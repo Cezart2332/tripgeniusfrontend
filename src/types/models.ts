@@ -1,26 +1,15 @@
 export type MemberRole = 'owner' | 'admin' | 'member'
 export type TripStatus = 'upcoming' | 'active' | 'completed'
-export type BudgetTier = 'low' | 'medium' | 'high'
-export type Pace = 'chill' | 'balanced' | 'fast'
-export type GroupPreference = 'narrow' | 'big'
 
-export interface UserPreferences {
-  tripTypes: string[]
-  groupPreference: GroupPreference
-  maxGroupSize: number
-  budgetTier: BudgetTier
-  pace: Pace
-}
 
-export interface UserProfile {
-  id: string
-  name: string
-  email: string
-  avatarUrl: string
-  description: string
-  preferences: UserPreferences
-  pastTripIds: string[]
-  futureTripIds: string[]
+export interface User {
+    id: number,
+    username: string,
+    email:string,
+    profileUrl: string,
+    description: string,
+    tags: string[],
+    groupSize: number
 }
 
 export interface TripMember {

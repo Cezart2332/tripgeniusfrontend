@@ -1,6 +1,6 @@
 import { AnimatePresence, motion } from 'framer-motion'
-import { useEffect, useMemo, useState } from 'react'
-import type { FormEvent, ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import type { FormEvent, KeyboardEvent as ReactKeyboardEvent, ReactNode } from 'react'
 import {
   FiArrowLeft,
   FiCalendar,
@@ -9,7 +9,7 @@ import {
   FiUploadCloud,
   FiX,
 } from 'react-icons/fi'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { addCreatedTrip, mockUserProfile, tripTypeOptions } from '../data/mockData'
 import type { Trip, TripStatus, TripTimelineStop } from '../types/models'
 
@@ -91,6 +91,14 @@ interface CalendarState {
   monthCursor: Date
 }
 
+type BuilderPane = 'overview' | 'timeline' | 'publish'
+
+const builderPanes: Array<{ key: BuilderPane; label: string }> = [
+  { key: 'overview', label: 'Overview' },
+  { key: 'timeline', label: 'Timeline' },
+  { key: 'publish', label: 'Publish' },
+]
+
 const revealTransition = {
   duration: 0.55,
   ease: [0.22, 1, 0.36, 1] as const,
@@ -99,6 +107,11 @@ const revealTransition = {
 const modalTransition = {
   duration: 0.25,
   ease: [0.2, 0.8, 0.2, 1] as const,
+}
+
+const builderPaneTransition = {
+  duration: 0.3,
+  ease: [0.22, 1, 0.36, 1] as const,
 }
 
 const weekdayLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
@@ -406,8 +419,15 @@ function LocationAutocompleteField({
 
       {showDropdown ? (
         <div className="location-dropdown">
-          {isLoading ? <p className="location-meta">Searching places...</p> : null}
-          {!isLoading && error ? <p className="location-meta">{error}</p> : null}
+          {isLoading ? (
+            <p className="location-meta">
+              <span className="inline-loading-content">
+                <span className="inline-spinner" aria-hidden="true" />
+                Searching places...
+              </span>
+            </p>
+          ) : null}
+          {!isLoading && error ? <p className="location-meta is-error">{error}</p> : null}
           {!isLoading && !error && suggestions.length === 0 ? (
             <p className="location-meta">No matches found for this location.</p>
           ) : null}
@@ -459,6 +479,7 @@ const getCoordinateCaption = (lng: string, lat: string): string => {
 
 export function CreateTripPage() {
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
   const mapboxPublicToken =
     (import.meta.env.VITE_MAPBOX_PUBLIC_TOKEN as string | undefined)?.trim() ?? ''
 
@@ -468,6 +489,12 @@ export function CreateTripPage() {
   const [creationError, setCreationError] = useState<string | null>(null)
   const [statusModalOpen, setStatusModalOpen] = useState(false)
   const [calendarState, setCalendarState] = useState<CalendarState | null>(null)
+  const tabListRef = useRef<HTMLElement | null>(null)
+  const requestedPane = searchParams.get('step')
+  const activeBuilderPane: BuilderPane =
+    requestedPane && builderPanes.some((pane) => pane.key === requestedPane)
+      ? (requestedPane as BuilderPane)
+      : 'overview'
 
   const calendarCells = useMemo(() => {
     if (!calendarState) {
@@ -825,6 +852,52 @@ export function CreateTripPage() {
   const selectedStatusOption =
     statusOptions.find((option) => option.value === formState.status) ?? statusOptions[0]
 
+  const selectBuilderPane = (nextPane: BuilderPane) => {
+    const nextParams = new URLSearchParams(searchParams)
+    nextParams.set('step', nextPane)
+    setSearchParams(nextParams, { replace: true })
+  }
+
+  const focusBuilderTabAt = (index: number) => {
+    const tabButtons = tabListRef.current?.querySelectorAll<HTMLButtonElement>(
+      '[role="tab"]',
+    )
+
+    tabButtons?.[index]?.focus()
+  }
+
+  const handleBuilderTabKeyDown = (
+    event: ReactKeyboardEvent<HTMLButtonElement>,
+    currentIndex: number,
+  ) => {
+    let nextIndex: number | null = null
+
+    if (event.key === 'ArrowRight') {
+      nextIndex = (currentIndex + 1) % builderPanes.length
+    }
+
+    if (event.key === 'ArrowLeft') {
+      nextIndex = (currentIndex - 1 + builderPanes.length) % builderPanes.length
+    }
+
+    if (event.key === 'Home') {
+      nextIndex = 0
+    }
+
+    if (event.key === 'End') {
+      nextIndex = builderPanes.length - 1
+    }
+
+    if (nextIndex === null) {
+      return
+    }
+
+    event.preventDefault()
+    const nextPane = builderPanes[nextIndex]
+    selectBuilderPane(nextPane.key)
+    focusBuilderTabAt(nextIndex)
+  }
+
   return (
     <section className="page create-trip-page">
       <motion.form
@@ -849,6 +922,34 @@ export function CreateTripPage() {
           </Link>
         </div>
 
+        <nav
+          ref={tabListRef}
+          className="builder-tab-bar"
+          aria-label="Create trip sections"
+          role="tablist"
+        >
+          {builderPanes.map((pane, index) => (
+            <button
+              key={pane.key}
+              type="button"
+              id={`builder-tab-${pane.key}`}
+              className={
+                activeBuilderPane === pane.key
+                  ? 'builder-tab-btn is-active'
+                  : 'builder-tab-btn'
+              }
+              role="tab"
+              aria-selected={activeBuilderPane === pane.key}
+              aria-controls={`builder-panel-${pane.key}`}
+              tabIndex={activeBuilderPane === pane.key ? 0 : -1}
+              onClick={() => selectBuilderPane(pane.key)}
+              onKeyDown={(event) => handleBuilderTabKeyDown(event, index)}
+            >
+              {pane.label}
+            </button>
+          ))}
+        </nav>
+
         {!hasMapboxToken ? (
           <p className="info-banner is-error">
             Mapbox token is missing. Add VITE_MAPBOX_PUBLIC_TOKEN in your environment
@@ -856,8 +957,21 @@ export function CreateTripPage() {
           </p>
         ) : null}
 
-        <div className="create-trip-grid">
-          <div>
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.div
+            key={activeBuilderPane}
+            id={`builder-panel-${activeBuilderPane}`}
+            role="tabpanel"
+            aria-labelledby={`builder-tab-${activeBuilderPane}`}
+            tabIndex={0}
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={builderPaneTransition}
+          >
+            <div className="create-trip-grid">
+              {activeBuilderPane !== 'timeline' ? (
+              <div>
             <label className="field-label" htmlFor="create-trip-title">
               Trip title
             </label>
@@ -1070,8 +1184,10 @@ export function CreateTripPage() {
               </button>
             </div>
           </div>
+              ) : null}
 
-          <div className="timeline-editor">
+              {activeBuilderPane !== 'overview' ? (
+              <div className="timeline-editor">
             <h2>Timeline route stops</h2>
             <p>
               Search locations for each stop and pick suggestions to auto-fill
@@ -1171,7 +1287,29 @@ export function CreateTripPage() {
               Add another day stop
             </button>
           </div>
-        </div>
+              ) : null}
+            </div>
+
+            {activeBuilderPane === 'publish' ? (
+              <section className="panel create-publish-overview">
+                <h2>Publish readiness</h2>
+                <p>
+                  Review your expedition setup before publishing it to discovery.
+                </p>
+                <div className="trip-stat-row">
+                  <span>Title: {formState.title || 'Missing'}</span>
+                  <span>Destination: {formState.destination || 'Missing'}</span>
+                  <span>Timeline days: {formState.timeline.length}</span>
+                </div>
+                <div className="trip-stat-row">
+                  <span>Budget: {Math.max(1, formState.budgetPerPerson)} EUR</span>
+                  <span>Max members: {Math.max(2, formState.maxMembers)}</span>
+                  <span>Tags selected: {formState.tags.length}</span>
+                </div>
+              </section>
+            ) : null}
+          </motion.div>
+        </AnimatePresence>
 
         {creationError ? <p className="info-banner is-error">{creationError}</p> : null}
 

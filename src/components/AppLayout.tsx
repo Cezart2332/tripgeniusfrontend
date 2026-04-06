@@ -6,18 +6,29 @@ import {
   FiCpu,
   FiHome,
   FiLogIn,
+  FiLogOut,
   FiSettings,
   FiUser,
   FiUserPlus,
 } from 'react-icons/fi'
 import type { IconType } from 'react-icons'
-import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
+import { useDispatch, useSelector } from 'react-redux'
+import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { logout as logoutAction } from '../data/authSlice'
+import api from '../data/api'
+import type { User } from '../types/models'
 
 interface NavItem {
   to: string
   label: string
   Icon: IconType
   end?: boolean
+}
+
+interface AuthStoreState {
+  auth: {
+    user: User | null
+  }
 }
 
 const primaryNavItems: NavItem[] = [
@@ -28,7 +39,27 @@ const primaryNavItems: NavItem[] = [
 
 export function AppLayout() {
   const location = useLocation()
+  const navigate = useNavigate()
+  const dispatch = useDispatch()
+  const user = useSelector((state: AuthStoreState) => state.auth.user)
   const [hideHeader, setHideHeader] = useState(false)
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
+
+  const handleLogout = async () => {
+    if (isLoggingOut) {
+      return
+    }
+
+    setIsLoggingOut(true)
+
+    try {
+      await api.post('/api/auth/logout')
+    } finally {
+      dispatch(logoutAction())
+      setIsLoggingOut(false)
+      navigate('/login', { replace: true })
+    }
+  }
 
   useEffect(() => {
     const lenis = new Lenis({
@@ -104,14 +135,40 @@ export function AppLayout() {
         </nav>
 
         <div className="header-actions">
-          <Link className="btn btn-ghost header-auth" to="/login">
-            <FiLogIn aria-hidden="true" />
-            Login
-          </Link>
-          <Link className="btn btn-primary header-auth" to="/register">
-            <FiUserPlus aria-hidden="true" />
-            Register
-          </Link>
+          {!user ? (
+            <>
+              <Link className="btn btn-ghost header-auth" to="/login">
+                <FiLogIn aria-hidden="true" />
+                Login
+              </Link>
+              <Link className="btn btn-primary header-auth" to="/register">
+                <FiUserPlus aria-hidden="true" />
+                Register
+              </Link>
+            </>
+          ) : null}
+
+          {user ? (
+            <button
+              type="button"
+              className="btn btn-ghost header-auth"
+              onClick={handleLogout}
+              disabled={isLoggingOut}
+              aria-busy={isLoggingOut}
+            >
+              {isLoggingOut ? (
+                <span className="btn-loading-content">
+                  <span className="inline-spinner" aria-hidden="true" />
+                  Logging out...
+                </span>
+              ) : (
+                <>
+                  <FiLogOut aria-hidden="true" />
+                  Logout
+                </>
+              )}
+            </button>
+          ) : null}
 
           <NavLink
             to="/profile"
