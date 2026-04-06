@@ -328,6 +328,34 @@ h3 {
   transform: translateY(-1px) scale(1.01);
 }
 
+.btn:disabled {
+  opacity: 0.72;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.btn:disabled:hover {
+  transform: none;
+}
+
+.btn-loading-content,
+.inline-loading-content {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.inline-spinner {
+  width: 0.9rem;
+  height: 0.9rem;
+  border-radius: 999px;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  animation: spin 0.75s linear infinite;
+  flex-shrink: 0;
+}
+
 .btn-primary {
   background: linear-gradient(128deg, var(--green-700), var(--green-580));
   color: #042116;
@@ -899,6 +927,10 @@ h3 {
   padding: 0.55rem 0.65rem;
   color: var(--text-380);
   font-size: 0.78rem;
+}
+
+.location-meta.is-error {
+  color: #ffd7de;
 }
 
 .location-option {
@@ -1961,5 +1993,11 @@ h3 {
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
   }
 }

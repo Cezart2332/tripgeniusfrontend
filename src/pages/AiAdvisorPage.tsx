@@ -181,81 +181,30 @@ export function AiAdvisorPage() {
 
   return (
     <section className="page ai-page">
-      <div className="panel ai-header">
-        <p className="eyebrow">AI trip advisor</p>
-        <h1>Chat with AI to plan your next trip.</h1>
+      <header className="panel ai-header">
+        <p className="eyebrow">AI expedition advisor</p>
+        <h1>Plan by conversation, execute by structure.</h1>
         <p>
-          Describe your ideal itinerary naturally. The assistant responds like a
-          conversation and suggests matching trips in real time.
+          Ask naturally, get ranked trip options, then jump directly into a workspace.
         </p>
-      </div>
+      </header>
 
-      <div className="panel ai-chat-shell">
-        <div className="ai-quick-prompts">
-          {quickPrompts.map((quickPrompt) => (
-            <button
-              key={quickPrompt}
-              type="button"
-              className="chip"
-              onClick={() => setPrompt(quickPrompt)}
-            >
-              {quickPrompt}
-            </button>
-          ))}
-        </div>
+      <div className="ai-workspace-shell">
+        <aside className="panel ai-brief-rail">
+          <h2>Prompt shortcuts</h2>
+          <div className="ai-quick-prompts">
+            {quickPrompts.map((quickPrompt) => (
+              <button
+                key={quickPrompt}
+                type="button"
+                className="chip"
+                onClick={() => setPrompt(quickPrompt)}
+              >
+                {quickPrompt}
+              </button>
+            ))}
+          </div>
 
-        <div className="ai-thread" ref={threadRef}>
-          {messages.map((message) => (
-            <article
-              key={message.id}
-              className={
-                message.role === 'assistant' ? 'ai-bubble assistant' : 'ai-bubble user'
-              }
-            >
-              <p className="ai-bubble-meta">
-                {message.role === 'assistant' ? 'TripGenius AI' : 'You'}
-              </p>
-              <p>{message.content}</p>
-
-              {message.recommendations ? (
-                <div className="ai-suggestion-list">
-                  {message.recommendations.map((recommendation) => (
-                    <div key={recommendation.id} className="ai-suggestion-card">
-                      <p className="list-title">
-                        {recommendation.title} • Score {recommendation.score}
-                      </p>
-                      <p>{recommendation.destination}</p>
-                      <p>{recommendation.summary}</p>
-                      <p>{recommendation.reason}</p>
-                      <Link className="btn btn-primary" to={`/trip/${recommendation.id}`}>
-                        Open trip
-                      </Link>
-                    </div>
-                  ))}
-                </div>
-              ) : null}
-
-              {message.externalIdeas ? (
-                <div className="match-reasons">
-                  {message.externalIdeas.map((idea) => (
-                    <span key={idea} className="reason-chip">
-                      External idea: {idea}
-                    </span>
-                  ))}
-                </div>
-              ) : null}
-            </article>
-          ))}
-
-          {isTyping ? (
-            <div className="ai-typing">
-              <FiMessageSquare aria-hidden="true" />
-              AI is thinking...
-            </div>
-          ) : null}
-        </div>
-
-        <form className="ai-composer" onSubmit={handleSubmit}>
           <label className="toggle">
             <input
               type="checkbox"
@@ -265,19 +214,78 @@ export function AiAdvisorPage() {
             Boost with onboarding preferences
           </label>
 
-          <div className="ai-composer-row">
-            <input
-              className="input"
-              value={prompt}
-              onChange={(event) => setPrompt(event.target.value)}
-              placeholder="Ask for the kind of trip you want..."
-            />
-            <button className="btn btn-primary" type="submit">
-              <FiSend aria-hidden="true" />
-              Send
-            </button>
+          <Link className="btn btn-ghost" to="/discover">
+            Open discovery feed
+          </Link>
+        </aside>
+
+        <section className="panel ai-chat-shell">
+          <div className="ai-thread" ref={threadRef}>
+            {messages.map((message) => (
+              <article
+                key={message.id}
+                className={
+                  message.role === 'assistant' ? 'ai-bubble assistant' : 'ai-bubble user'
+                }
+              >
+                <p className="ai-bubble-meta">
+                  {message.role === 'assistant' ? 'TripGenius AI' : 'You'}
+                </p>
+                <p>{message.content}</p>
+
+                {message.recommendations ? (
+                  <div className="ai-suggestion-list">
+                    {message.recommendations.map((recommendation) => (
+                      <div key={recommendation.id} className="ai-suggestion-card">
+                        <p className="list-title">
+                          {recommendation.title} - Score {recommendation.score}
+                        </p>
+                        <p>{recommendation.destination}</p>
+                        <p>{recommendation.summary}</p>
+                        <p>{recommendation.reason}</p>
+                        <Link className="btn btn-primary" to={`/trip/${recommendation.id}`}>
+                          Open trip
+                        </Link>
+                      </div>
+                    ))}
+                  </div>
+                ) : null}
+
+                {message.externalIdeas ? (
+                  <div className="match-reasons">
+                    {message.externalIdeas.map((idea) => (
+                      <span key={idea} className="reason-chip">
+                        External idea: {idea}
+                      </span>
+                    ))}
+                  </div>
+                ) : null}
+              </article>
+            ))}
+
+            {isTyping ? (
+              <div className="ai-typing">
+                <FiMessageSquare aria-hidden="true" />
+                AI is thinking...
+              </div>
+            ) : null}
           </div>
-        </form>
+
+          <form className="ai-composer" onSubmit={handleSubmit}>
+            <div className="ai-composer-row">
+              <input
+                className="input"
+                value={prompt}
+                onChange={(event) => setPrompt(event.target.value)}
+                placeholder="Ask for the kind of trip you want..."
+              />
+              <button className="btn btn-primary" type="submit">
+                <FiSend aria-hidden="true" />
+                Send
+              </button>
+            </div>
+          </form>
+        </section>
       </div>
     </section>
   )

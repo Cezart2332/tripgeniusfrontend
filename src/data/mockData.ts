@@ -4,8 +4,23 @@ import type {
   Trip,
   TripMember,
   TripTimelineStop,
-  UserProfile,
 } from '../types/models'
+
+export interface UserPreferences {
+  tripTypes: string[]
+  maxGroupSize: number
+}
+
+export interface UserProfile {
+  id: string
+  name: string
+  email: string
+  avatarUrl: string
+  description: string
+  preferences: UserPreferences
+  pastTripIds: string[]
+  futureTripIds: string[]
+}
 
 const formatDateOffset = (offset: number): string => {
   const date = new Date()
@@ -108,10 +123,7 @@ export const mockUserProfile: UserProfile = {
     'I enjoy mixed city + mountain trips, practical planning, and meeting people with strong positive energy.',
   preferences: {
     tripTypes: ['adventure', 'roadtrip', 'nature'],
-    groupPreference: 'narrow',
     maxGroupSize: 8,
-    budgetTier: 'medium',
-    pace: 'balanced',
   },
   pastTripIds: ['trip-adria'],
   futureTripIds: ['trip-danube', 'trip-retreat'],

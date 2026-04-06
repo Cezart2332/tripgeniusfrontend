@@ -1,18 +1,40 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import { tripTypeOptions } from '../data/mockData'
-import type {
-  BudgetTier,
-  GroupPreference,
-  Pace,
-  UserPreferences,
-} from '../types/models'
+import api from '../data/api'
+import { useDispatch } from 'react-redux'
+import { setCredentials } from '../data/authSlice'
 
 interface RegisterState {
-  fullName: string
+  username: string
   email: string
   password: string
-  preferences: UserPreferences
+  tags: string[]
+  groupSize: number
+}
+
+const registerHighlights = [
+  'Build your onboarding profile in one pass.',
+  'Set trip styles to improve your discovery feed quality.',
+  'Define ideal group size before joining or creating trips.',
+]
+
+const getRequestErrorMessage = (error: unknown, fallbackMessage: string): string => {
+  if (typeof error === 'object' && error !== null) {
+    const errorResponse = (error as { response?: { data?: { message?: unknown } } }).response
+    const apiMessage = errorResponse?.data?.message
+
+    if (typeof apiMessage === 'string' && apiMessage.trim().length > 0) {
+      return apiMessage
+    }
+  }
+
+  if (error instanceof Error && error.message.trim().length > 0) {
+    return error.message
+  }
+
+  return fallbackMessage
 }
 
 const toggleTripType = (current: string[], type: string): string[] =>
@@ -21,79 +43,109 @@ const toggleTripType = (current: string[], type: string): string[] =>
     : [...current, type]
 
 const createInitialState = (): RegisterState => ({
-  fullName: '',
+  username: '',
   email: '',
   password: '',
-  preferences: {
-    tripTypes: ['adventure', 'nature'],
-    groupPreference: 'narrow',
-    maxGroupSize: 8,
-    budgetTier: 'medium',
-    pace: 'balanced',
-  },
+  tags: ['adventure', 'nature'],
+  groupSize: 8,
 })
 
 export function RegisterPage() {
+  const dispatch = useDispatch()
+  const navigate = useNavigate()
   const [formState, setFormState] = useState<RegisterState>(createInitialState)
-  const [created, setCreated] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
-  const updateBudget = (budgetTier: BudgetTier) => {
-    setFormState((previous) => ({
-      ...previous,
-      preferences: {
-        ...previous.preferences,
-        budgetTier,
-      },
-    }))
+  const register = async (
+    username: string,
+    email: string,
+    password: string,
+    tags: string[],
+    groupSize: number,
+  ) => {
+    const res = await api.post('api/auth/register', {
+      email,
+      password,
+      username,
+      tags,
+      groupSize,
+    })
+
+    const user = await api.get('api/user/me')
+    dispatch(
+      setCredentials({
+        user: user.data,
+        token: res.data.token,
+      }),
+    )
   }
 
-  const updatePace = (pace: Pace) => {
-    setFormState((previous) => ({
-      ...previous,
-      preferences: {
-        ...previous.preferences,
-        pace,
-      },
-    }))
-  }
-
-  const updateGroupPreference = (groupPreference: GroupPreference) => {
-    setFormState((previous) => ({
-      ...previous,
-      preferences: {
-        ...previous.preferences,
-        groupPreference,
-      },
-    }))
-  }
-
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    setCreated(true)
+    setErrorMessage(null)
+    setIsLoading(true)
+
+    try {
+      await register(
+        formState.username,
+        formState.email,
+        formState.password,
+        formState.tags,
+        formState.groupSize,
+      )
+      navigate('/profile', { replace: true })
+    } catch (error) {
+      setErrorMessage(
+        getRequestErrorMessage(
+          error,
+          'Could not register your account. Please try again in a moment.',
+        ),
+      )
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
     <section className="page register-page">
-      <form className="register-layout" onSubmit={handleSubmit}>
-        <div className="panel">
-          <p className="eyebrow">Create account</p>
-          <h1>Register and configure your trip onboarding.</h1>
+      <header className="panel auth-headline">
+        <p className="eyebrow">Start your expedition</p>
+        <h1>Create your basecamp profile.</h1>
+        <p>
+          Register once, set your travel preferences, and unlock personalized trip discovery.
+        </p>
+      </header>
+
+      <nav className="auth-switch" aria-label="Authentication pages">
+        <Link className="auth-switch-link" to="/login">
+          Login
+        </Link>
+        <Link className="auth-switch-link is-active" to="/register">
+          Register
+        </Link>
+      </nav>
+
+      <div className="auth-flow">
+        <form className="panel auth-form-rail" onSubmit={handleSubmit}>
+          <h2>Account details</h2>
 
           <label className="field-label" htmlFor="register-name">
-            Full name
+            Username
           </label>
           <input
             id="register-name"
             className="input"
             type="text"
             placeholder="Your name"
-            value={formState.fullName}
+            value={formState.username}
             onChange={(event) =>
               setFormState((previous) => ({
                 ...previous,
-                fullName: event.target.value,
+                username: event.target.value,
               }))
             }
+            disabled={isLoading}
             required
           />
 
@@ -112,6 +164,7 @@ export function RegisterPage() {
                 email: event.target.value,
               }))
             }
+            disabled={isLoading}
             required
           />
 
@@ -130,32 +183,26 @@ export function RegisterPage() {
                 password: event.target.value,
               }))
             }
+            disabled={isLoading}
             required
           />
-        </div>
 
-        <div className="panel">
-          <p className="eyebrow">Onboarding preferences</p>
-          <h2>What type of trips do you prefer?</h2>
+          <h2>Onboarding preferences</h2>
+          <p>Select the trip styles you care about most.</p>
 
           <div className="chip-row">
             {tripTypeOptions.map((tripType) => {
-              const selected = formState.preferences.tripTypes.includes(tripType)
+              const selected = formState.tags.includes(tripType)
               return (
                 <button
                   key={tripType}
                   type="button"
                   className={selected ? 'chip is-selected' : 'chip'}
+                  disabled={isLoading}
                   onClick={() =>
                     setFormState((previous) => ({
                       ...previous,
-                      preferences: {
-                        ...previous.preferences,
-                        tripTypes: toggleTripType(
-                          previous.preferences.tripTypes,
-                          tripType,
-                        ),
-                      },
+                      tags: toggleTripType(previous.tags, tripType),
                     }))
                   }
                 >
@@ -163,32 +210,6 @@ export function RegisterPage() {
                 </button>
               )
             })}
-          </div>
-
-          <h2>Do you prefer a narrow or big group?</h2>
-          <div className="choice-row">
-            <button
-              type="button"
-              className={
-                formState.preferences.groupPreference === 'narrow'
-                  ? 'choice-card is-active'
-                  : 'choice-card'
-              }
-              onClick={() => updateGroupPreference('narrow')}
-            >
-              Narrow group
-            </button>
-            <button
-              type="button"
-              className={
-                formState.preferences.groupPreference === 'big'
-                  ? 'choice-card is-active'
-                  : 'choice-card'
-              }
-              onClick={() => updateGroupPreference('big')}
-            >
-              Big group
-            </button>
           </div>
 
           <label className="field-label" htmlFor="register-max-members">
@@ -200,62 +221,50 @@ export function RegisterPage() {
             type="number"
             min={2}
             max={30}
-            value={formState.preferences.maxGroupSize}
+            value={formState.groupSize}
+            disabled={isLoading}
             onChange={(event) => {
               const value = Number(event.target.value)
               setFormState((previous) => ({
                 ...previous,
-                preferences: {
-                  ...previous.preferences,
-                  maxGroupSize: Number.isFinite(value) ? value : 8,
-                },
+                groupSize: Number.isFinite(value) ? value : 8,
               }))
             }}
           />
 
-          <div className="select-row">
-            <label className="field-label" htmlFor="register-budget">
-              Budget tier
-            </label>
-            <select
-              id="register-budget"
-              className="input"
-              value={formState.preferences.budgetTier}
-              onChange={(event) =>
-                updateBudget(event.target.value as BudgetTier)
-              }
-            >
-              <option value="low">Low</option>
-              <option value="medium">Medium</option>
-              <option value="high">High</option>
-            </select>
-
-            <label className="field-label" htmlFor="register-pace">
-              Travel pace
-            </label>
-            <select
-              id="register-pace"
-              className="input"
-              value={formState.preferences.pace}
-              onChange={(event) => updatePace(event.target.value as Pace)}
-            >
-              <option value="chill">Chill</option>
-              <option value="balanced">Balanced</option>
-              <option value="fast">Fast</option>
-            </select>
-          </div>
-
-          <button className="btn btn-primary" type="submit">
-            Register and save onboarding
+          <button
+            className="btn btn-primary"
+            type="submit"
+            disabled={isLoading}
+            aria-busy={isLoading}
+          >
+            {isLoading ? (
+              <span className="btn-loading-content">
+                <span className="inline-spinner" aria-hidden="true" />
+                Creating account...
+              </span>
+            ) : (
+              'Create account and continue'
+            )}
           </button>
 
-          {created ? (
-            <p className="info-banner">
-              Account and onboarding preferences saved in mock mode.
-            </p>
-          ) : null}
-        </div>
-      </form>
+          {errorMessage ? <p className="info-banner is-error">{errorMessage}</p> : null}
+        </form>
+
+        <aside className="panel auth-side-rail">
+          <h2>What happens next?</h2>
+          <ul className="auth-point-list">
+            {registerHighlights.map((point) => (
+              <li key={point}>{point}</li>
+            ))}
+          </ul>
+
+          <p className="lead">Already have an account?</p>
+          <Link to="/login" className="btn btn-ghost">
+            Sign in instead
+          </Link>
+        </aside>
+      </div>
     </section>
   )
 }

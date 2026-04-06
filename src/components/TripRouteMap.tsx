@@ -341,7 +341,14 @@ export function TripRouteMap({ timeline, selectedDay }: TripRouteMapProps) {
     <div className="map-wrapper">
       <div className="map-container" ref={containerRef} aria-label="Trip route map" />
       <p className={routeState.hasError ? 'map-estimation is-warning' : 'map-estimation'}>
-        {estimationText}
+        {routeState.isLoading ? (
+          <span className="inline-loading-content">
+            <span className="inline-spinner" aria-hidden="true" />
+            {estimationText}
+          </span>
+        ) : (
+          estimationText
+        )}
       </p>
     </div>
   )
