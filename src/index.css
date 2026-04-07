@@ -204,8 +204,7 @@ h3 {
   border-radius: 999px;
   border: 1px solid var(--line-soft);
   background: rgba(18, 34, 25, 0.52);
-  transition: transform 0.24s ease, border-color 0.24s ease, background 0.24s ease,
-    color 0.24s ease;
+  transition: 0.25s all;
 }
 
 .nav-link:hover {
@@ -248,7 +247,7 @@ h3 {
   display: inline-grid;
   place-items: center;
   text-decoration: none;
-  transition: transform 0.24s ease, border-color 0.24s ease, color 0.24s ease;
+  transition: transform 0.25s ease, border-color 0.25s ease, color 0.25s ease;
 }
 
 .icon-link:hover {
@@ -320,8 +319,7 @@ h3 {
   font-weight: 700;
   text-decoration: none;
   cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease,
-    background 0.2s ease;
+  transition: 0.25s all;
 }
 
 .btn:hover {
@@ -382,7 +380,7 @@ h3 {
   font-family: var(--body-font);
   font-size: 0.95rem;
   padding: 0.68rem 0.82rem;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  transition: border-color 0.25s ease, box-shadow 0.25s ease;
 }
 
 .input::placeholder {
@@ -450,6 +448,73 @@ h3 {
   font-size: 0.84rem;
 }
 
+.feedback-toast-shell {
+  position: fixed;
+  top: 5rem;
+  right: 1rem;
+  width: min(360px, calc(100vw - 2rem));
+  z-index: 70;
+  pointer-events: none;
+}
+
+.feedback-toast {
+  pointer-events: auto;
+  display: grid;
+  gap: 0.7rem;
+  border-radius: 16px;
+  border: 1px solid rgba(61, 255, 159, 0.35);
+  background: rgba(8, 22, 15, 0.95);
+  color: var(--text-100);
+  box-shadow: 0 20px 42px rgba(2, 10, 7, 0.44);
+  padding: 0.85rem 0.95rem;
+}
+
+.feedback-toast p {
+  margin: 0;
+  font-size: 0.84rem;
+  line-height: 1.45;
+}
+
+.feedback-toast--success {
+  border-color: rgba(154, 247, 208, 0.6);
+}
+
+.feedback-toast--error {
+  border-color: rgba(219, 74, 91, 0.68);
+  background: rgba(46, 9, 15, 0.95);
+}
+
+.feedback-toast--info {
+  border-color: rgba(138, 200, 255, 0.6);
+  background: rgba(10, 20, 32, 0.95);
+}
+
+.feedback-toast-close {
+  justify-self: end;
+  border: 1px solid var(--line-soft);
+  border-radius: 999px;
+  background: rgba(17, 33, 24, 0.62);
+  color: var(--text-220);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 0.38rem 0.58rem;
+  cursor: pointer;
+}
+
+.feedback-toast-close:hover {
+  border-color: var(--line);
+  color: var(--text-100);
+}
+
+@media (max-width: 700px) {
+  .feedback-toast-shell {
+    top: 4.35rem;
+    right: 0.75rem;
+    width: calc(100vw - 1.5rem);
+  }
+}
+
 .chip-row {
   display: flex;
   flex-wrap: wrap;
@@ -466,7 +531,7 @@ h3 {
   text-transform: capitalize;
   color: var(--text-220);
   cursor: pointer;
-  transition: border-color 0.2s ease, transform 0.2s ease, color 0.2s ease;
+  transition: border-color 0.25s ease, transform 0.25s ease, color 0.25s ease;
 }
 
 .chip:hover {
@@ -623,7 +688,7 @@ h3 {
 .feature-card {
   display: grid;
   gap: 0.6rem;
-  transition: transform 0.24s ease, border-color 0.24s ease;
+  transition: transform 0.25s ease, border-color 0.25s ease;
 }
 
 .feature-card:hover {
@@ -710,7 +775,7 @@ h3 {
   padding: 0.72rem;
   display: grid;
   gap: 0.4rem;
-  transition: transform 0.22s ease, border-color 0.22s ease;
+  transition: transform 0.25s ease, border-color 0.25s ease;
 }
 
 .journey-step:hover {
@@ -943,7 +1008,7 @@ h3 {
   display: grid;
   gap: 0.2rem;
   cursor: pointer;
-  transition: background 0.2s ease;
+  transition: background 0.25s ease;
 }
 
 .location-option:first-of-type {
@@ -1112,7 +1177,7 @@ h3 {
   gap: 0.22rem;
   background: rgba(16, 31, 23, 0.5);
   cursor: pointer;
-  transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+  transition: transform 0.25s ease, border-color 0.25s ease, background 0.25s ease;
 }
 
 .upload-dropzone:hover {
@@ -1198,7 +1263,7 @@ h3 {
   display: grid;
   gap: 0.2rem;
   cursor: pointer;
-  transition: border-color 0.2s ease, background 0.2s ease;
+  transition: border-color 0.25s ease, background 0.25s ease;
 }
 
 .option-item small {
@@ -1277,7 +1342,7 @@ h3 {
   background: rgba(16, 31, 23, 0.55);
   color: var(--text-120);
   cursor: pointer;
-  transition: background 0.2s ease, border-color 0.2s ease;
+  transition: background 0.25s ease, border-color 0.25s ease;
 }
 
 .calendar-day:hover {
@@ -1354,7 +1419,7 @@ h3 {
   padding: 0.48rem;
   text-decoration: none;
   color: inherit;
-  transition: background 0.2s ease;
+  transition: background 0.25s ease;
 }
 
 .history-item-link:hover {
@@ -1657,6 +1722,14 @@ h3 {
   gap: 1rem;
 }
 
+.settings-empty-state {
+  max-width: min(640px, 100%);
+}
+
+.settings-empty-state .btn {
+  justify-self: start;
+}
+
 .danger-panel p {
   margin-bottom: 0.6rem;
   color: var(--text-220);
@@ -1665,7 +1738,7 @@ h3 {
 
 @media (hover: hover) and (pointer: fine) {
   .trip-card {
-    transition: transform 0.28s ease, border-color 0.28s ease;
+    transition: transform 0.25s ease, border-color 0.25s ease;
     will-change: transform;
   }
 
@@ -1945,7 +2018,10 @@ h3 {
 @media (prefers-reduced-motion: reduce) {
   * {
     animation: none !important;
-    transition: none !important;
+  }
+
+  .inline-spinner {
+    animation: spin 0.75s linear infinite !important;
   }
 }
 

@@ -3,6 +3,10 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useDispatch } from 'react-redux'
 import api from '../data/api'
 import { setCredentials, setToken } from '../data/authSlice'
+import { AxiosError } from 'axios'
+import { FeedbackToast } from '../components/FeedbackToast'
+import type { FeedbackToastState, FeedbackToastTone } from '../components/FeedbackToast'
+import waitForBackendButtonUnlock from '../utils/interactionDelay'
 
 const GoogleIcon = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
@@ -19,30 +23,21 @@ const loginHighlights = [
   'Keep your profile-driven discovery recommendations active.',
 ]
 
-const getRequestErrorMessage = (error: unknown, fallbackMessage: string): string => {
-  if (typeof error === 'object' && error !== null) {
-    const errorResponse = (error as { response?: { data?: { message?: unknown } } }).response
-    const apiMessage = errorResponse?.data?.message
-
-    if (typeof apiMessage === 'string' && apiMessage.trim().length > 0) {
-      return apiMessage
-    }
-  }
-
-  if (error instanceof Error && error.message.trim().length > 0) {
-    return error.message
-  }
-
-  return fallbackMessage
-}
-
 export function LoginPage() {
   const dispatch = useDispatch()
   const navigate = useNavigate()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
-  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [toast, setToast] = useState<FeedbackToastState | null>(null)
+
+  const showToast = (message: string, tone: FeedbackToastTone) => {
+    setToast({
+      id: Date.now(),
+      message,
+      tone,
+    })
+  }
 
 const login = async (email:string, password:string) => {
     const res = await api.post('api/auth/login', { email, password });
@@ -58,26 +53,46 @@ const login = async (email:string, password:string) => {
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    setErrorMessage(null)
+
+    if (isLoading) {
+      return
+    }
+
     setIsLoading(true)
+    let shouldNavigate = false
 
     try {
       await login(email, password)
-      navigate('/profile', { replace: true })
-    } catch (error) {
-      setErrorMessage(
-        getRequestErrorMessage(
-          error,
-          'Could not log in. Please verify your credentials and try again.',
-        ),
-      )
-    } finally {
+      showToast('Login successful. Redirecting...', 'success')
+      shouldNavigate = true
+    } 
+    catch (err : unknown) 
+    {
+      if(err instanceof AxiosError)
+      {
+        const message = err.response?.data?.message || err.response?.data || "There was a problem, please try again later."
+        showToast(String(message), 'error')
+      }
+      else
+      {
+        showToast('Could not log in. Please verify your credentials and try again.', 'error')
+      }
+
+    } 
+    finally 
+    {
+      await waitForBackendButtonUnlock()
       setIsLoading(false)
+    }
+
+    if (shouldNavigate) {
+      navigate('/profile', { replace: true })
     }
   }
 
   return (
     <section className="page auth-page">
+      <FeedbackToast toast={toast} clearToast={() => setToast(null)} />
       <header className="panel auth-headline">
         <p className="eyebrow">Expedition access</p>
         <h1>Return to your travel control room.</h1>
@@ -151,8 +166,6 @@ const login = async (email:string, password:string) => {
               'Enter workspace'
             )}
           </button>
-
-          {errorMessage ? <p className="info-banner is-error">{errorMessage}</p> : null}
         </form>
 
         <aside className="panel auth-side-rail">

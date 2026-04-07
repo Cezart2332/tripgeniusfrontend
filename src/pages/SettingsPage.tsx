@@ -1,8 +1,23 @@
 import { AnimatePresence, motion } from 'framer-motion'
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { FormEvent, KeyboardEvent } from 'react'
-import { useSearchParams } from 'react-router-dom'
-import { mockUserProfile } from '../data/mockData'
+import { Link, useSearchParams,useNavigate } from 'react-router-dom'
+import type { User } from '../types/models'
+import api from '../data/api'
+import { useDispatch, useSelector } from 'react-redux'
+import { setUser, logout as logoutAction } from '../data/authSlice'
+import { FeedbackToast } from '../components/FeedbackToast'
+import type { FeedbackToastState, FeedbackToastTone } from '../components/FeedbackToast'
+import waitForBackendButtonUnlock from '../utils/interactionDelay'
+
+import { AxiosError } from 'axios'
+
+interface AuthStoreState {
+  auth: {
+    user: User | null
+    token: string | null
+  }
+}
 
 type SettingsTab = 'account' | 'security' | 'support' | 'danger'
 
@@ -19,6 +34,10 @@ const sectionTransition = {
 }
 
 export function SettingsPage() {
+  const dispatch = useDispatch()
+  const navigate = useNavigate()
+  const user = useSelector((state: AuthStoreState) => state.auth.user)
+  const token = useSelector((state: AuthStoreState) => state.auth.token)
   const [searchParams, setSearchParams] = useSearchParams()
   const tabListRef = useRef<HTMLElement | null>(null)
   const requestedTab = searchParams.get('tab')
@@ -26,11 +45,62 @@ export function SettingsPage() {
     requestedTab && settingsTabs.some((tab) => tab.key === requestedTab)
       ? (requestedTab as SettingsTab)
       : 'account'
-  const [email, setEmail] = useState(mockUserProfile.email)
+  const [email, setEmail] = useState(user?.email ?? '')
   const [currentPassword, setCurrentPassword] = useState('')
   const [nextPassword, setNextPassword] = useState('')
   const [bugReport, setBugReport] = useState('')
-  const [feedback, setFeedback] = useState('')
+  const [toast, setToast] = useState<FeedbackToastState | null>(null)
+  const [isUpdatingEmail, setIsUpdatingEmail] = useState(false)
+  const [isUpdatingPassword, setIsUpdatingPassword] = useState(false)
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false)
+  const [isReportingBug, setIsReportingBug] = useState(false)
+  const isBackendActionLocked = isUpdatingEmail || isUpdatingPassword || isDeletingAccount || isReportingBug
+  const shouldRedirectToLogin = !token
+
+  const showToast = (message: string, tone: FeedbackToastTone) => {
+    setToast({
+      id: Date.now(),
+      message,
+      tone,
+    })
+  }
+
+  useEffect(() => {
+    if (!shouldRedirectToLogin) {
+      return
+    }
+
+    setToast({
+      id: Date.now(),
+      message: 'You will be redirected in 2 seconds to login page',
+      tone: 'info',
+    })
+
+    const timeoutId = window.setTimeout(() => {
+      navigate('/login', { replace: true })
+    }, 2000)
+
+    return () => {
+      window.clearTimeout(timeoutId)
+    }
+  }, [shouldRedirectToLogin, navigate])
+
+  if(!user || !token)
+  {
+    return (
+      <section className="page settings-page">
+        <FeedbackToast toast={toast} clearToast={() => setToast(null)} />
+        <section className="panel settings-section settings-empty-state">
+          <p className="eyebrow">Settings center</p>
+          <h1>You are not logged in</h1>
+          <p>Log in to update account details, security settings, and support tickets.</p>
+          <Link className="btn btn-primary" to="/login">
+            Go to login
+          </Link>
+        </section>
+      </section>
+    )
+  }
 
   const selectTab = (nextTab: SettingsTab) => {
     const nextParams = new URLSearchParams(searchParams)
@@ -78,31 +148,162 @@ export function SettingsPage() {
     focusTabAt(nextIndex)
   }
 
-  const updateEmail = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    setFeedback('Email updated in mock mode.')
+  const changeEmail = async (newEmail: string) => {
+      const res = await api.patch('api/user/change-mail', {newEmail})
+      console.log(res)
+      const newUser  = await api.get('api/user/me', {headers: {Authorization: `Bearer ${token}`}})
+      dispatch(setUser({user: newUser.data}))
   }
 
-  const updatePassword = (event: FormEvent<HTMLFormElement>) => {
+  const updateEmail = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    setFeedback('Password change submitted in mock mode.')
-    setCurrentPassword('')
-    setNextPassword('')
+
+    if (isUpdatingEmail || isDeletingAccount || isReportingBug) {
+      return
+    }
+
+    setIsUpdatingEmail(true)
+
+    try{
+      await changeEmail(email)
+      showToast('Email updated successfully.', 'success')
+    }
+    catch(err : unknown)
+    {
+      if(err instanceof AxiosError)
+      {
+        console.log(err.response)
+        const message = err.response?.data?.message || err.response?.data || "Email change failed"
+        showToast(String(message), 'error')
+      }
+      else
+      {
+        showToast('Email change failed.', 'error')
+      }
+    }
+    finally
+    {
+      await waitForBackendButtonUnlock()
+      setIsUpdatingEmail(false)
+    }
   }
 
-  const reportBug = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    setFeedback('Bug report received. Thank you for helping improve TripGenius.')
-    setBugReport('')
+  const changePassword = async (oldPassword : string, newPassword : string) => {
+    await api.patch("api/user/change-password", {oldPassword, newPassword})
+
   }
+
+  const updatePassword = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+
+    if (isUpdatingPassword || isDeletingAccount || isReportingBug) {
+      return
+    }
+
+    setIsUpdatingPassword(true)
+
+    try
+    {
+      await changePassword(currentPassword,nextPassword)
+      showToast('Password changed successfully.', 'success')
+      setCurrentPassword('')
+      setNextPassword('')
+    }
+    catch(err : unknown)
+    {
+      if(err instanceof AxiosError)
+      {
+        const message = err.response?.data?.message || err.response?.data || "Password change failed"
+        showToast(String(message), 'error')
+      }
+    }
+    finally
+    {
+      await waitForBackendButtonUnlock()
+      setIsUpdatingPassword(false)
+    }
+  }
+
+  const reportBug = async(description : string) =>{
+     api.post('api/user/bug-report', {description})
+  }
+
+  const reportBugSend = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    if(isDeletingAccount || isUpdatingEmail || isUpdatingPassword)
+    {
+      return
+    }
+    setIsReportingBug(true)
+    try
+    {
+      await reportBug(bugReport)
+      showToast('Bug report received. Thank you for helping improve TripGenius.', 'info')
+      setBugReport('')
+    }
+    catch(err : unknown)
+    {
+      if(err instanceof AxiosError)
+      {
+        const message = err.response?.data?.message || err.response?.data || "Bug report failed"
+        showToast(String(message), 'error')
+      }
+    }
+    finally
+    {
+      await waitForBackendButtonUnlock()
+      setIsReportingBug(false)
+    }
+
+  }
+
+  const deleteAccount = async () => {
+    if (isBackendActionLocked) {
+      return
+    }
+
+    setIsDeletingAccount(true)
+    let shouldNavigate = false
+
+    try
+    {
+      await api.delete("api/user/delete-account")
+      showToast('Account deleted. Redirecting to login...', 'success')
+      shouldNavigate = true
+    }
+    catch(err : unknown)
+    {
+      if(err instanceof AxiosError)
+      {
+        console.log(err.response)
+        const message = err.response?.data?.message || err.response?.data || "Account deletion failed"
+        showToast(String(message), 'error')
+      }
+      else
+      {
+        showToast('Account deletion failed.', 'error')
+      }
+    }
+    finally
+    {
+      await waitForBackendButtonUnlock()
+      setIsDeletingAccount(false)
+    }
+
+    if (shouldNavigate) {
+      dispatch(logoutAction())
+      navigate('/login', { replace: true })
+    }
+  }
+
 
   return (
     <section className="page settings-page">
+      <FeedbackToast toast={toast} clearToast={() => setToast(null)} />
       <header className="panel settings-head">
         <p className="eyebrow">Settings center</p>
         <h1>Manage account, security, and platform health.</h1>
         <p>Switch sections below to focus one task at a time.</p>
-        {feedback ? <p className="info-banner">{feedback}</p> : null}
       </header>
 
       <nav
@@ -121,6 +322,7 @@ export function SettingsPage() {
             aria-selected={activeTab === tab.key}
             aria-controls={`settings-panel-${tab.key}`}
             tabIndex={activeTab === tab.key ? 0 : -1}
+            disabled={isBackendActionLocked}
             onClick={() => selectTab(tab.key)}
             onKeyDown={(event) => handleTabKeyDown(event, index)}
           >
@@ -154,11 +356,24 @@ export function SettingsPage() {
               className="input"
               type="email"
               value={email}
+              disabled={isUpdatingEmail || isDeletingAccount}
               onChange={(event) => setEmail(event.target.value)}
               required
             />
-            <button className="btn btn-primary" type="submit">
-              Save email
+            <button
+              className="btn btn-primary"
+              type="submit"
+              disabled={isUpdatingEmail || isDeletingAccount}
+              aria-busy={isUpdatingEmail}
+            >
+              {isUpdatingEmail ? (
+                <span className="btn-loading-content">
+                  <span className="inline-spinner" aria-hidden="true" />
+                  Saving email...
+                </span>
+              ) : (
+                'Save email'
+              )}
             </button>
           </motion.form>
         ) : null}
@@ -188,6 +403,7 @@ export function SettingsPage() {
               className="input"
               type="password"
               value={currentPassword}
+              disabled={isUpdatingPassword || isDeletingAccount}
               onChange={(event) => setCurrentPassword(event.target.value)}
               required
             />
@@ -200,12 +416,25 @@ export function SettingsPage() {
               className="input"
               type="password"
               value={nextPassword}
+              disabled={isUpdatingPassword || isDeletingAccount}
               onChange={(event) => setNextPassword(event.target.value)}
               required
             />
 
-            <button className="btn btn-primary" type="submit">
-              Save password
+            <button
+              className="btn btn-primary"
+              type="submit"
+              disabled={isUpdatingPassword || isDeletingAccount}
+              aria-busy={isUpdatingPassword}
+            >
+              {isUpdatingPassword ? (
+                <span className="btn-loading-content">
+                  <span className="inline-spinner" aria-hidden="true" />
+                  Saving password...
+                </span>
+              ) : (
+                'Save password'
+              )}
             </button>
           </motion.form>
         ) : null}
@@ -214,7 +443,7 @@ export function SettingsPage() {
           <motion.form
             key="support"
             className="panel settings-section"
-            onSubmit={reportBug}
+            onSubmit={reportBugSend}
             id="settings-panel-support"
             role="tabpanel"
             aria-labelledby="settings-tab-support"
@@ -264,8 +493,21 @@ export function SettingsPage() {
               Deleting your account removes profile data, trips, and chat history.
               This action cannot be undone.
             </p>
-            <button className="btn btn-danger" type="button">
-              Delete account (mock)
+            <button
+              className="btn btn-danger"
+              type="button"
+              onClick={deleteAccount}
+              disabled={isBackendActionLocked}
+              aria-busy={isDeletingAccount}
+            >
+              {isDeletingAccount ? (
+                <span className="btn-loading-content">
+                  <span className="inline-spinner" aria-hidden="true" />
+                  Deleting account...
+                </span>
+              ) : (
+                'Delete account'
+              )}
             </button>
           </motion.section>
         ) : null}
@@ -273,3 +515,5 @@ export function SettingsPage() {
     </section>
   )
 }
+
+

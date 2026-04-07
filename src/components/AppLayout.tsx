@@ -106,9 +106,9 @@ export function AppLayout() {
 
       <motion.header
         className="topbar"
-        animate={{ y: hideHeader ? -128 : 0, opacity: 1 }}
-        initial={{ y: -24, opacity: 0 }}
-        transition={{ duration: 0.35, ease: [0.2, 0.8, 0.2, 1] }}
+        animate={{ y: hideHeader ? -125 : 0, opacity: 1 }}
+        initial={{ y: -100, opacity: 0 }}
+        transition={{ duration: 2, ease: [0.2, 0.8, 0.2, 1] }}
       >
         <div className="brand-block">
           <div className="brand-dot" aria-hidden="true" />
@@ -149,45 +149,49 @@ export function AppLayout() {
           ) : null}
 
           {user ? (
-            <button
-              type="button"
-              className="btn btn-ghost header-auth"
-              onClick={handleLogout}
-              disabled={isLoggingOut}
-              aria-busy={isLoggingOut}
+            <>
+              <button
+                type="button"
+                className="btn btn-ghost header-auth"
+                onClick={handleLogout}
+                disabled={isLoggingOut}
+                aria-busy={isLoggingOut}
+              >
+                {isLoggingOut ? (
+                  <span className="btn-loading-content">
+                    <span className="inline-spinner" aria-hidden="true" />
+                    Logging out...
+                  </span>
+                ) : (
+                  <>
+                    <FiLogOut aria-hidden="true" />
+                    Logout
+                  </>
+                )}
+              </button>
+              
+            <NavLink
+              to="/profile"
+              className={({ isActive }) =>
+                isActive ? 'icon-link is-active' : 'icon-link'
+              }
+              aria-label="Profile"
             >
-              {isLoggingOut ? (
-                <span className="btn-loading-content">
-                  <span className="inline-spinner" aria-hidden="true" />
-                  Logging out...
-                </span>
-              ) : (
-                <>
-                  <FiLogOut aria-hidden="true" />
-                  Logout
-                </>
-              )}
-            </button>
+              <FiUser aria-hidden="true" />
+            </NavLink>
+            <NavLink
+              to="/settings"
+              className={({ isActive }) =>
+                isActive ? 'icon-link is-active' : 'icon-link'
+              }
+              aria-label="Settings"
+            >
+              <FiSettings aria-hidden="true" />
+            </NavLink>
+          </>
+        
           ) : null}
 
-          <NavLink
-            to="/profile"
-            className={({ isActive }) =>
-              isActive ? 'icon-link is-active' : 'icon-link'
-            }
-            aria-label="Profile"
-          >
-            <FiUser aria-hidden="true" />
-          </NavLink>
-          <NavLink
-            to="/settings"
-            className={({ isActive }) =>
-              isActive ? 'icon-link is-active' : 'icon-link'
-            }
-            aria-label="Settings"
-          >
-            <FiSettings aria-hidden="true" />
-          </NavLink>
         </div>
       </motion.header>
 
@@ -198,7 +202,7 @@ export function AppLayout() {
           initial={{ opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -12 }}
-          transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+          transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
         >
           <Outlet />
         </motion.main>
