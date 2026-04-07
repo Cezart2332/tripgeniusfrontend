@@ -4,14 +4,18 @@ import { Link, useNavigate } from 'react-router-dom'
 import { tripTypeOptions } from '../data/mockData'
 import api from '../data/api'
 import { useDispatch } from 'react-redux'
-import { setCredentials } from '../data/authSlice'
+import { setCredentials,setToken } from '../data/authSlice'
+import { AxiosError } from 'axios'
+import { FeedbackToast } from '../components/FeedbackToast'
+import type { FeedbackToastState, FeedbackToastTone } from '../components/FeedbackToast'
+import waitForBackendButtonUnlock from '../utils/interactionDelay'
 
 interface RegisterState {
   username: string
   email: string
   password: string
   tags: string[]
-  groupSize: number
+  maxGroupSize: number
 }
 
 const registerHighlights = [
@@ -20,22 +24,6 @@ const registerHighlights = [
   'Define ideal group size before joining or creating trips.',
 ]
 
-const getRequestErrorMessage = (error: unknown, fallbackMessage: string): string => {
-  if (typeof error === 'object' && error !== null) {
-    const errorResponse = (error as { response?: { data?: { message?: unknown } } }).response
-    const apiMessage = errorResponse?.data?.message
-
-    if (typeof apiMessage === 'string' && apiMessage.trim().length > 0) {
-      return apiMessage
-    }
-  }
-
-  if (error instanceof Error && error.message.trim().length > 0) {
-    return error.message
-  }
-
-  return fallbackMessage
-}
 
 const toggleTripType = (current: string[], type: string): string[] =>
   current.includes(type)
@@ -47,7 +35,7 @@ const createInitialState = (): RegisterState => ({
   email: '',
   password: '',
   tags: ['adventure', 'nature'],
-  groupSize: 8,
+  maxGroupSize: 8,
 })
 
 export function RegisterPage() {
@@ -55,24 +43,35 @@ export function RegisterPage() {
   const navigate = useNavigate()
   const [formState, setFormState] = useState<RegisterState>(createInitialState)
   const [isLoading, setIsLoading] = useState(false)
-  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [toast, setToast] = useState<FeedbackToastState | null>(null)
+
+  const showToast = (message: string, tone: FeedbackToastTone) => {
+    setToast({
+      id: Date.now(),
+      message,
+      tone,
+    })
+  }
 
   const register = async (
     username: string,
     email: string,
     password: string,
     tags: string[],
-    groupSize: number,
+    maxGroupSize: number,
   ) => {
+    console.log(maxGroupSize)
     const res = await api.post('api/auth/register', {
       email,
       password,
       username,
       tags,
-      groupSize,
+      maxGroupSize,
     })
 
-    const user = await api.get('api/user/me')
+    dispatch(setToken({token:res.data.token}))
+
+    const user = await api.get('api/user/me', {headers: { Authorization: `Bearer ${res.data.token}` } })
     dispatch(
       setCredentials({
         user: user.data,
@@ -83,32 +82,52 @@ export function RegisterPage() {
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    setErrorMessage(null)
-    setIsLoading(true)
 
-    try {
+    if (isLoading) {
+      return
+    }
+
+    setIsLoading(true)
+    let shouldNavigate = false
+
+    try 
+    {
       await register(
         formState.username,
         formState.email,
         formState.password,
         formState.tags,
-        formState.groupSize,
+        formState.maxGroupSize,
       )
-      navigate('/profile', { replace: true })
-    } catch (error) {
-      setErrorMessage(
-        getRequestErrorMessage(
-          error,
-          'Could not register your account. Please try again in a moment.',
-        ),
-      )
-    } finally {
+      showToast('Account created. Redirecting to your profile...', 'success')
+      shouldNavigate = true
+    } 
+    catch (err : unknown) 
+    {
+      if(err instanceof AxiosError)
+      {
+        const message = err.response?.data?.message || err.response?.data || "There was an issue, please try again later"
+        showToast(String(message), 'error')
+      }
+      else
+      {
+        showToast('Could not register your account. Please try again in a moment.', 'error')
+      }
+    } 
+    finally 
+    {
+      await waitForBackendButtonUnlock()
       setIsLoading(false)
+    }
+
+    if (shouldNavigate) {
+      navigate('/profile', { replace: true })
     }
   }
 
   return (
     <section className="page register-page">
+      <FeedbackToast toast={toast} clearToast={() => setToast(null)} />
       <header className="panel auth-headline">
         <p className="eyebrow">Start your expedition</p>
         <h1>Create your basecamp profile.</h1>
@@ -221,13 +240,13 @@ export function RegisterPage() {
             type="number"
             min={2}
             max={30}
-            value={formState.groupSize}
+            value={formState.maxGroupSize}
             disabled={isLoading}
             onChange={(event) => {
               const value = Number(event.target.value)
               setFormState((previous) => ({
                 ...previous,
-                groupSize: Number.isFinite(value) ? value : 8,
+                maxGroupSize: Number.isFinite(value) ? value : 8,
               }))
             }}
           />
@@ -247,8 +266,6 @@ export function RegisterPage() {
               'Create account and continue'
             )}
           </button>
-
-          {errorMessage ? <p className="info-banner is-error">{errorMessage}</p> : null}
         </form>
 
         <aside className="panel auth-side-rail">

@@ -4,15 +4,20 @@ import type { ChangeEvent, FormEvent, KeyboardEvent } from 'react'
 import { FiCompass, FiUploadCloud } from 'react-icons/fi'
 import { useDispatch, useSelector } from 'react-redux'
 
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { mockTrips, mockUserProfile, tripTypeOptions } from '../data/mockData'
 import type { User } from '../types/models'
 import api from '../data/api'
 import { setUser } from '../data/authSlice'
+import { AxiosError } from 'axios'
+import { FeedbackToast } from '../components/FeedbackToast'
+import type { FeedbackToastState, FeedbackToastTone } from '../components/FeedbackToast'
+import waitForBackendButtonUnlock from '../utils/interactionDelay'
 
 interface AuthStoreState {
   auth: {
     user: User | null
+    token: string | null
   }
 }
 
@@ -48,22 +53,6 @@ const revealTransition = {
   ease: [0.22, 1, 0.36, 1] as const,
 }
 
-const getRequestErrorMessage = (error: unknown, fallbackMessage: string): string => {
-  if (typeof error === 'object' && error !== null) {
-    const errorResponse = (error as { response?: { data?: { message?: unknown } } }).response
-    const apiMessage = errorResponse?.data?.message
-
-    if (typeof apiMessage === 'string' && apiMessage.trim().length > 0) {
-      return apiMessage
-    }
-  }
-
-  if (error instanceof Error && error.message.trim().length > 0) {
-    return error.message
-  }
-
-  return fallbackMessage
-}
 
 const profileTabs: Array<{ key: ProfileTab; label: string }> = [
   { key: 'identity', label: 'Identity' },
@@ -73,8 +62,11 @@ const profileTabs: Array<{ key: ProfileTab; label: string }> = [
 
 export function ProfilePage() {
   const dispatch = useDispatch()
+  const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const user = useSelector((state: AuthStoreState) => state.auth.user)
+  const token = useSelector((state: AuthStoreState) => state.auth.token)
+  const shouldRedirectToLogin = !token
   const requestedTab = searchParams.get('tab')
   const activeTab: ProfileTab =
     requestedTab && profileTabs.some((tab) => tab.key === requestedTab)
@@ -94,11 +86,18 @@ export function ProfilePage() {
   const [maxGroupSize, setMaxGroupSize] = useState<number>(
     user?.groupSize ?? mockUserProfile.preferences.maxGroupSize,
   )
-  const [saved, setSaved] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
-  const [saveError, setSaveError] = useState<string | null>(null)
+  const [toast, setToast] = useState<FeedbackToastState | null>(null)
   const objectUrlRef = useRef<string | null>(null)
   const tabListRef = useRef<HTMLElement | null>(null)
+
+  const showToast = (message: string, tone: FeedbackToastTone) => {
+    setToast({
+      id: Date.now(),
+      message,
+      tone,
+    })
+  }
 
 
 
@@ -116,6 +115,26 @@ useEffect(() => {
         }
     }
 }, [dispatch])
+
+  useEffect(() => {
+    if (!shouldRedirectToLogin) {
+      return
+    }
+
+    setToast({
+      id: Date.now(),
+      message: 'You will be redirected in 2 seconds to login page',
+      tone: 'info',
+    })
+
+    const timeoutId = window.setTimeout(() => {
+      navigate('/login', { replace: true })
+    }, 2000)
+
+    return () => {
+      window.clearTimeout(timeoutId)
+    }
+  }, [shouldRedirectToLogin, navigate])
 
   const pastTrips = useMemo(
     () => mockTrips.filter((trip) => mockUserProfile.pastTripIds.includes(trip.id)),
@@ -213,8 +232,6 @@ useEffect(() => {
     setAvatarUrl(nextObjectUrl)
     setAvatarFileName(selectedFile.name)
     setAvatarFile(selectedFile)
-    setSaved(false)
-    setSaveError(null)
   }
 
   const update = async (
@@ -233,11 +250,9 @@ useEffect(() => {
     tags.forEach((tag) => formData.append('tags', tag))
     formData.append('groupSize', groupSize.toString())
 
-    const response = await api.put('/api/user/update', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    })
+    const response = await api.put('/api/user/update', formData)
 
-    const updatedUser = (response.data?.user ?? response.data) as User
+    const updatedUser = (response.data) as User
     dispatch(
       setUser({
         user: updatedUser,
@@ -254,11 +269,10 @@ useEffect(() => {
       return
     }
 
-    setSaved(false)
-    setSaveError(null)
     setIsSaving(true)
 
-    try {
+    try 
+    {
       const updatedUser = await update(
         avatarFile,
         description.trim(),
@@ -266,8 +280,10 @@ useEffect(() => {
         maxGroupSize,
       )
 
-      if (updatedUser.profileUrl) {
-        if (objectUrlRef.current) {
+      if (updatedUser.profileUrl) 
+      {
+        if (objectUrlRef.current) 
+        {
           URL.revokeObjectURL(objectUrlRef.current)
           objectUrlRef.current = null
         }
@@ -276,15 +292,23 @@ useEffect(() => {
 
       setAvatarFileName(avatarFile ? avatarFile.name : 'No image uploaded yet')
       setAvatarFile(null)
-      setSaved(true)
-    } catch (error) {
-      setSaveError(
-        getRequestErrorMessage(
-          error,
-          'Could not update profile. Please try again.',
-        ),
-      )
-    } finally {
+      showToast('Profile and preferences updated successfully.', 'success')
+    } 
+    catch (err : unknown) 
+    {
+      if(err instanceof AxiosError)
+      {
+        const message = err.response?.data?.message || err.response?.data || "There was a problem updating your profile, please try again later."
+        showToast(String(message), 'error')
+      }
+      else
+      {
+        showToast('Could not update profile. Please try again.', 'error')
+      }
+    } 
+    finally 
+    {
+      await waitForBackendButtonUnlock()
       setIsSaving(false)
     }
   }
@@ -335,9 +359,10 @@ useEffect(() => {
     focusTabAt(nextIndex)
   }
 
-  if (!user) {
+  if (!user || !token) {
     return (
       <section className="page profile-page">
+        <FeedbackToast toast={toast} clearToast={() => setToast(null)} />
         <section className="panel profile-editor-card">
           <p className="eyebrow">Profile</p>
           <h1>You are not logged in</h1>
@@ -352,6 +377,7 @@ useEffect(() => {
 
   return (
     <section className="page profile-page">
+      <FeedbackToast toast={toast} clearToast={() => setToast(null)} />
       <motion.header
         className="panel profile-shell-head"
         initial={{ opacity: 0, y: 20 }}
@@ -422,6 +448,7 @@ useEffect(() => {
                   className="visually-hidden"
                   type="file"
                   accept="image/png,image/jpeg,image/webp"
+                  disabled={isSaving}
                   onChange={handleAvatarUpload}
                 />
               </div>
@@ -436,8 +463,8 @@ useEffect(() => {
               value={description}
               onChange={(event) => {
                 setDescription(event.target.value)
-                setSaved(false)
               }}
+              disabled={isSaving}
               rows={4}
             />
 
@@ -450,8 +477,8 @@ useEffect(() => {
                     key={tripType}
                     type="button"
                     className={selected ? 'chip is-selected' : 'chip'}
+                    disabled={isSaving}
                     onClick={() => {
-                      setSaved(false)
                       setTripTypes((previous) => toggleTripType(previous, tripType))
                     }}
                   >
@@ -471,10 +498,10 @@ useEffect(() => {
               min={2}
               max={30}
               value={maxGroupSize}
+              disabled={isSaving}
               onChange={(event) => {
                 const nextValue = Number(event.target.value)
                 setMaxGroupSize(Number.isFinite(nextValue) ? nextValue : 8)
-                setSaved(false)
               }}
             />
 
@@ -493,12 +520,6 @@ useEffect(() => {
                 'Save profile changes'
               )}
             </button>
-
-            {saved ? (
-              <p className="info-banner">Profile and preferences updated successfully.</p>
-            ) : null}
-
-            {saveError ? <p className="info-banner is-error">{saveError}</p> : null}
           </motion.form>
         ) : null}
 
