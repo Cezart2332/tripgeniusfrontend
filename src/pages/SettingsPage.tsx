@@ -37,7 +37,6 @@ export function SettingsPage() {
   const dispatch = useDispatch()
   const navigate = useNavigate()
   const user = useSelector((state: AuthStoreState) => state.auth.user)
-  const token = useSelector((state: AuthStoreState) => state.auth.token)
   const [searchParams, setSearchParams] = useSearchParams()
   const tabListRef = useRef<HTMLElement | null>(null)
   const requestedTab = searchParams.get('tab')
@@ -55,7 +54,7 @@ export function SettingsPage() {
   const [isDeletingAccount, setIsDeletingAccount] = useState(false)
   const [isReportingBug, setIsReportingBug] = useState(false)
   const isBackendActionLocked = isUpdatingEmail || isUpdatingPassword || isDeletingAccount || isReportingBug
-  const shouldRedirectToLogin = !token
+  const shouldRedirectToLogin = !user
 
   const showToast = (message: string, tone: FeedbackToastTone) => {
     setToast({
@@ -85,7 +84,7 @@ export function SettingsPage() {
     }
   }, [shouldRedirectToLogin, navigate])
 
-  if(!user || !token)
+  if(!user)
   {
     return (
       <section className="page settings-page">
@@ -151,7 +150,7 @@ export function SettingsPage() {
   const changeEmail = async (newEmail: string) => {
       const res = await api.patch('api/user/change-mail', {newEmail})
       console.log(res)
-      const newUser  = await api.get('api/user/me', {headers: {Authorization: `Bearer ${token}`}})
+      const newUser  = await api.get('api/user/me')
       dispatch(setUser({user: newUser.data}))
   }
 
@@ -225,7 +224,7 @@ export function SettingsPage() {
   }
 
   const reportBug = async(description : string) =>{
-     api.post('api/user/bug-report', {description})
+     await api.post('api/user/bug-report', {description})
   }
 
   const reportBugSend = async (event: FormEvent<HTMLFormElement>) => {

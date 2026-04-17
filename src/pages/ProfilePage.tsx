@@ -5,14 +5,20 @@ import { FiCompass, FiUploadCloud } from 'react-icons/fi'
 import { useDispatch, useSelector } from 'react-redux'
 
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { mockTrips, mockUserProfile, tripTypeOptions } from '../data/mockData'
-import type { User } from '../types/models'
+import { tripTypeOptions } from '../data/tripTypeOptions'
+import type { Trip, User } from '../types/models'
 import api from '../data/api'
 import { setUser } from '../data/authSlice'
 import { AxiosError } from 'axios'
 import { FeedbackToast } from '../components/FeedbackToast'
 import type { FeedbackToastState, FeedbackToastTone } from '../components/FeedbackToast'
 import waitForBackendButtonUnlock from '../utils/interactionDelay'
+import { formatDisplayDate, formatDisplayDateRange } from '../utils/dateDisplay'
+import {
+  getTripStatusLabel,
+  isFinishedTripStatus,
+  isUpcomingTripStatus,
+} from '../utils/tripStatus'
 
 interface AuthStoreState {
   auth: {
@@ -26,7 +32,6 @@ type ProfileTab = 'identity' | 'history' | 'matches'
 interface PersonalizedTripCard {
   id: string
   title: string
-  destination: string
   coverImage: string
   description: string
   status: string
@@ -34,7 +39,7 @@ interface PersonalizedTripCard {
   startDate: string
   currentMembers: number
   maxMembers: number
-  budgetPerPerson: number
+  price: number
   tags: string[]
   matchScore: number
   matchReasons: string[]
@@ -53,6 +58,12 @@ const revealTransition = {
   ease: [0.22, 1, 0.36, 1] as const,
 }
 
+const DEFAULT_AVATAR_URL =
+  'https://images.unsplash.com/photo-1521119989659-a83eee488004?auto=format&fit=crop&w=300&q=80'
+const DEFAULT_PROFILE_DESCRIPTION = ''
+const DEFAULT_TRIP_TYPES = ['adventure', 'nature']
+const DEFAULT_MAX_GROUP_SIZE = 8
+
 
 const profileTabs: Array<{ key: ProfileTab; label: string }> = [
   { key: 'identity', label: 'Identity' },
@@ -65,29 +76,29 @@ export function ProfilePage() {
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const user = useSelector((state: AuthStoreState) => state.auth.user)
-  const token = useSelector((state: AuthStoreState) => state.auth.token)
-  const shouldRedirectToLogin = !token
+  const shouldRedirectToLogin = !user
   const requestedTab = searchParams.get('tab')
   const activeTab: ProfileTab =
     requestedTab && profileTabs.some((tab) => tab.key === requestedTab)
       ? (requestedTab as ProfileTab)
       : 'identity'
-  const [avatarUrl, setAvatarUrl] = useState(user?.profileUrl ?? mockUserProfile.avatarUrl)
+  const [avatarUrl, setAvatarUrl] = useState(user?.profileUrl ?? DEFAULT_AVATAR_URL)
   const [avatarFileName, setAvatarFileName] = useState('No image uploaded yet')
   const [description, setDescription] = useState(
-    user?.description ?? mockUserProfile.description,
+    user?.description ?? DEFAULT_PROFILE_DESCRIPTION,
   )
   const [avatarFile, setAvatarFile] = useState<File | null>(null)
   const [tripTypes, setTripTypes] = useState<string[]>(() =>
     user?.tags.length && user.tags.length > 0
       ? [...user.tags]
-      : [...mockUserProfile.preferences.tripTypes],
+      : [...DEFAULT_TRIP_TYPES],
   )
   const [maxGroupSize, setMaxGroupSize] = useState<number>(
-    user?.groupSize ?? mockUserProfile.preferences.maxGroupSize,
+    user?.groupSize ?? DEFAULT_MAX_GROUP_SIZE,
   )
   const [isSaving, setIsSaving] = useState(false)
   const [toast, setToast] = useState<FeedbackToastState | null>(null)
+  const [trips, setTrips] = useState<Trip[]>([])
   const objectUrlRef = useRef<string | null>(null)
   const tabListRef = useRef<HTMLElement | null>(null)
 
@@ -101,20 +112,35 @@ export function ProfilePage() {
 
 
 
-useEffect(() => {
-    const fetchData = async () => {
+  useEffect(() => {
+    if (!user) {
+      return
+    }
+
+    setAvatarUrl(user.profileUrl || DEFAULT_AVATAR_URL)
+    setDescription(user.description || DEFAULT_PROFILE_DESCRIPTION)
+    setTripTypes(user.tags.length > 0 ? [...user.tags] : [...DEFAULT_TRIP_TYPES])
+    setMaxGroupSize(user.groupSize || DEFAULT_MAX_GROUP_SIZE)
+  }, [user])
+
+  useEffect(() => {
+    const fetchUser = async () => {
         const res = await api.get('api/user/me')
-        console.log(res)
         dispatch(setUser({ user: res.data }))
     }
-    fetchData()
+    const fetchUserHistory = async () => {
+      const res = await api.get('api/trip/get-user-trips')
+      setTrips(res.data)
+    }
+    fetchUser()
+    fetchUserHistory()
 
     return () => {
         if (objectUrlRef.current) {
             URL.revokeObjectURL(objectUrlRef.current)
         }
     }
-}, [dispatch])
+  }, [dispatch])
 
   useEffect(() => {
     if (!shouldRedirectToLogin) {
@@ -137,13 +163,13 @@ useEffect(() => {
   }, [shouldRedirectToLogin, navigate])
 
   const pastTrips = useMemo(
-    () => mockTrips.filter((trip) => mockUserProfile.pastTripIds.includes(trip.id)),
-    [],
+    () => trips.filter((trip) => isFinishedTripStatus(trip.status)),
+    [trips],
   )
 
   const futureTrips = useMemo(
-    () => mockTrips.filter((trip) => mockUserProfile.futureTripIds.includes(trip.id)),
-    [],
+    () => trips.filter((trip) => isUpcomingTripStatus(trip.status)),
+    [trips],
   )
 
   const memberTripIds = useMemo(() => {
@@ -154,10 +180,10 @@ useEffect(() => {
     const normalizedUserName = user.username.trim().toLowerCase()
 
     return new Set(
-      mockTrips
+      trips
         .filter((trip) =>
           trip.members.some((member) => {
-            const normalizedMemberName = member.name.trim().toLowerCase()
+            const normalizedMemberName = member.username.trim().toLowerCase()
 
             return (
               member.id === String(user.id) ||
@@ -168,17 +194,17 @@ useEffect(() => {
         )
         .map((trip) => trip.id),
     )
-  }, [user])
+  }, [user, trips])
 
   const discoveryTrips = useMemo<PersonalizedTripCard[]>(() => {
-    return [...mockTrips]
+    return [...trips]
       .map((trip) => {
         const matchingTags = trip.tags.filter((tag) =>
           tripTypes.includes(tag),
         )
 
-        const groupAlignment = trip.maxMembers <= maxGroupSize ? 10 : -7
-        const statusBoost = trip.status === 'upcoming' ? 6 : 2
+        const groupAlignment = trip.maxParticipants <= maxGroupSize ? 10 : -7
+        const statusBoost = isUpcomingTripStatus(trip.status) ? 6 : 2
 
         const matchScore = clamp(
           44 + matchingTags.length * 16 + groupAlignment + statusBoost,
@@ -190,7 +216,7 @@ useEffect(() => {
           matchingTags.length > 0
             ? `Shared trip styles: ${matchingTags.slice(0, 2).join(', ')}`
             : 'Great for trying a new travel vibe',
-          trip.maxMembers <= maxGroupSize
+          trip.maxParticipants <= maxGroupSize
             ? 'Fits your preferred group size'
             : 'Larger group than your default setting',
         ]
@@ -198,22 +224,21 @@ useEffect(() => {
         return {
           id: trip.id,
           title: trip.title,
-          destination: trip.destination,
-          coverImage: trip.coverImage,
+          coverImage: trip.imageUrl,
           description: trip.description,
-          status: trip.status,
-          timelineLength: trip.timeline.length,
-          startDate: trip.startDate,
+          status: getTripStatusLabel(trip.status),
+          timelineLength: trip.timelines.length,
+          startDate: formatDisplayDate(trip.startingDate),
           currentMembers: trip.currentMembers,
-          maxMembers: trip.maxMembers,
-          budgetPerPerson: trip.budgetPerPerson,
+          maxMembers: trip.maxParticipants,
+          price: trip.price,
           tags: trip.tags,
           matchScore,
           matchReasons,
         }
       })
       .sort((first, second) => second.matchScore - first.matchScore)
-  }, [tripTypes, maxGroupSize])
+  }, [trips, tripTypes, maxGroupSize])
 
 
   const handleAvatarUpload = (event: ChangeEvent<HTMLInputElement>) => {
@@ -359,7 +384,7 @@ useEffect(() => {
     focusTabAt(nextIndex)
   }
 
-  if (!user || !token) {
+  if (!user) {
     return (
       <section className="page profile-page">
         <FeedbackToast toast={toast} clearToast={() => setToast(null)} />
@@ -545,13 +570,13 @@ useEffect(() => {
                   {futureTrips.map((trip) => (
                     <li key={trip.id} className="history-item">
                       <Link className="history-item-link" to={`/trip/${trip.id}`}>
-                        <img src={trip.coverImage} alt={trip.title} className="history-thumb" />
+                        <img src={trip.imageUrl} alt={trip.title} className="history-thumb" />
                         <div>
                           <p className="list-title">{trip.title}</p>
                           <p>
-                            {trip.startDate} - {trip.endDate}
+                            {formatDisplayDateRange(trip.startingDate, trip.endingDate)}
                           </p>
-                          <p>{trip.currentMembers}/{trip.maxMembers} travelers</p>
+                          <p>{trip.currentMembers}/{trip.maxParticipants} travelers</p>
                         </div>
                       </Link>
                     </li>
@@ -565,13 +590,13 @@ useEffect(() => {
                   {pastTrips.map((trip) => (
                     <li key={trip.id} className="history-item">
                       <Link className="history-item-link" to={`/trip/${trip.id}`}>
-                        <img src={trip.coverImage} alt={trip.title} className="history-thumb" />
+                        <img src={trip.imageUrl} alt={trip.title} className="history-thumb" />
                         <div>
                           <p className="list-title">{trip.title}</p>
                           <p>
-                            {trip.startDate} - {trip.endDate}
+                            {formatDisplayDateRange(trip.startingDate, trip.endingDate)}
                           </p>
-                          <p>{trip.timeline.length} timeline day entries</p>
+                          <p>{trip.timelines.length} timeline day entries</p>
                         </div>
                       </Link>
                     </li>
@@ -625,7 +650,7 @@ useEffect(() => {
                     )}
 
                     <p className="trip-meta">
-                      {trip.destination} - {trip.status}
+                      {trip.status}
                     </p>
                     <h2>{trip.title}</h2>
                     <p>{trip.description}</p>
@@ -637,7 +662,7 @@ useEffect(() => {
                       <span>
                         {trip.currentMembers}/{trip.maxMembers} members
                       </span>
-                      <span>{trip.budgetPerPerson} EUR / person</span>
+                      <span>{trip.price} EUR / person</span>
                     </div>
 
                     <p className="match-pill">{trip.matchScore}% profile match</p>
