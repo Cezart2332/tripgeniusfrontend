@@ -1,5 +1,11 @@
 export type MemberRole = 'owner' | 'admin' | 'member'
-export type TripStatus = 'upcoming' | 'active' | 'completed'
+export type TripStatus =
+  | 'Upcoming'
+  | 'Started'
+  | 'Finished'
+  | 'upcoming'
+  | 'active'
+  | 'completed'
 
 
 export interface User {
@@ -14,17 +20,16 @@ export interface User {
 
 export interface TripMember {
   id: string
-  name: string
+  username: string
   role: MemberRole
   avatarUrl: string
-  location: string
 }
 
 export interface TripTimelineStop {
   day: number
   date: string
-  from: string
-  to: string
+  startingPoint: string
+  endPoint: string
   fromCoords: [number, number]
   toCoords: [number, number]
   note: string
@@ -34,17 +39,17 @@ export interface Trip {
   id: string
   title: string
   description: string
-  destination: string
-  coverImage: string
+  imageUrl: string
   status: TripStatus
-  startDate: string
-  endDate: string
-  budgetPerPerson: number
+  startingDate: string
+  endingDate: string
+  price: number
   currentMembers: number
-  maxMembers: number
+  maxParticipants: number
   tags: string[]
-  timeline: TripTimelineStop[]
+  timelines: TripTimelineStop[]
   members: TripMember[]
+  isUserMember: boolean
 }
 
 export interface ChatMessage {

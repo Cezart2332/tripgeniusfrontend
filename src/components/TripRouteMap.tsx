@@ -55,7 +55,7 @@ const fetchDirectionsRoute = async (
   stop: TripTimelineStop,
   token: string,
 ): Promise<RouteData> => {
-  const coordinateString = `${stop.fromCoords[0]},${stop.fromCoords[1]};${stop.toCoords[0]},${stop.toCoords[1]}`
+  const coordinateString = `${stop.fromCoords[1]},${stop.fromCoords[0]};${stop.toCoords[1]},${stop.toCoords[0]}`
   const query = new URLSearchParams({
     alternatives: 'false',
     overview: 'full',
@@ -122,7 +122,7 @@ const createPointData = (
   features: [
     {
       type: 'Feature',
-      properties: { name: stop.from },
+      properties: { name: `From ${stop.fromCoords.join(', ')}` },
       geometry: {
         type: 'Point',
         coordinates: stop.fromCoords,
@@ -130,7 +130,7 @@ const createPointData = (
     },
     {
       type: 'Feature',
-      properties: { name: stop.to },
+      properties: { name: `To ${stop.toCoords.join(', ')}` },
       geometry: {
         type: 'Point',
         coordinates: stop.toCoords,

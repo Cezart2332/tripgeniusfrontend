@@ -1,49 +1,64 @@
 import { AnimatePresence, motion } from 'framer-motion'
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { FormEvent, KeyboardEvent } from 'react'
+import { useSelector } from 'react-redux'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { TripRouteMap } from '../components/TripRouteMap'
+import type { ChatMessage, MemberRole, Trip, TripMember, User } from '../types/models'
+import api from '../data/api'
+import { AxiosError } from 'axios'
 import {
-  getTripById,
-  isUserInTrip,
-  mockTripChat,
-  mockUserProfile,
-} from '../data/mockData'
-import type { ChatMessage, MemberRole, Trip, TripMember } from '../types/models'
+  formatDisplayDate,
+  formatDisplayDateRange,
+  toLocalStartOfDay,
+} from '../utils/dateDisplay'
 
 const MILLISECONDS_PER_DAY = 1000 * 60 * 60 * 24
 
-type TripWorkspaceTab = 'overview' | 'map' | 'timeline' | 'members' | 'chat'
+type TripWorkspaceTab = 'overview' | 'map' | 'members' | 'chat'
 
 interface TripTabItem {
   key: TripWorkspaceTab
   label: string
 }
 
+interface AuthStoreState {
+  auth: {
+    user: User | null
+    token: string | null
+  }
+}
+
+type TripFetchState = 'loading' | 'ready' | 'not-found' | 'error'
+
 const memberTabs: TripTabItem[] = [
   { key: 'overview', label: 'Overview' },
-  { key: 'map', label: 'Map' },
-  { key: 'timeline', label: 'Timeline' },
+  { key: 'map', label: 'Map + Timeline' },
   { key: 'members', label: 'Members' },
   { key: 'chat', label: 'Chat' },
 ]
 
 const visitorTabs: TripTabItem[] = [
   { key: 'overview', label: 'Overview' },
-  { key: 'map', label: 'Map' },
-  { key: 'timeline', label: 'Timeline' },
+  { key: 'map', label: 'Map + Timeline' },
   { key: 'members', label: 'Members' },
 ]
 
 const defaultSelectedDay = (startDate: string, timelineLength: number): number => {
-  const start = new Date(startDate)
-  if (Number.isNaN(start.getTime()) || timelineLength < 1) {
+  const start = toLocalStartOfDay(startDate)
+  if (!start || timelineLength < 1) {
     return 1
   }
 
   const today = new Date()
+  const localTodayStart = new Date(
+    today.getFullYear(),
+    today.getMonth(),
+    today.getDate(),
+  )
+
   const dayDiff = Math.floor(
-    (today.getTime() - start.getTime()) / MILLISECONDS_PER_DAY,
+    (localTodayStart.getTime() - start.getTime()) / MILLISECONDS_PER_DAY,
   )
 
   if (dayDiff < 0) {
@@ -57,6 +72,33 @@ const defaultSelectedDay = (startDate: string, timelineLength: number): number =
   return dayDiff + 1
 }
 
+const EARTH_RADIUS_KM = 6371
+
+const toRadians = (value: number): number => (value * Math.PI) / 180
+
+const calculateRouteDistanceKm = (
+  fromCoords: [number, number],
+  toCoords: [number, number],
+): number => {
+  // Timeline coordinates are stored as [lng, lat] in map data.
+  const [fromLng, fromLat] = fromCoords
+  const [toLng, toLat] = toCoords
+
+  const dLat = toRadians(toLat - fromLat)
+  const dLng = toRadians(toLng - fromLng)
+
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(toRadians(fromLat)) *
+      Math.cos(toRadians(toLat)) *
+      Math.sin(dLng / 2) *
+      Math.sin(dLng / 2)
+
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+
+  return EARTH_RADIUS_KM * c
+}
+
 const roleOrder: MemberRole[] = ['owner', 'admin', 'member']
 
 const tabTransition = {
@@ -65,19 +107,106 @@ const tabTransition = {
 }
 
 export function TripPage() {
+  const [trip, setTrip] = useState<Trip | null>(null)
+  const [fetchState, setFetchState] = useState<TripFetchState>('loading')
   const { tripId } = useParams<{ tripId: string }>()
-  const trip = useMemo(() => {
+
+  useEffect(() => {
     if (!tripId) {
-      return undefined
+      return
     }
 
-    return getTripById(tripId)
+    let isMounted = true
+
+    const fetchTrip = async () => {
+      setFetchState('loading')
+
+      try {
+        const res = await api.get(`api/trip/get-trip/${tripId}`)
+        if (!isMounted) {
+          return
+        }
+
+        const payload = res.data as Trip | { trip: Trip } | null
+        const nextTrip =
+          payload && typeof payload === 'object' && 'trip' in payload
+            ? payload.trip
+            : payload
+
+        if (!nextTrip) {
+          setTrip(null)
+          setFetchState('not-found')
+          return
+        }
+
+        setTrip(nextTrip)
+        setFetchState('ready')
+      } catch (error: unknown) {
+        if (!isMounted) {
+          return
+        }
+
+        if (error instanceof AxiosError && error.response?.status === 404) {
+          setTrip(null)
+          setFetchState('not-found')
+          return
+        }
+
+        setTrip(null)
+        setFetchState('error')
+      }
+    }
+
+    fetchTrip()
+
+    return () => {
+      isMounted = false
+    }
   }, [tripId])
 
-  const isMember = useMemo(
-    () => (trip ? isUserInTrip(trip, mockUserProfile) : false),
-    [trip],
-  )
+  if (!tripId) {
+    return (
+      <section className="page trip-page">
+        <section className="panel">
+          <p className="eyebrow">Trip space</p>
+          <h1>Trip not found</h1>
+          <p>This trip does not exist anymore or the link is invalid.</p>
+          <Link className="btn btn-primary" to="/discover">
+            Back to discovery
+          </Link>
+        </section>
+      </section>
+    )
+  }
+
+  if (fetchState === 'loading') {
+    return (
+      <section className="page trip-page">
+        <section className="panel">
+          <p className="eyebrow">Trip space</p>
+          <h1>Loading trip workspace</h1>
+          <p>Fetching the latest trip details and membership state...</p>
+        </section>
+      </section>
+    )
+  }
+
+  if (fetchState === 'error') {
+    return (
+      <section className="page trip-page">
+        <section className="panel">
+          <p className="eyebrow">Trip space</p>
+          <h1>Could not load this trip</h1>
+          <p>There was a problem reaching the trip service. Please try again later.</p>
+          <Link className="btn btn-primary" to="/discover">
+            Back to discovery
+          </Link>
+        </section>
+      </section>
+    )
+  }
+
+
 
   if (!trip) {
     return (
@@ -94,7 +223,7 @@ export function TripPage() {
     )
   }
 
-  return <TripPageContent key={trip.id} trip={trip} isMember={isMember} />
+  return <TripPageContent key={trip.id} trip={trip} isMember={trip.isUserMember} />
 }
 
 interface TripPageContentProps {
@@ -103,33 +232,56 @@ interface TripPageContentProps {
 }
 
 function TripPageContent({ trip, isMember }: TripPageContentProps) {
+  const authenticatedUser = useSelector((state: AuthStoreState) => state.auth.user)
   const [searchParams, setSearchParams] = useSearchParams()
   const [selectedDay, setSelectedDay] = useState(
-    defaultSelectedDay(trip.startDate, trip.timeline.length),
+    defaultSelectedDay(trip.startingDate, trip.timelines.length),
   )
   const [members, setMembers] = useState<TripMember[]>(trip.members)
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>(mockTripChat)
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([])
   const [newMessage, setNewMessage] = useState('')
   const [requestedJoin, setRequestedJoin] = useState(false)
   const tabListRef = useRef<HTMLElement | null>(null)
 
   const tabs = isMember ? memberTabs : visitorTabs
   const requestedTab = searchParams.get('view')
+  const normalizedRequestedTab = requestedTab === 'timeline' ? 'map' : requestedTab
+
   const activeWorkspaceTab: TripWorkspaceTab =
-    requestedTab && tabs.some((tab) => tab.key === requestedTab)
-      ? (requestedTab as TripWorkspaceTab)
+    normalizedRequestedTab && tabs.some((tab) => tab.key === normalizedRequestedTab)
+      ? (normalizedRequestedTab as TripWorkspaceTab)
       : isMember
         ? 'map'
         : 'overview'
 
   const currentStop =
-    trip.timeline.find((timelineStop) => timelineStop.day === selectedDay) ??
-    trip.timeline[0]
+    trip.timelines.find((timelineStop) => timelineStop.day === selectedDay) ??
+    trip.timelines[0]
+
+  const selectedRouteDistanceKm = useMemo(
+    () => calculateRouteDistanceKm(currentStop.fromCoords, currentStop.toCoords),
+    [currentStop],
+  )
+
+  const normalizedUserName = authenticatedUser?.username.trim().toLowerCase()
 
   const viewerMember = members.find(
-    (member) =>
-      member.id === mockUserProfile.id ||
-      member.name.toLowerCase().includes(mockUserProfile.name.toLowerCase()),
+    (member) => {
+      if (authenticatedUser && member.id === String(authenticatedUser.id)) {
+        return true
+      }
+
+      if (!normalizedUserName) {
+        return false
+      }
+
+      const normalizedMemberName = member.username.trim().toLowerCase()
+
+      return (
+        normalizedMemberName === normalizedUserName ||
+        normalizedMemberName.includes(normalizedUserName)
+      )
+    },
   )
 
   const viewerRole: MemberRole = viewerMember?.role ?? 'member'
@@ -219,37 +371,27 @@ function TripPageContent({ trip, isMember }: TripPageContentProps) {
     focusTabAt(nextIndex)
   }
 
-  const renderTimeline = () => (
-    <section
-      className="panel trip-tab-panel"
-      id="trip-panel-timeline"
-      role="tabpanel"
-      aria-labelledby="trip-tab-timeline"
-      tabIndex={0}
-    >
-      <h2>Day-by-day timeline</h2>
-      <p>Select any day to inspect the route segment details.</p>
-      <div className="timeline-list">
-        {trip.timeline.map((timelineStop) => (
-          <button
-            key={timelineStop.day}
-            type="button"
-            className={
-              selectedDay === timelineStop.day
-                ? 'timeline-item is-active'
-                : 'timeline-item'
-            }
-            onClick={() => setSelectedDay(timelineStop.day)}
-          >
-            <span>Day {timelineStop.day}</span>
-            <strong>
-              {timelineStop.from} to {timelineStop.to}
-            </strong>
-            <small>{timelineStop.note}</small>
-          </button>
-        ))}
-      </div>
-    </section>
+  const renderTimelineSelector = () => (
+    <div className="timeline-list trip-route-timeline-list">
+      {trip.timelines.map((timelineStop) => (
+        <button
+          key={timelineStop.day}
+          type="button"
+          className={
+            selectedDay === timelineStop.day
+              ? 'timeline-item is-active'
+              : 'timeline-item'
+          }
+          onClick={() => setSelectedDay(timelineStop.day)}
+        >
+          <span>Day {timelineStop.day}</span>
+          <strong>
+            {timelineStop.startingPoint} to {timelineStop.endPoint}
+          </strong>
+          <small>{timelineStop.note}</small>
+        </button>
+      ))}
+    </div>
   )
 
   const renderMap = () => (
@@ -260,11 +402,48 @@ function TripPageContent({ trip, isMember }: TripPageContentProps) {
       aria-labelledby="trip-tab-map"
       tabIndex={0}
     >
-      <h2>Route map</h2>
-      <p>
-        Day {currentStop.day}: {currentStop.from} to {currentStop.to}
-      </p>
-      <TripRouteMap timeline={trip.timeline} selectedDay={selectedDay} />
+      <h2>Map and timeline</h2>
+      <p>Select a day on the timeline and see the route update instantly on the map.</p>
+
+      <div className="trip-route-combined">
+        <div className="trip-route-timeline">
+          <h3>Timeline days</h3>
+          {renderTimelineSelector()}
+        </div>
+
+        <div className="trip-route-map">
+          <p className="trip-submeta">
+            Day {currentStop.day}: {currentStop.startingPoint} to {currentStop.endPoint}
+          </p>
+          <TripRouteMap timeline={trip.timelines} selectedDay={selectedDay} />
+        </div>
+      </div>
+    </section>
+  )
+
+  const renderOverviewRoutePreview = () => (
+    <section className="trip-overview-preview">
+      <img src={trip.imageUrl} alt={trip.title} className="trip-overview-cover" />
+
+      <div className="trip-overview-content">
+        <div className="trip-overview-day">
+          <p className="eyebrow">Route for selected day</p>
+          <h3>Day {currentStop.day}</h3>
+          <div className="trip-overview-route-line">
+            <span className="trip-overview-location">{currentStop.startingPoint}</span>
+            <span className="trip-overview-distance-pill">
+              {selectedRouteDistanceKm.toFixed(1)} km
+            </span>
+            <span className="trip-overview-location">{currentStop.endPoint}</span>
+          </div>
+          <p className="trip-submeta">{formatDisplayDate(currentStop.date)}</p>
+          <p className="trip-overview-note">{currentStop.note}</p>
+        </div>
+
+        <div className="trip-overview-map">
+          <TripRouteMap timeline={trip.timelines} selectedDay={selectedDay} />
+        </div>
+      </div>
     </section>
   )
 
@@ -286,10 +465,9 @@ function TripPageContent({ trip, isMember }: TripPageContentProps) {
       <ul className="member-list">
         {members.map((member) => (
           <li key={member.id} className="member-row">
-            <img className="avatar" src={member.avatarUrl} alt={member.name} />
+            <img className="avatar" src={member.avatarUrl} alt={member.username} />
             <div>
-              <p className="list-title">{member.name}</p>
-              <p>{member.location}</p>
+              <p className="list-title">{member.username}</p>
             </div>
 
             {isMember && canManageMembers && member.role !== 'owner' ? (
@@ -376,10 +554,13 @@ function TripPageContent({ trip, isMember }: TripPageContentProps) {
             time: map, timeline, member management, or chat.
           </p>
           <div className="trip-stat-row">
-            <span>{trip.currentMembers}/{trip.maxMembers} members</span>
-            <span>{trip.timeline.length} days in timeline</span>
-            <span>{trip.budgetPerPerson} EUR per person</span>
+            <span>{trip.currentMembers}/{trip.maxParticipants} members</span>
+            <span>{trip.timelines.length} days in timeline</span>
+            <span>{trip.price} EUR per person</span>
           </div>
+
+          {renderOverviewRoutePreview()}
+
           <div className="chip-row">
             {trip.tags.map((tag) => (
               <span key={tag} className="chip chip-static">
@@ -409,10 +590,13 @@ function TripPageContent({ trip, isMember }: TripPageContentProps) {
           then send a request if this trip fits your style.
         </p>
         <div className="trip-stat-row">
-          <span>{trip.budgetPerPerson} EUR / person</span>
-          <span>{trip.maxMembers} max members</span>
-          <span>{trip.timeline.length} timeline days</span>
+          <span>{trip.price} EUR / person</span>
+          <span>{trip.maxParticipants} max members</span>
+          <span>{trip.timelines.length} timeline days</span>
         </div>
+
+        {renderOverviewRoutePreview()}
+
         <div className="chip-row">
           {trip.tags.map((tag) => (
             <span key={tag} className="chip chip-static">
@@ -443,8 +627,6 @@ function TripPageContent({ trip, isMember }: TripPageContentProps) {
     switch (activeWorkspaceTab) {
       case 'map':
         return renderMap()
-      case 'timeline':
-        return renderTimeline()
       case 'members':
         return renderMembers()
       case 'chat':
@@ -462,7 +644,7 @@ function TripPageContent({ trip, isMember }: TripPageContentProps) {
         <h1>{trip.title}</h1>
         <p>{trip.description}</p>
         <p className="trip-meta">
-          {trip.startDate} - {trip.endDate} - {trip.currentMembers}/{trip.maxMembers}{' '}
+          {formatDisplayDateRange(trip.startingDate, trip.endingDate)} - {trip.currentMembers}/{trip.maxParticipants}{' '}
           members
         </p>
       </header>

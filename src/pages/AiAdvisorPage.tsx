@@ -3,6 +3,7 @@ import type { FormEvent } from 'react'
 import { FiMessageSquare, FiSend } from 'react-icons/fi'
 import { Link } from 'react-router-dom'
 import { aiKnowledgeTrips, mockTrips, mockUserProfile } from '../data/mockData'
+import { isUpcomingTripStatus } from '../utils/tripStatus'
 
 interface RankedRecommendation {
   id: string
@@ -83,7 +84,12 @@ export function AiAdvisorPage() {
 
     return [...mockTrips]
       .map((trip) => {
-        const lowerTitle = `${trip.title} ${trip.description} ${trip.destination}`.toLowerCase()
+        const routeContext = trip.timelines
+          .map((stop) => `${stop.startingPoint} ${stop.endPoint}`)
+          .join(' ')
+          .toLowerCase()
+
+        const lowerTitle = `${trip.title} ${trip.description} ${routeContext}`.toLowerCase()
 
         const matchingPromptTerms = trip.tags.filter(
           (tag) => promptTerms.includes(tag) || lowerTitle.includes(tag),
@@ -99,18 +105,25 @@ export function AiAdvisorPage() {
           score += matchingProfileTags.length * 2
         }
 
-        if (trip.maxMembers <= mockUserProfile.preferences.maxGroupSize) {
+        if (trip.maxParticipants <= mockUserProfile.preferences.maxGroupSize) {
           score += 2
         }
 
-        if (trip.status === 'upcoming') {
+        if (isUpcomingTripStatus(trip.status)) {
           score += 1
         }
+
+        const firstStop = trip.timelines[0]
+        const lastStop = trip.timelines[trip.timelines.length - 1]
+        const destinationLabel =
+          firstStop && lastStop
+            ? `${firstStop.startingPoint} to ${lastStop.endPoint}`
+            : 'Route not specified'
 
         return {
           id: trip.id,
           title: trip.title,
-          destination: trip.destination,
+          destination: destinationLabel,
           summary: trip.description,
           score,
           reason: calculateReason(matchingPromptTerms, matchingProfileTags),

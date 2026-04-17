@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { tripTypeOptions } from '../data/mockData'
+import { tripTypeOptions } from '../data/tripTypeOptions'
 import api from '../data/api'
 import { useDispatch } from 'react-redux'
 import { setCredentials,setToken } from '../data/authSlice'

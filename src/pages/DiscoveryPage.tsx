@@ -1,18 +1,26 @@
 import { motion } from 'framer-motion'
-import { useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { FiPlusCircle, FiSliders, FiZap } from 'react-icons/fi'
 import { Link, useLocation } from 'react-router-dom'
-import {
-  getAllTrips,
-  isUserInTrip,
-  mockUserProfile,
-  tripTypeOptions,
-} from '../data/mockData'
-import type { Trip } from '../types/models'
+import { useDebouncedCallback } from 'use-debounce'
+import { tripTypeOptions } from '../data/tripTypeOptions'
+import type { Trip,User } from '../types/models'
+import {useSelector } from 'react-redux'
+import api from '../data/api'
+import { formatDisplayDate } from '../utils/dateDisplay'
+import { getTripStatusLabel } from '../utils/tripStatus'
 
 const revealTransition = {
   duration: 0.55,
   ease: [0.22, 1, 0.36, 1] as const,
+}
+
+
+interface AuthStoreState {
+  auth: {
+    user: User | null
+    token: string | null
+  }
 }
 
 interface DiscoveryNavigationState {
@@ -22,46 +30,99 @@ interface DiscoveryNavigationState {
 export function DiscoveryPage() {
   const location = useLocation()
   const navigationState = location.state as DiscoveryNavigationState | null
-  const trips = useMemo<Trip[]>(() => getAllTrips(), [])
+  const user = useSelector((state: AuthStoreState) => state.auth.user)
+  const [trips, setTrips] = useState<Trip[]>([])
   const [showFilters, setShowFilters] = useState(true)
   const [autoApplyPreferences, setAutoApplyPreferences] = useState(true)
   const [search, setSearch] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
   const [selectedType, setSelectedType] = useState('all')
-  const [maxBudget, setMaxBudget] = useState(1800)
+  const [maxBudget, setMaxBudget] = useState(1000)
+  const [isFetchingTrips, setIsFetchingTrips] = useState(true)
 
-  const filteredTrips = useMemo(() => {
-    const normalizedSearch = search.trim().toLowerCase()
-    const profileTripTypes = mockUserProfile.preferences.tripTypes
+  const isSearchDebouncing = search !== debouncedSearch
+  const showDiscoverySkeleton = isSearchDebouncing || isFetchingTrips
 
-    return trips.filter((trip) => {
-      const matchesSearch =
-        normalizedSearch.length === 0 ||
-        trip.title.toLowerCase().includes(normalizedSearch) ||
-        trip.destination.toLowerCase().includes(normalizedSearch) ||
-        trip.tags.some((tag) => tag.includes(normalizedSearch))
+  const onChangeText = (text: string) => {
+    setSearch(text)
+    handleSearch(text)
+  }
 
-      const matchesTripType =
-        selectedType === 'all' || trip.tags.includes(selectedType)
+  const handleSearch = useDebouncedCallback((text: string) => {
+    setDebouncedSearch(text)
+  }, 500)
 
-      const matchesBudget = trip.budgetPerPerson <= maxBudget
+  useEffect(() => {
+    return () => {
+      handleSearch.cancel()
+    }
+  }, [handleSearch])
 
-      if (!matchesSearch || !matchesTripType || !matchesBudget) {
-        return false
+  useEffect(() => {
+    if (!user) {
+      setIsFetchingTrips(false)
+      return
+    }
+
+    let isActive = true
+
+    setIsFetchingTrips(true)
+
+    const fetchData = async () => {
+      try {
+        const res = await api.post('api/trip/get-trips', {
+          preferences: autoApplyPreferences,
+          tag: selectedType,
+          search: debouncedSearch,
+          budget: maxBudget,
+        })
+
+        if (!isActive) {
+          return
+        }
+
+        setTrips(res.data)
+      } catch {
+        if (!isActive) {
+          return
+        }
+      } finally {
+        if (isActive) {
+          setIsFetchingTrips(false)
+        }
       }
+    }
 
-      if (!autoApplyPreferences) {
-        return true
-      }
+    fetchData()
 
-      const matchesPreferenceType = trip.tags.some((tag) =>
-        profileTripTypes.includes(tag),
-      )
-      const matchesGroupLimit =
-        trip.maxMembers <= mockUserProfile.preferences.maxGroupSize
+    return () => {
+      isActive = false
+    }
+  }, [autoApplyPreferences, selectedType, debouncedSearch, maxBudget, user])
 
-      return matchesPreferenceType && matchesGroupLimit
-    })
-  }, [autoApplyPreferences, maxBudget, search, selectedType, trips])
+
+  if(user == null) 
+  {
+    return (
+      <section className="page discovery-page">
+        <motion.section
+          className="panel discovery-auth-empty"
+          initial={{ opacity: 0, y: 18 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={revealTransition}
+        >
+          <p className="eyebrow">Discovery</p>
+          <h1>You are not logged in</h1>
+          <p>
+            Log in to unlock discovery filters, personalized matching, and trip collaboration.
+          </p>
+          <Link className="btn btn-primary" to="/login">
+            Go to login
+          </Link>
+        </motion.section>
+      </section>
+    )
+  }
 
   return (
     <section className="page discovery-page">
@@ -99,14 +160,36 @@ export function DiscoveryPage() {
 
           {showFilters ? (
             <>
-              <label className="toggle">
+              <label
+                className={
+                  autoApplyPreferences
+                    ? 'discovery-boost-toggle is-active'
+                    : 'discovery-boost-toggle'
+                }
+              >
                 <input
+                  className="visually-hidden"
                   type="checkbox"
                   checked={autoApplyPreferences}
-                  onChange={(event) => setAutoApplyPreferences(event.target.checked)}
+                  onChange={(event) => {
+                    const isChecked = event.target.checked
+                    setAutoApplyPreferences(isChecked)
+
+                    if (isChecked) {
+                      setSelectedType('all')
+                    }
+                  }}
                 />
-                <FiZap aria-hidden="true" />
-                Boost with onboarding preferences
+                <span className="discovery-boost-switch" aria-hidden="true">
+                  <span className="discovery-boost-thumb" />
+                </span>
+                <span className="discovery-boost-copy">
+                  <span className="discovery-boost-title">
+                    <FiZap aria-hidden="true" />
+                    Boost with onboarding preferences
+                  </span>
+                  <small>Use your profile preferences to auto-prioritize matching trips.</small>
+                </span>
               </label>
 
               <label className="field-label" htmlFor="discover-search">
@@ -116,7 +199,7 @@ export function DiscoveryPage() {
                 id="discover-search"
                 className="input"
                 value={search}
-                onChange={(event) => setSearch(event.target.value)}
+                onChange={(event) => onChangeText(event.target.value)}
                 placeholder="Search by location or type"
               />
 
@@ -125,9 +208,15 @@ export function DiscoveryPage() {
               </label>
               <select
                 id="discover-trip-type"
-                className="input"
+                className={
+                  autoApplyPreferences
+                    ? 'input discovery-trip-type is-locked'
+                    : 'input discovery-trip-type'
+                }
                 value={selectedType}
                 onChange={(event) => setSelectedType(event.target.value)}
+                disabled={autoApplyPreferences}
+                aria-disabled={autoApplyPreferences}
               >
                 <option value="all">All types</option>
                 {tripTypeOptions.map((tripType) => (
@@ -136,6 +225,11 @@ export function DiscoveryPage() {
                   </option>
                 ))}
               </select>
+              <p className={autoApplyPreferences ? 'discovery-field-note is-locked' : 'discovery-field-note'}>
+                {autoApplyPreferences
+                  ? 'Trip type is disabled while onboarding boost is enabled.'
+                  : 'Choose a trip style to narrow results manually.'}
+              </p>
 
               <label className="field-label" htmlFor="discover-max-budget">
                 Budget per person up to {maxBudget} EUR
@@ -154,18 +248,47 @@ export function DiscoveryPage() {
           ) : null}
         </aside>
 
-        <section className="panel discovery-results-rail">
+        <section className="panel discovery-results-rail" aria-live="polite" aria-busy={showDiscoverySkeleton}>
           {navigationState?.createdTripTitle ? (
             <p className="info-banner">
               {navigationState.createdTripTitle} was published and is now visible in discovery.
             </p>
           ) : null}
 
-          <h2>Results ({filteredTrips.length})</h2>
-          <p>Open any trip to switch between map, timeline, members, and chat.</p>
+          <h2>{showDiscoverySkeleton ? 'Updating results...' : `Results (${trips.length})`}</h2>
+          <p className={showDiscoverySkeleton ? 'discovery-search-status is-loading' : 'discovery-search-status'}>
+            {isSearchDebouncing
+              ? 'Filtering trips for your latest search...'
+              : showDiscoverySkeleton
+                ? 'Loading the latest matching trips...'
+                : 'Open any trip to switch between map, timeline, members, and chat.'}
+          </p>
 
           <div className="trip-grid">
-            {filteredTrips.map((trip, index) => (
+            {showDiscoverySkeleton
+              ? Array.from({ length: 3 }, (_, index) => (
+                <article className="panel trip-card trip-card-skeleton" key={`trip-skeleton-${index}`} aria-hidden="true">
+                  <div className="trip-cover discovery-skeleton-block discovery-skeleton-cover" />
+                  <div className="trip-card-body">
+                    <div className="discovery-skeleton-block discovery-skeleton-pill" />
+                    <div className="discovery-skeleton-block discovery-skeleton-title" />
+                    <div className="discovery-skeleton-block discovery-skeleton-text" />
+                    <div className="discovery-skeleton-block discovery-skeleton-text is-short" />
+                    <div className="discovery-skeleton-block discovery-skeleton-submeta" />
+                    <div className="discovery-skeleton-stat-row">
+                      <div className="discovery-skeleton-block discovery-skeleton-stat" />
+                      <div className="discovery-skeleton-block discovery-skeleton-stat" />
+                    </div>
+                    <div className="discovery-skeleton-chip-row">
+                      <div className="discovery-skeleton-block discovery-skeleton-chip" />
+                      <div className="discovery-skeleton-block discovery-skeleton-chip" />
+                      <div className="discovery-skeleton-block discovery-skeleton-chip" />
+                    </div>
+                    <div className="discovery-skeleton-block discovery-skeleton-cta" />
+                  </div>
+                </article>
+              ))
+              : trips.map((trip, index) => (
               <motion.article
                 className="panel trip-card"
                 key={trip.id}
@@ -174,27 +297,22 @@ export function DiscoveryPage() {
                 viewport={{ once: true, amount: 0.2 }}
                 transition={{ ...revealTransition, delay: index * 0.05 }}
               >
-                <img src={trip.coverImage} alt={trip.title} className="trip-cover" />
+                <img src={trip.imageUrl} alt={trip.title} className="trip-cover" />
                 <div className="trip-card-body">
-                  {isUserInTrip(trip, mockUserProfile) ? (
-                    <p className="match-pill">You are part of this trip</p>
-                  ) : (
-                    <p className="match-pill">Open details and request to join</p>
-                  )}
 
                   <p className="trip-meta">
-                    {trip.destination} - {trip.status}
+                    {getTripStatusLabel(trip.status)}
                   </p>
                   <h2>{trip.title}</h2>
                   <p>{trip.description}</p>
                   <p className="trip-submeta">
-                    {trip.timeline.length} days - starts {trip.startDate}
+                    {trip.timelines.length} days - starts {formatDisplayDate(trip.startingDate)}
                   </p>
                   <div className="trip-stat-row">
                     <span>
-                      {trip.currentMembers}/{trip.maxMembers} members
+                      {trip.currentMembers}/{trip.maxParticipants} members
                     </span>
-                    <span>{trip.budgetPerPerson} EUR / person</span>
+                    <span>{trip.price} EUR / person</span>
                   </div>
                   <div className="chip-row">
                     {trip.tags.map((tag) => (
@@ -204,15 +322,13 @@ export function DiscoveryPage() {
                     ))}
                   </div>
                   <Link className="btn btn-primary" to={`/trip/${trip.id}`}>
-                    {isUserInTrip(trip, mockUserProfile)
-                      ? 'Open trip space'
-                      : 'View details'}
+                      View details
                   </Link>
                 </div>
               </motion.article>
             ))}
 
-            {filteredTrips.length === 0 ? (
+            {!showDiscoverySkeleton && trips.length === 0 ? (
               <div className="panel">
                 <h2>No trips match these filters right now.</h2>
                 <p>
@@ -226,3 +342,4 @@ export function DiscoveryPage() {
     </section>
   )
 }
+
