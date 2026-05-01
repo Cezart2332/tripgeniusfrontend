@@ -497,7 +497,7 @@ export function AppLayout() {
         </button>
 
         <nav className={`top-nav ${isMobileMenuOpen ? 'is-open' : ''}`} aria-label="Main navigation">
-          {primaryNavItems.map((item) => (
+          {primaryNavItems.filter(item => item.to !== '/ai' || !!user).map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
@@ -721,10 +721,12 @@ export function AppLayout() {
           <FiCompass aria-hidden="true" />
           <span>Discover</span>
         </NavLink>
-        <NavLink to="/ai" className={({ isActive }) => isActive ? 'bottom-nav-link is-active' : 'bottom-nav-link'}>
-          <AiIcon aria-hidden="true" />
-          <span>Advisor</span>
-        </NavLink>
+        {user && (
+          <NavLink to="/ai" className={({ isActive }) => isActive ? 'bottom-nav-link is-active' : 'bottom-nav-link'}>
+            <AiIcon aria-hidden="true" />
+            <span>Advisor</span>
+          </NavLink>
+        )}
         {user ? (
           <NavLink to="/profile" className={({ isActive }) => isActive ? 'bottom-nav-link is-active' : 'bottom-nav-link'}>
             <FiUser aria-hidden="true" />

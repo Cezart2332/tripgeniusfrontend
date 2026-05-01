@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
 import { FiSend, FiMapPin, FiExternalLink, FiMessageCircle } from 'react-icons/fi'
 import { useSelector, useDispatch } from 'react-redux'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { setToken } from '../data/authSlice'
 import * as signalR from '@microsoft/signalr'
 import ReactMarkdown from 'react-markdown'
@@ -92,6 +92,7 @@ const Typewriter = ({ text, isStreaming }: { text: string; isStreaming?: boolean
 
 export function AiAdvisorPage() {
   const dispatch = useDispatch()
+  const navigate = useNavigate()
   const token = useSelector((state: AuthStoreState) => state.auth.token)
   const [prompt, setPrompt] = useState('')
   const baseURL = import.meta.env.VITE_BASE_URL;
@@ -127,8 +128,12 @@ export function AiAdvisorPage() {
       return
     }
     const refreshToken = async () => {
-      const res = await api.post('/api/auth/refresh');
-      dispatch(setToken({ token: res.data.token }))
+      try {
+        const res = await api.post('/api/auth/refresh');
+        dispatch(setToken({ token: res.data.token }))
+      } catch {
+        navigate('/login', { replace: true })
+      }
     }
     if (!token) {
       refreshToken()
