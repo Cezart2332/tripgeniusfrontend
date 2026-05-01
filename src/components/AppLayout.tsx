@@ -554,6 +554,102 @@ export function AppLayout() {
         </div>
       </motion.header>
 
+      {/* Mobile-only compact header — logo + notification bell */}
+      <header className="mobile-topbar" aria-label="Mobile header">
+        <Link to="/" className="mobile-brand">
+          <img src="/fulllogo.svg" alt="TripGenius" className="mobile-brand-logo" />
+        </Link>
+        <div className="mobile-topbar-actions">
+          {deferredPrompt && (
+            <button
+              type="button"
+              className="mobile-icon-btn"
+              onClick={handleInstallClick}
+              aria-label="Install App"
+            >
+              <FiDownload />
+            </button>
+          )}
+          {user ? (
+            <div className="nav-notification-shell" ref={notificationMenuRef}>
+              <button
+                type="button"
+                className={isNotificationOpen ? 'mobile-icon-btn is-active' : 'mobile-icon-btn'}
+                aria-label="Notifications"
+                aria-haspopup="menu"
+                aria-expanded={isNotificationOpen}
+                disabled={isSyncingUser}
+                onClick={() => {
+                  if (isSyncingUser) return
+                  setIsNotificationOpen((prev) => !prev)
+                  void syncUserFromProfileFetch()
+                }}
+              >
+                {isSyncingUser ? (
+                  <span className="inline-spinner" aria-hidden="true" />
+                ) : (
+                  <FiBell />
+                )}
+                {unreadNotifications.length > 0 && (
+                  <span className="notification-badge" aria-hidden="true" />
+                )}
+              </button>
+              <AnimatePresence>
+                {isNotificationOpen ? (
+                  <motion.section
+                    className="header-notification-dropdown"
+                    id="mobile-notification-menu"
+                    role="menu"
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -8 }}
+                    transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
+                  >
+                    <div className="header-notification-head">
+                      <p className="eyebrow">Notifications</p>
+                      <Link
+                        className="header-notification-see-more"
+                        to="/profile?tab=notifications"
+                        onClick={() => setIsNotificationOpen(false)}
+                      >
+                        See more
+                      </Link>
+                    </div>
+                    {unreadNotifications.length > 0 ? (
+                      unreadNotifications.map((notification) => (
+                        <div
+                          key={notification.id}
+                          style={{
+                            padding: '0.75rem 1rem',
+                            borderBottom: '1px solid rgba(243, 255, 241, 0.1)',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '0.25rem',
+                          }}
+                        >
+                          <p style={{ margin: 0, color: '#f3fff1', fontSize: '0.875rem', fontWeight: 500, lineHeight: 1.4 }}>
+                            {getNotificationContent(notification)}
+                          </p>
+                          <p style={{ margin: 0, color: 'rgba(243, 255, 241, 0.6)', fontSize: '0.75rem' }}>
+                            {formatNotificationTimestamp(notification)}
+                          </p>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="header-notification-empty">No unread notifications.</p>
+                    )}
+                  </motion.section>
+                ) : null}
+              </AnimatePresence>
+            </div>
+          ) : (
+            <Link className="mobile-icon-btn" to="/login" aria-label="Login">
+              <FiLogIn />
+            </Link>
+          )}
+        </div>
+      </header>
+
       <motion.main
         key={location.pathname}
         className="main-content"
@@ -563,6 +659,7 @@ export function AppLayout() {
       >
         {outlet}
       </motion.main>
+
 
       <nav className="bottom-nav" aria-label="Mobile navigation">
         <NavLink to="/" end className={({ isActive }) => isActive ? 'bottom-nav-link is-active' : 'bottom-nav-link'}>
