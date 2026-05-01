@@ -1,7 +1,7 @@
 import { AnimatePresence, motion } from 'framer-motion'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { ChangeEvent, FormEvent, KeyboardEvent } from 'react'
-import { FiCompass, FiUploadCloud } from 'react-icons/fi'
+import { FiBell, FiChevronDown, FiCompass, FiMail, FiUploadCloud, FiZap } from 'react-icons/fi'
 import { useDispatch, useSelector } from 'react-redux'
 
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
@@ -27,7 +27,7 @@ interface AuthStoreState {
   }
 }
 
-type ProfileTab = 'identity' | 'history' | 'matches'
+type ProfileTab = 'identity' | 'invites' | 'history' | 'matches' | 'notifications'
 
 interface PersonalizedTripCard {
   id: string
@@ -61,15 +61,125 @@ const revealTransition = {
 const DEFAULT_AVATAR_URL =
   'https://images.unsplash.com/photo-1521119989659-a83eee488004?auto=format&fit=crop&w=300&q=80'
 const DEFAULT_PROFILE_DESCRIPTION = ''
-const DEFAULT_TRIP_TYPES = ['adventure', 'nature']
-const DEFAULT_MAX_GROUP_SIZE = 8
 
 
 const profileTabs: Array<{ key: ProfileTab; label: string }> = [
   { key: 'identity', label: 'Identity' },
+  { key: 'invites', label: 'Invites' },
   { key: 'history', label: 'History' },
   { key: 'matches', label: 'Matches' },
+  { key: 'notifications', label: 'Notifications' },
 ]
+
+const formatNotificationTimestamp = (notification: User['notifications'][number]): string => {
+  const timestampValue =
+    (notification as {
+      CreatedAt?: string
+      createdAt?: string
+      date?: string
+      timestamp?: string
+      Timestamp?: string
+      created?: string
+    }).CreatedAt ??
+    (notification as {
+      CreatedAt?: string
+      createdAt?: string
+      date?: string
+      timestamp?: string
+      Timestamp?: string
+      created?: string
+    }).createdAt ??
+    (notification as {
+      CreatedAt?: string
+      createdAt?: string
+      date?: string
+      timestamp?: string
+      Timestamp?: string
+      created?: string
+    }).timestamp ??
+    (notification as {
+      CreatedAt?: string
+      createdAt?: string
+      date?: string
+      timestamp?: string
+      Timestamp?: string
+      created?: string
+    }).Timestamp ??
+    (notification as {
+      CreatedAt?: string
+      createdAt?: string
+      date?: string
+      timestamp?: string
+      Timestamp?: string
+      created?: string
+    }).created ??
+    notification.date
+
+  if (!timestampValue) {
+    return 'Just now'
+  }
+
+  const dotNetDateMatch = /\/Date\((\d+)\)\//.exec(timestampValue)
+  const parsedDate = dotNetDateMatch
+    ? new Date(Number(dotNetDateMatch[1]))
+    : new Date(timestampValue)
+
+  if (Number.isNaN(parsedDate.getTime())) {
+    return 'Just now'
+  }
+
+  return new Intl.DateTimeFormat(undefined, {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(parsedDate)
+}
+
+const isNotificationRead = (
+  notification: User['notifications'][number],
+  readNotificationIds: number[],
+): boolean => {
+  const backendReadStatus =
+    notification.isRead ??
+    notification.read ??
+    notification.IsRead ??
+    notification.Read ??
+    false
+
+  return backendReadStatus || readNotificationIds.includes(notification.id)
+}
+
+const getErrorMessage = (error: unknown, fallbackMessage: string): string => {
+  if (error instanceof AxiosError) {
+    const responseData = error.response?.data
+
+    if (typeof responseData === 'string') {
+      return responseData
+    }
+
+    if (responseData && typeof responseData === 'object') {
+      const messageValue =
+        (responseData as { message?: unknown }).message ??
+        (responseData as { error?: unknown }).error ??
+        (responseData as { detail?: unknown }).detail
+
+      if (typeof messageValue === 'string') {
+        return messageValue
+      }
+
+      if (messageValue != null) {
+        return String(messageValue)
+      }
+
+      return JSON.stringify(responseData)
+    }
+  }
+
+  if (error instanceof Error && error.message) {
+    return error.message
+  }
+
+  return fallbackMessage
+}
 
 export function ProfilePage() {
   const dispatch = useDispatch()
@@ -83,22 +193,22 @@ export function ProfilePage() {
       ? (requestedTab as ProfileTab)
       : 'identity'
   const [avatarUrl, setAvatarUrl] = useState(user?.profileUrl ?? DEFAULT_AVATAR_URL)
-  const [avatarFileName, setAvatarFileName] = useState('No image uploaded yet')
+  const [, setAvatarFileName] = useState('No image uploaded yet')
   const [description, setDescription] = useState(
     user?.description ?? DEFAULT_PROFILE_DESCRIPTION,
   )
   const [avatarFile, setAvatarFile] = useState<File | null>(null)
-  const [tripTypes, setTripTypes] = useState<string[]>(() =>
-    user?.tags.length && user.tags.length > 0
-      ? [...user.tags]
-      : [...DEFAULT_TRIP_TYPES],
-  )
-  const [maxGroupSize, setMaxGroupSize] = useState<number>(
-    user?.groupSize ?? DEFAULT_MAX_GROUP_SIZE,
+  const [tripTypes, setTripTypes] = useState<string[]>(() => [...(user?.tags ?? [])])
+  const [maxGroupSize, setMaxGroupSize] = useState<number | ''>(
+    user?.groupSize ?? '',
   )
   const [isSaving, setIsSaving] = useState(false)
   const [toast, setToast] = useState<FeedbackToastState | null>(null)
-  const [trips, setTrips] = useState<Trip[]>([])
+  const [readNotificationIds, setReadNotificationIds] = useState<number[]>([])
+  const [isMarkingNotificationId, setIsMarkingNotificationId] = useState<number | null>(null)
+  const [isClearingNotifications, setIsClearingNotifications] = useState(false)
+  const [isRespondingInviteId, setIsRespondingInviteId] = useState<string | null>(null)
+  const [inviteResponseAction, setInviteResponseAction] = useState<'Accepted' | 'Declined' | null>(null)
   const objectUrlRef = useRef<string | null>(null)
   const tabListRef = useRef<HTMLElement | null>(null)
 
@@ -110,6 +220,36 @@ export function ProfilePage() {
     })
   }
 
+  const updateUserNotificationsAsRead = (notificationIds: number[]) => {
+    if (!user || notificationIds.length === 0) {
+      return
+    }
+
+    const notificationIdSet = new Set(notificationIds)
+    const updatedNotifications = user.notifications.map((notification) => {
+      if (!notificationIdSet.has(notification.id)) {
+        return notification
+      }
+
+      return {
+        ...notification,
+        isRead: true,
+        read: true,
+        IsRead: true,
+        Read: true,
+      }
+    })
+
+    dispatch(
+      setUser({
+        user: {
+          ...user,
+          notifications: updatedNotifications,
+        },
+      }),
+    )
+  }
+
 
 
   useEffect(() => {
@@ -119,26 +259,22 @@ export function ProfilePage() {
 
     setAvatarUrl(user.profileUrl || DEFAULT_AVATAR_URL)
     setDescription(user.description || DEFAULT_PROFILE_DESCRIPTION)
-    setTripTypes(user.tags.length > 0 ? [...user.tags] : [...DEFAULT_TRIP_TYPES])
-    setMaxGroupSize(user.groupSize || DEFAULT_MAX_GROUP_SIZE)
+    setTripTypes([...(user.tags ?? [])])
+    setMaxGroupSize(user.groupSize ?? '')
   }, [user])
 
   useEffect(() => {
     const fetchUser = async () => {
-        const res = await api.get('api/user/me')
-        dispatch(setUser({ user: res.data }))
-    }
-    const fetchUserHistory = async () => {
-      const res = await api.get('api/trip/get-user-trips')
-      setTrips(res.data)
+      const res = await api.get('api/user/me')
+      dispatch(setUser({ user: res.data }))
+      console.log(res.data)
     }
     fetchUser()
-    fetchUserHistory()
 
     return () => {
-        if (objectUrlRef.current) {
-            URL.revokeObjectURL(objectUrlRef.current)
-        }
+      if (objectUrlRef.current) {
+        URL.revokeObjectURL(objectUrlRef.current)
+      }
     }
   }, [dispatch])
 
@@ -163,47 +299,30 @@ export function ProfilePage() {
   }, [shouldRedirectToLogin, navigate])
 
   const pastTrips = useMemo(
-    () => trips.filter((trip) => isFinishedTripStatus(trip.status)),
-    [trips],
+    () => (user?.trips ?? []).filter((trip: Trip) => isFinishedTripStatus(trip.status)),
+    [user?.trips],
   )
+
+  const effectiveMaxGroupSize = typeof maxGroupSize === 'number' ? maxGroupSize : null
 
   const futureTrips = useMemo(
-    () => trips.filter((trip) => isUpcomingTripStatus(trip.status)),
-    [trips],
+    () => (user?.trips ?? []).filter((trip: Trip) => isUpcomingTripStatus(trip.status)),
+    [user?.trips],
   )
 
-  const memberTripIds = useMemo(() => {
-    if (!user) {
-      return new Set<string>()
-    }
-
-    const normalizedUserName = user.username.trim().toLowerCase()
-
-    return new Set(
-      trips
-        .filter((trip) =>
-          trip.members.some((member) => {
-            const normalizedMemberName = member.username.trim().toLowerCase()
-
-            return (
-              member.id === String(user.id) ||
-              normalizedMemberName === normalizedUserName ||
-              normalizedMemberName.includes(normalizedUserName)
-            )
-          }),
-        )
-        .map((trip) => trip.id),
-    )
-  }, [user, trips])
-
   const discoveryTrips = useMemo<PersonalizedTripCard[]>(() => {
-    return [...trips]
-      .map((trip) => {
-        const matchingTags = trip.tags.filter((tag) =>
-          tripTypes.includes(tag),
-        )
+    return (user?.trips ?? [])
+      .map((trip: Trip) => {
+        const tagsSafe = trip.tags ?? []
+        const matchingTags = tagsSafe.filter((tag: string) => tripTypes.includes(tag))
 
-        const groupAlignment = trip.maxParticipants <= maxGroupSize ? 10 : -7
+        const tripMax = trip.maxParticipants ?? Number.MAX_SAFE_INTEGER
+        const groupAlignment =
+          effectiveMaxGroupSize === null
+            ? 0
+            : tripMax <= effectiveMaxGroupSize
+              ? 10
+              : -7
         const statusBoost = isUpcomingTripStatus(trip.status) ? 6 : 2
 
         const matchScore = clamp(
@@ -216,9 +335,11 @@ export function ProfilePage() {
           matchingTags.length > 0
             ? `Shared trip styles: ${matchingTags.slice(0, 2).join(', ')}`
             : 'Great for trying a new travel vibe',
-          trip.maxParticipants <= maxGroupSize
-            ? 'Fits your preferred group size'
-            : 'Larger group than your default setting',
+          effectiveMaxGroupSize === null
+            ? 'No preferred group size set'
+            : trip.maxParticipants <= effectiveMaxGroupSize
+              ? 'Fits your preferred group size'
+              : 'Larger group than your default setting',
         ]
 
         return {
@@ -227,18 +348,49 @@ export function ProfilePage() {
           coverImage: trip.imageUrl,
           description: trip.description,
           status: getTripStatusLabel(trip.status),
-          timelineLength: trip.timelines.length,
+          timelineLength: (trip.timelines ?? []).length,
           startDate: formatDisplayDate(trip.startingDate),
           currentMembers: trip.currentMembers,
           maxMembers: trip.maxParticipants,
           price: trip.price,
-          tags: trip.tags,
+          tags: tagsSafe,
           matchScore,
           matchReasons,
         }
       })
       .sort((first, second) => second.matchScore - first.matchScore)
-  }, [trips, tripTypes, maxGroupSize])
+  }, [user?.trips, tripTypes, effectiveMaxGroupSize])
+
+  const visibleNotifications = useMemo(
+    () =>
+      (user?.notifications ?? []).filter(
+        (notification) => !isNotificationRead(notification, readNotificationIds),
+      ),
+    [user?.notifications, readNotificationIds],
+  )
+
+  const visibleInvites = useMemo(() => {
+    const invites: Array<{ tripId: string; invitedId: string; tripTitle: string }> = []
+
+      ; (user?.trips ?? []).forEach((trip) => {
+        const memberEntry = trip.members?.find((m) => {
+          const usernameMatch = String((m as unknown as Record<string, unknown>).username) === String(user?.username)
+          const memberObj = m as unknown as Record<string, unknown>
+          const memberStatus = String(memberObj.status ?? memberObj.memberStatus ?? memberObj.member_status ?? '').toLowerCase()
+          return usernameMatch && memberStatus === 'invited'
+        })
+
+        if (!memberEntry) return
+
+        invites.push({
+          tripId: String(trip.id),
+          invitedId: String((memberEntry as unknown as Record<string, unknown>).id ?? ''),
+          tripTitle: trip.title,
+        })
+      })
+
+    return invites
+  }, [user?.trips, user?.username])
 
 
   const handleAvatarUpload = (event: ChangeEvent<HTMLInputElement>) => {
@@ -263,7 +415,7 @@ export function ProfilePage() {
     avatar: File | null,
     nextDescription: string,
     tags: string[],
-    groupSize: number,
+    groupSize: number | '',
   ) => {
     const formData = new FormData()
 
@@ -273,18 +425,31 @@ export function ProfilePage() {
 
     formData.append('description', nextDescription)
     tags.forEach((tag) => formData.append('tags', tag))
-    formData.append('groupSize', groupSize.toString())
+    if (groupSize !== '') {
+      formData.append('groupSize', groupSize.toString())
+    }
 
-    const response = await api.put('/api/user/update', formData)
+    try {
+      const response = await api.put('/api/user/update', formData)
 
-    const updatedUser = (response.data) as User
-    dispatch(
-      setUser({
-        user: updatedUser,
-      }),
-    )
+      const updatedUser = (response.data) as User
+      dispatch(
+        setUser({
+          user: updatedUser,
+        }),
+      )
 
-    return updatedUser
+      return updatedUser
+    }
+    catch (err: any) {
+      if (err?.queued) {
+        showToast('Profile and preferences will be updated successfully.', 'success')
+      }
+      else {
+        showToast('There was a problem updating your profile, please try again.', 'error')
+        console.error(err)
+      }
+    }
   }
 
   const handleSave = async (event: FormEvent<HTMLFormElement>) => {
@@ -296,8 +461,7 @@ export function ProfilePage() {
 
     setIsSaving(true)
 
-    try 
-    {
+    try {
       const updatedUser = await update(
         avatarFile,
         description.trim(),
@@ -305,34 +469,30 @@ export function ProfilePage() {
         maxGroupSize,
       )
 
-      if (updatedUser.profileUrl) 
-      {
-        if (objectUrlRef.current) 
-        {
-          URL.revokeObjectURL(objectUrlRef.current)
-          objectUrlRef.current = null
+      if (updatedUser) {
+        if (updatedUser.profileUrl) {
+          if (objectUrlRef.current) {
+            URL.revokeObjectURL(objectUrlRef.current)
+            objectUrlRef.current = null
+          }
+          setAvatarUrl(updatedUser.profileUrl)
         }
-        setAvatarUrl(updatedUser.profileUrl)
-      }
 
-      setAvatarFileName(avatarFile ? avatarFile.name : 'No image uploaded yet')
-      setAvatarFile(null)
-      showToast('Profile and preferences updated successfully.', 'success')
-    } 
-    catch (err : unknown) 
-    {
-      if(err instanceof AxiosError)
-      {
+        setAvatarFileName(avatarFile ? avatarFile.name : 'No image uploaded yet')
+        setAvatarFile(null)
+        showToast('Profile and preferences updated successfully.', 'success')
+      }
+    }
+    catch (err: unknown) {
+      if (err instanceof AxiosError) {
         const message = err.response?.data?.message || err.response?.data || "There was a problem updating your profile, please try again later."
         showToast(String(message), 'error')
       }
-      else
-      {
+      else {
         showToast('Could not update profile. Please try again.', 'error')
       }
-    } 
-    finally 
-    {
+    }
+    finally {
       await waitForBackendButtonUnlock()
       setIsSaving(false)
     }
@@ -384,315 +544,491 @@ export function ProfilePage() {
     focusTabAt(nextIndex)
   }
 
+  const markNotificationAsRead = async (notificationId: number) => {
+    if (isMarkingNotificationId === notificationId || isClearingNotifications) {
+      return
+    }
+
+    setIsMarkingNotificationId(notificationId)
+    try {
+      const res = await api.post('/api/user/read-notification', { notificationId: notificationId })
+      if (res.status == 200) {
+        setReadNotificationIds((previous) =>
+          previous.includes(notificationId)
+            ? previous
+            : [...previous, notificationId],
+        )
+        updateUserNotificationsAsRead([notificationId])
+      }
+    }
+    catch (error) {
+      console.error(error)
+    } finally {
+      setIsMarkingNotificationId(null)
+    }
+  }
+
+  const markNotificationsAsRead = async () => {
+    if (isClearingNotifications) {
+      return
+    }
+
+    setIsClearingNotifications(true)
+    try {
+      const res = await api.post('/api/user/read-notifications')
+      if (res.status == 200) {
+        const allNotificationIds = (user?.notifications ?? []).map(
+          (notification) => notification.id,
+        )
+
+        setReadNotificationIds((previous) =>
+          Array.from(new Set([...previous, ...allNotificationIds])),
+        )
+        updateUserNotificationsAsRead(allNotificationIds)
+      }
+    }
+    catch (error) {
+      console.error(error)
+    } finally {
+      setIsClearingNotifications(false)
+    }
+  }
+
+  const handleInviteResponse = async (tripId: string, action: 'Accepted' | 'Declined') => {
+    if (isRespondingInviteId === tripId) {
+      return
+    }
+
+    setIsRespondingInviteId(tripId)
+    setInviteResponseAction(action)
+    try {
+      const response = await api.patch('api/trip/membership-response', {
+        tripId: tripId,
+        invitedId: user?.id,
+        memberStatus: 'Invited',
+        action: action === 'Accepted' ? 'accept' : 'decline',
+      })
+      if (response.status === 200) {
+        showToast(`Expedition invite ${action.toLowerCase()}ed.`, 'success')
+      }
+
+      const userRes = await api.get('api/user/me')
+      dispatch(setUser({ user: userRes.data }))
+
+    } catch (error: unknown) {
+      const fallbackMessage = `Failed to ${action.toLowerCase()} invite.`
+      showToast(getErrorMessage(error, fallbackMessage), 'error')
+    } finally {
+      setIsRespondingInviteId(null)
+      setInviteResponseAction(null)
+    }
+  }
+
   if (!user) {
     return (
       <section className="page profile-page">
         <FeedbackToast toast={toast} clearToast={() => setToast(null)} />
-        <section className="panel profile-editor-card">
-          <p className="eyebrow">Profile</p>
+        <div className="discovery-empty-state">
+          <img src="/newstickers/sticker5.png" alt="" className="discovery-empty-sticker" />
           <h1>You are not logged in</h1>
           <p>Log in to edit your profile and unlock personalized trip discovery.</p>
           <Link className="btn btn-primary" to="/login">
             Go to login
           </Link>
-        </section>
+        </div>
       </section>
     )
   }
 
   return (
-    <section className="page profile-page">
+    <section className="page profile-page-v2 container">
       <FeedbackToast toast={toast} clearToast={() => setToast(null)} />
-      <motion.header
-        className="panel profile-shell-head"
-        initial={{ opacity: 0, y: 20 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, amount: 0.3 }}
-        transition={revealTransition}
-      >
-        <p className="eyebrow">Traveler profile</p>
-        <h1>{user.username}</h1>
-        <p>Switch between identity editing, trip history, and match intelligence.</p>
-      </motion.header>
 
-      <nav
-        ref={tabListRef}
-        className="profile-tab-bar"
-        aria-label="Profile sections"
-        role="tablist"
-      >
-        {profileTabs.map((tab, index) => (
-          <button
-            key={tab.key}
-            type="button"
-            id={`profile-tab-${tab.key}`}
-            className={activeTab === tab.key ? 'profile-tab-btn is-active' : 'profile-tab-btn'}
-            role="tab"
-            aria-selected={activeTab === tab.key}
-            aria-controls={`profile-panel-${tab.key}`}
-            tabIndex={activeTab === tab.key ? 0 : -1}
-            onClick={() => selectTab(tab.key)}
-            onKeyDown={(event) => handleTabKeyDown(event, index)}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </nav>
+      <header className="profile-header-v2">
+        <div>
+          <p className="eyebrow">Explorer Workspace</p>
+          <h1>Welcome, {user.username}</h1>
+        </div>
+        <nav
+          ref={tabListRef}
+          className="profile-tab-bar-v2"
+          aria-label="Profile sections"
+          role="tablist"
+        >
+          {profileTabs.map((tab, index) => (
+            <button
+              key={tab.key}
+              type="button"
+              id={`profile-tab-${tab.key}`}
+              className={activeTab === tab.key ? 'profile-tab-btn-v2 is-active' : 'profile-tab-btn-v2'}
+              role="tab"
+              aria-selected={activeTab === tab.key}
+              aria-controls={`profile-panel-${tab.key}`}
+              tabIndex={activeTab === tab.key ? 0 : -1}
+              onClick={() => selectTab(tab.key)}
+              onKeyDown={(event) => handleTabKeyDown(event, index)}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </nav>
+      </header>
 
       <AnimatePresence mode="wait" initial={false}>
         {activeTab === 'identity' ? (
-          <motion.form
+          <motion.div
             key="identity"
-            className="panel profile-editor-card"
-            onSubmit={handleSave}
             id="profile-panel-identity"
             role="tabpanel"
             aria-labelledby="profile-tab-identity"
-            tabIndex={0}
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -12 }}
+            transition={revealTransition}
+            className="profile-identity-v2"
+          >
+            <div className="profile-avatar-section-v2">
+              <label className="avatar-wrapper-v2" htmlFor="profile-avatar-file">
+                <img src={avatarUrl} alt="Profile" className="avatar-preview-v2" />
+                <div className="avatar-upload-overlay-v2">
+                  <FiUploadCloud size={24} />
+                  <span>Update photo</span>
+                </div>
+              </label>
+              <input
+                id="profile-avatar-file"
+                className="visually-hidden"
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                disabled={isSaving}
+                onChange={handleAvatarUpload}
+              />
+              <img src="/newstickers/sticker2.png" alt="" style={{ width: '100%', maxWidth: '200px', marginTop: '2rem', opacity: 0.8 }} />
+            </div>
+
+            <form className="profile-form-v2" onSubmit={handleSave}>
+              <div className="profile-section-v2">
+                <h3>Identity Details</h3>
+                <label className="field-label" htmlFor="profile-description">
+                  Bio / Expedition Motto
+                </label>
+                <textarea
+                  id="profile-description"
+                  className="input input-area"
+                  value={description}
+                  onChange={(event) => setDescription(event.target.value)}
+                  disabled={isSaving}
+                  rows={4}
+                  placeholder="Tell us about your travel style..."
+                />
+              </div>
+
+              <div className="profile-section-v2">
+                <h3>Travel DNA</h3>
+                <div className="chip-row">
+                  {tripTypeOptions.map((tripType) => {
+                    const selected = tripTypes.includes(tripType)
+                    return (
+                      <button
+                        key={tripType}
+                        type="button"
+                        className={selected ? 'chip is-selected' : 'chip'}
+                        disabled={isSaving}
+                        onClick={() => setTripTypes((previous) => toggleTripType(previous, tripType))}
+                      >
+                        {tripType}
+                      </button>
+                    )
+                  })}
+                </div>
+
+                <div style={{ marginTop: '1rem' }}>
+                  <label className="field-label" htmlFor="profile-max-group">
+                    Ideal Group Size
+                  </label>
+                  <input
+                    id="profile-max-group"
+                    className="input"
+                    type="number"
+                    min={2}
+                    max={30}
+                    value={maxGroupSize}
+                    disabled={isSaving}
+                    placeholder="Leave empty if not set"
+                    onChange={(event) => {
+                      const nextValue = event.target.value
+                      setMaxGroupSize(nextValue === '' ? '' : Number(nextValue))
+                    }}
+                  />
+                </div>
+              </div>
+
+              <button className="btn btn-primary btn-lg" type="submit" disabled={isSaving}>
+                {isSaving ? 'Syncing...' : 'Save Profile Workspace'}
+              </button>
+            </form>
+          </motion.div>
+        ) : null}
+
+        {activeTab === 'invites' ? (
+          <motion.div
+            key="invites"
+            id="profile-panel-invites"
+            role="tabpanel"
+            aria-labelledby="profile-tab-invites"
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -12 }}
             transition={revealTransition}
           >
-            <h2>Identity and preference setup</h2>
-            <p>Shape how your profile behaves in collaborative trip discovery.</p>
+            <div className="profile-section-v2">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                <div>
+                  <h3>Expedition Invites</h3>
+                  <p>Manage your pending trip invitations.</p>
+                </div>
+              </div>
 
-            <div className="profile-hero">
-              <img src={avatarUrl} alt="Profile" className="avatar-lg" />
-              <div className="upload-stack">
-                <label className="field-label" htmlFor="profile-avatar-file">
-                  Upload profile picture
-                </label>
-                <label className="upload-dropzone" htmlFor="profile-avatar-file">
-                  <FiUploadCloud className="upload-icon" aria-hidden="true" />
-                  <span>Drop an image or click to upload</span>
-                  <small className="file-note">{avatarFileName}</small>
-                </label>
-                <input
-                  id="profile-avatar-file"
-                  className="visually-hidden"
-                  type="file"
-                  accept="image/png,image/jpeg,image/webp"
-                  disabled={isSaving}
-                  onChange={handleAvatarUpload}
-                />
+              <div className="profile-invites-v2">
+                {visibleInvites.length === 0 && (
+                  <div style={{ textAlign: 'center', padding: '3rem 0' }}>
+                    <img src="/newstickers/sticker4.png" alt="" style={{ width: '120px', marginBottom: '1rem', opacity: 0.6 }} />
+                    <p className="empty-note">No pending invitations.</p>
+                  </div>
+                )}
+                {visibleInvites.map((invite) => (
+                  <div key={invite.tripId} className="invite-row-v2">
+                    <div className="invite-icon-v2">
+                      <FiMail />
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <p style={{ color: '#f3fff1', fontWeight: 500 }}>Invitation to {invite.tripTitle}</p>
+                    </div>
+                    <div className="invite-actions-v2">
+                      <button
+                        className="btn btn-primary btn-sm"
+                        disabled={isRespondingInviteId === invite.tripId}
+                        onClick={() => handleInviteResponse(invite.tripId, 'Accepted')}
+                      >
+                        {isRespondingInviteId === invite.tripId && inviteResponseAction === 'Accepted'
+                          ? 'Accepting...'
+                          : 'Accept'}
+                      </button>
+                      <button
+                        className="btn btn-ghost btn-sm"
+                        disabled={isRespondingInviteId === invite.tripId}
+                        onClick={() => handleInviteResponse(invite.tripId, 'Declined')}
+                      >
+                        {isRespondingInviteId === invite.tripId && inviteResponseAction === 'Declined'
+                          ? 'Declining...'
+                          : 'Decline'}
+                      </button>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
-
-            <label className="field-label" htmlFor="profile-description">
-              Description
-            </label>
-            <textarea
-              id="profile-description"
-              className="input input-area"
-              value={description}
-              onChange={(event) => {
-                setDescription(event.target.value)
-              }}
-              disabled={isSaving}
-              rows={4}
-            />
-
-            <h2>Preferred trip styles</h2>
-            <div className="chip-row">
-              {tripTypeOptions.map((tripType) => {
-                const selected = tripTypes.includes(tripType)
-                return (
-                  <button
-                    key={tripType}
-                    type="button"
-                    className={selected ? 'chip is-selected' : 'chip'}
-                    disabled={isSaving}
-                    onClick={() => {
-                      setTripTypes((previous) => toggleTripType(previous, tripType))
-                    }}
-                  >
-                    {tripType}
-                  </button>
-                )
-              })}
-            </div>
-
-            <label className="field-label" htmlFor="profile-max-group">
-              Maximum group members
-            </label>
-            <input
-              id="profile-max-group"
-              className="input"
-              type="number"
-              min={2}
-              max={30}
-              value={maxGroupSize}
-              disabled={isSaving}
-              onChange={(event) => {
-                const nextValue = Number(event.target.value)
-                setMaxGroupSize(Number.isFinite(nextValue) ? nextValue : 8)
-              }}
-            />
-
-            <button
-              className="btn btn-primary"
-              type="submit"
-              disabled={isSaving}
-              aria-busy={isSaving}
-            >
-              {isSaving ? (
-                <span className="btn-loading-content">
-                  <span className="inline-spinner" aria-hidden="true" />
-                  Saving...
-                </span>
-              ) : (
-                'Save profile changes'
-              )}
-            </button>
-          </motion.form>
+          </motion.div>
         ) : null}
 
         {activeTab === 'history' ? (
-          <motion.section
+          <motion.div
             key="history"
-            className="panel profile-history-panel"
             id="profile-panel-history"
             role="tabpanel"
             aria-labelledby="profile-tab-history"
-            tabIndex={0}
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -12 }}
             transition={revealTransition}
+            className="profile-history-v2"
           >
-            <h2>Past and upcoming journeys</h2>
+            <div className="profile-section-v2">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <h3>Expedition Timeline</h3>
+                  <p>Your journey through various territories.</p>
+                </div>
+                <img src="/newstickers/sticker3.png" alt="" style={{ width: '80px' }} />
+              </div>
 
-            <div className="profile-history-grid">
-              <article className="history-block">
-                <h3>Future trips</h3>
-                <ul className="timeline-mini">
-                  {futureTrips.map((trip) => (
-                    <li key={trip.id} className="history-item">
-                      <Link className="history-item-link" to={`/trip/${trip.id}`}>
-                        <img src={trip.imageUrl} alt={trip.title} className="history-thumb" />
-                        <div>
-                          <p className="list-title">{trip.title}</p>
-                          <p>
-                            {formatDisplayDateRange(trip.startingDate, trip.endingDate)}
-                          </p>
-                          <p>{trip.currentMembers}/{trip.maxParticipants} travelers</p>
-                        </div>
-                      </Link>
-                    </li>
+              <div className="profile-history-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginTop: '1rem' }}>
+                <div className="history-list-v2">
+                  <h4>Upcoming</h4>
+                  {futureTrips?.length === 0 && <p className="empty-note">No upcoming trips planned.</p>}
+                  {futureTrips?.map((trip) => (
+                    <Link key={trip.id} className="history-row-v2" to={`/trip/${trip.id}`}>
+                      <img src={trip.imageUrl} alt="" className="history-thumb-v2" />
+                      <div className="history-info-v2">
+                        <h4>{trip.title}</h4>
+                        <p>{formatDisplayDateRange(trip.startingDate, trip.endingDate)}</p>
+                      </div>
+                      <FiChevronDown style={{ transform: 'rotate(-90deg)', opacity: 0.4 }} />
+                    </Link>
                   ))}
-                </ul>
-              </article>
+                </div>
 
-              <article className="history-block">
-                <h3>Past trips</h3>
-                <ul className="timeline-mini">
-                  {pastTrips.map((trip) => (
-                    <li key={trip.id} className="history-item">
-                      <Link className="history-item-link" to={`/trip/${trip.id}`}>
-                        <img src={trip.imageUrl} alt={trip.title} className="history-thumb" />
-                        <div>
-                          <p className="list-title">{trip.title}</p>
-                          <p>
-                            {formatDisplayDateRange(trip.startingDate, trip.endingDate)}
-                          </p>
-                          <p>{trip.timelines.length} timeline day entries</p>
-                        </div>
-                      </Link>
-                    </li>
+                <div className="history-list-v2">
+                  <h4>Completed</h4>
+                  {pastTrips?.length === 0 && <p className="empty-note">Your history is currently a blank map.</p>}
+                  {pastTrips?.map((trip) => (
+                    <Link key={trip.id} className="history-row-v2" to={`/trip/${trip.id}`}>
+                      <img src={trip.imageUrl} alt="" className="history-thumb-v2" />
+                      <div className="history-info-v2">
+                        <h4>{trip.title}</h4>
+                        <p>{formatDisplayDateRange(trip.startingDate, trip.endingDate)}</p>
+                      </div>
+                      <FiChevronDown style={{ transform: 'rotate(-90deg)', opacity: 0.4 }} />
+                    </Link>
                   ))}
-                </ul>
-              </article>
+                </div>
+              </div>
             </div>
-          </motion.section>
+          </motion.div>
         ) : null}
 
         {activeTab === 'matches' ? (
-          <motion.section
+          <motion.div
             key="matches"
-            className="panel profile-discovery-panel"
             id="profile-panel-matches"
             role="tabpanel"
             aria-labelledby="profile-tab-matches"
-            tabIndex={0}
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -12 }}
             transition={revealTransition}
           >
-            <div className="profile-section-head">
-              <div>
-                <p className="eyebrow">Matching engine</p>
-                <h2>Trips matched to your current preferences</h2>
+            <div className="profile-section-v2">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                <div>
+                  <h3>Match Intelligence</h3>
+                  <p>Trips that resonate with your travel DNA.</p>
+                </div>
+                <Link className="btn btn-ghost" to="/discover">
+                  <FiCompass /> Full Discovery
+                </Link>
               </div>
-              <Link className="btn btn-ghost" to="/discover">
-                <FiCompass aria-hidden="true" />
-                Open full discovery
-              </Link>
-            </div>
 
-            <div className="profile-matches-grid">
-              {discoveryTrips.map((trip, index) => (
-                <motion.article
-                  className="panel profile-match-card"
-                  key={trip.id}
-                  initial={{ opacity: 0, y: 22 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true, amount: 0.15 }}
-                  transition={{ ...revealTransition, delay: index * 0.05 }}
-                >
-                  <img src={trip.coverImage} alt={trip.title} className="profile-match-cover" />
-                  <div className="profile-match-body">
-                    {memberTripIds.has(trip.id) ? (
-                      <p className="match-pill">You are in this trip</p>
-                    ) : (
-                      <p className="match-pill">Not joined yet</p>
-                    )}
-
-                    <p className="trip-meta">
-                      {trip.status}
-                    </p>
-                    <h2>{trip.title}</h2>
-                    <p>{trip.description}</p>
-                    <p className="trip-submeta">
-                      {trip.timelineLength} days - starts {trip.startDate}
-                    </p>
-
-                    <div className="trip-stat-row">
-                      <span>
-                        {trip.currentMembers}/{trip.maxMembers} members
-                      </span>
-                      <span>{trip.price} EUR / person</span>
-                    </div>
-
-                    <p className="match-pill">{trip.matchScore}% profile match</p>
-
-                    <div className="match-reasons">
-                      {trip.matchReasons.map((reason) => (
-                        <span key={reason} className="reason-chip">
-                          {reason}
-                        </span>
-                      ))}
-                    </div>
-
-                    <div className="chip-row profile-match-tags">
-                      {trip.tags.map((tag) => (
-                        <span key={tag} className="chip chip-static">
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-
-                    <Link className="btn btn-primary" to={`/trip/${trip.id}`}>
-                      {memberTripIds.has(trip.id) ? 'Open trip space' : 'View details'}
-                    </Link>
+              <div className="matches-grid-v2">
+                {discoveryTrips.length === 0 && (
+                  <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '4rem 0' }}>
+                    <img src="/newstickers/sticker5.png" alt="" style={{ width: '140px', opacity: 0.4, marginBottom: '1rem' }} />
+                    <p className="empty-note">No matches found. Try adjusting your preferences in Identity.</p>
                   </div>
-                </motion.article>
-              ))}
+                )}
+                {discoveryTrips.slice(0, 6).map((trip) => (
+                  <Link key={trip.id} to={`/trip/${trip.id}`} className="match-card-v2">
+                    <div className="match-badge-v2">{trip.matchScore}% Match</div>
+                    <img src={trip.coverImage || '/newstickers/sticker1.png'} alt="" className="match-thumb-v2" />
+
+                    <div className="match-content-v2">
+                      <p className="eyebrow" style={{ color: 'var(--green-580)', fontSize: '0.7rem' }}>{trip.status}</p>
+                      <h3>{trip.title}</h3>
+                      <p className="match-desc-v2">{trip.description}</p>
+
+                      <div className="match-reasons-v2">
+                        {trip.matchReasons.map((reason, idx) => (
+                          <div key={idx} className="match-reason-v2">
+                            <FiZap size={12} />
+                            <span>{reason}</span>
+                          </div>
+                        ))}
+                      </div>
+
+                      <div className="match-meta-v2">
+                        <div className="match-price-v2">{trip.price} EUR</div>
+                        <div className="match-members-v2">{trip.currentMembers}/{trip.maxMembers} Explorers</div>
+                      </div>
+
+                      <button className="btn btn-primary btn-sm" style={{ marginTop: '1.5rem', width: '100%' }}>View Workspace</button>
+                    </div>
+                  </Link>
+                ))}
+              </div>
             </div>
-          </motion.section>
+          </motion.div>
+        ) : null}
+
+        {activeTab === 'notifications' ? (
+          <motion.div
+            key="notifications"
+            id="profile-panel-notifications"
+            role="tabpanel"
+            aria-labelledby="profile-tab-notifications"
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -12 }}
+            transition={revealTransition}
+          >
+            <div className="profile-section-v2">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                <div>
+                  <h3>Intelligence Feed</h3>
+                  <p>Stay updated on expedition changes.</p>
+                </div>
+                <button
+                  className="btn btn-ghost"
+                  disabled={isClearingNotifications || visibleNotifications.length === 0}
+                  onClick={markNotificationsAsRead}
+                >
+                  {isClearingNotifications ? 'Clearing...' : 'Clear all'}
+                </button>
+              </div>
+
+              <div className="profile-notifications-v2">
+                {visibleNotifications.length === 0 && (
+                  <div style={{ textAlign: 'center', padding: '3rem 0' }}>
+                    <img src="/newstickers/sticker6.png" alt="" style={{ width: '120px', marginBottom: '1rem', opacity: 0.6 }} />
+                    <p className="empty-note">All quiet on the expedition front.</p>
+                  </div>
+                )}
+                {visibleNotifications.map((notification) => {
+                  const read = isNotificationRead(notification, readNotificationIds)
+                  return (
+                    <div
+                      key={notification.id}
+                      className={read ? 'notification-row-v2' : 'notification-row-v2 unread'}
+                      onClick={() => {
+                        if (!read && isMarkingNotificationId !== notification.id && !isClearingNotifications) {
+                          markNotificationAsRead(notification.id)
+                        }
+                      }}
+                    >
+                      <div className="notification-icon-v2">
+                        <FiBell />
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <p style={{ color: '#f3fff1', fontWeight: 500 }}>{notification.content}</p>
+                        <p style={{ fontSize: '0.75rem', opacity: 0.5, marginTop: '0.2rem' }}>
+                          {formatNotificationTimestamp(notification)}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        className="btn btn-ghost btn-sm"
+                        disabled={read || isMarkingNotificationId === notification.id || isClearingNotifications}
+                        onClick={(event) => {
+                          event.stopPropagation()
+                          if (!read) {
+                            markNotificationAsRead(notification.id)
+                          }
+                        }}
+                      >
+                        {read
+                          ? 'Read'
+                          : isMarkingNotificationId === notification.id
+                            ? 'Marking...'
+                            : 'Mark as read'}
+                      </button>
+                      {!read && <span className="notification-badge-dot" />}
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          </motion.div>
         ) : null}
       </AnimatePresence>
-    </section>
-  )
-}
+      </section>
+    )
+  }

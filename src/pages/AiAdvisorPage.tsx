@@ -1,300 +1,363 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
-import { FiMessageSquare, FiSend } from 'react-icons/fi'
+import { FiSend, FiMapPin, FiExternalLink } from 'react-icons/fi'
+import { useSelector, useDispatch } from 'react-redux'
 import { Link } from 'react-router-dom'
-import { aiKnowledgeTrips, mockTrips, mockUserProfile } from '../data/mockData'
-import { isUpcomingTripStatus } from '../utils/tripStatus'
+import { setToken } from '../data/authSlice'
+import * as signalR from '@microsoft/signalr'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
+import api from '../data/api'
 
-interface RankedRecommendation {
-  id: string
+interface AuthStoreState {
+  auth: {
+    token: string | null
+  }
+}
+
+interface TripCard {
   title: string
-  destination: string
-  summary: string
-  score: number
-  reason: string
+  id: number
 }
 
-interface AiChatMessage {
-  id: string
-  role: 'assistant' | 'user'
-  content: string
-  recommendations?: RankedRecommendation[]
-  externalIdeas?: string[]
+interface ParsedMessage {
+  text: string
+  trips: TripCard[]
 }
 
-const calculateReason = (
-  matchingPromptTerms: string[],
-  matchingProfileTags: string[],
-): string => {
-  if (matchingPromptTerms.length > 0 && matchingProfileTags.length > 0) {
-    return `Matches your prompt (${matchingPromptTerms.join(', ')}) and profile preferences (${matchingProfileTags.join(', ')}).`
+function parseAiMessage(raw: string): ParsedMessage {
+  // Găsește tot ce e între [TRIPS: și ultimul ]
+  const tripMatch = raw.match(/\[TRIPS:(.*?)\]+\s*$/)
+
+  const partialTagIndex = raw.indexOf('[TRIPS:')
+  if (partialTagIndex !== -1 && !tripMatch) {
+    return { text: raw.slice(0, partialTagIndex).trim(), trips: [] }
   }
 
-  if (matchingPromptTerms.length > 0) {
-    return `Strong match for your prompt keywords: ${matchingPromptTerms.join(', ')}.`
-  }
+  if (!tripMatch) return { text: raw, trips: [] }
 
-  if (matchingProfileTags.length > 0) {
-    return `Aligned with your onboarding interests: ${matchingProfileTags.join(', ')}.`
+  try {
+    // Curăță acolade/brackets în plus înainte să parsezi
+    let jsonStr = tripMatch[1].trim().replace(/}+\]$/, '}]').replace(/\}+$/, '}')
+    const parsed = JSON.parse(jsonStr)
+    const text = raw.replace(/\[TRIPS:.*$/s, '').trim()
+    return { text, trips: parsed.trips || [] }
+  } catch {
+    const text = raw.replace(/\[TRIPS:.*$/s, '').trim()
+    return { text, trips: [] }
   }
-
-  return 'Good balanced option based on trip activity and group size.'
 }
+
+interface Message {
+  id: string,
+  text: string;
+  sender: 'user' | 'assistant';
+  isComplete?: boolean;
+}
+
+interface AiChatResponse {
+  message: string;
+  role: string;
+}
+
+const Typewriter = ({ text, isStreaming }: { text: string; isStreaming?: boolean }) => {
+  const [displayedText, setDisplayedText] = useState(text);
+
+  useEffect(() => {
+    if (!isStreaming) {
+      return;
+    }
+
+    if (text.length > displayedText.length) {
+      const timeout = setTimeout(() => {
+        const diff = text.length - displayedText.length;
+        // Faster steps for a snappier feel
+        const step = diff > 50 ? 15 : (diff > 20 ? 8 : 1);
+        setDisplayedText(text.slice(0, displayedText.length + step));
+      }, 25);
+      return () => clearTimeout(timeout);
+    }
+  }, [text, displayedText, isStreaming]);
+
+  return (
+    <div className="message-content" style={{ position: 'relative' }}>
+      <ReactMarkdown remarkPlugins={[remarkGfm]}>{isStreaming ? displayedText : text}</ReactMarkdown>
+      {isStreaming && displayedText.length < text.length && (
+        <span className="typing-cursor" style={{ display: 'inline-block', height: '1em', width: '2px', background: 'var(--green-500)', marginLeft: '4px' }}></span>
+      )}
+    </div>
+  );
+};
+
 
 export function AiAdvisorPage() {
+  const dispatch = useDispatch()
+  const token = useSelector((state: AuthStoreState) => state.auth.token)
   const [prompt, setPrompt] = useState('')
+  const baseURL = import.meta.env.VITE_BASE_URL;
   const [preferProfile, setPreferProfile] = useState(true)
   const [isTyping, setIsTyping] = useState(false)
-  const [messages, setMessages] = useState<AiChatMessage[]>([
-    {
-      id: 'welcome-1',
-      role: 'assistant',
-      content:
-        'Hi! I am your TripGenius AI advisor. Tell me your ideal destination, vibe, budget, and group style, and I will recommend the best matching trips.',
-    },
-  ])
+  const [activeAiMessageId, setActiveAiMessageId] = useState<string | null>(null)
+  const connectionRef = useRef<signalR.HubConnection | null>(null);
+  const aiMessageIdRef = useRef<string | null>(null);
+  const [messages, setMessages] = useState<Message[]>([])
 
   const threadRef = useRef<HTMLDivElement | null>(null)
 
-  const quickPrompts = useMemo(
-    () => [
-      'I want a mountain roadtrip with medium budget and a small group.',
-      'Find me a relaxing nature retreat for 5-7 people under 900 EUR.',
-      'Suggest a high-energy city trip with food and nightlife vibes.',
-    ],
-    [],
-  )
+  const fetchChatHistory = async () => {
+    try {
+      const res = await api.get<AiChatResponse[]>('/api/ai/history')
+      const historyMessages: Message[] = res.data.map((item) => ({
+        id: crypto.randomUUID(),
+        text: item.message,
+        sender: item.role.toLowerCase() === 'user' ? 'user' : 'assistant',
+        isComplete: true
+      }))
+      setMessages(historyMessages)
+    }
+    catch (error) {
+      console.error(error)
+    }
+  }
+
+
 
   useEffect(() => {
     if (!threadRef.current) {
       return
     }
+    const refreshToken = async () => {
+      const res = await api.post('/api/auth/refresh');
+      dispatch(setToken({ token: res.data.token }))
+    }
+    if (!token) {
+      refreshToken()
+    }
+
 
     threadRef.current.scrollTop = threadRef.current.scrollHeight
-  }, [messages, isTyping])
 
-  const rankRecommendations = (
-    submittedPrompt: string,
-    useProfileBoost: boolean,
-  ): RankedRecommendation[] => {
-    const promptTerms = submittedPrompt
-      .toLowerCase()
-      .split(/[^a-z-]+/)
-      .filter((token) => token.length > 2)
+    const connection = new signalR.HubConnectionBuilder().withUrl(`${baseURL}/hubs/ai-chat?access_token=${token}`).withAutomaticReconnect([1000, 2000, 5000, 10000, 30000]).build()
 
-    return [...mockTrips]
-      .map((trip) => {
-        const routeContext = trip.timelines
-          .map((stop) => `${stop.startingPoint} ${stop.endPoint}`)
-          .join(' ')
-          .toLowerCase()
+    connection.on("StartAiMessage", () => {
+      const id = crypto.randomUUID()
+      setMessages((prev) => [...prev, { id, text: "", sender: 'assistant', isComplete: false }])
+      aiMessageIdRef.current = id;
+      setActiveAiMessageId(id)
+      setIsTyping(false); // AI started responding
+    })
 
-        const lowerTitle = `${trip.title} ${trip.description} ${routeContext}`.toLowerCase()
+    connection.on("ReceiveAiChunk", (chunk: string) => {
+      const id = aiMessageIdRef.current
+      setMessages(prev => {
+        const index = prev.findIndex(m => m.id === id);
+        if (index === -1) return prev;
 
-        const matchingPromptTerms = trip.tags.filter(
-          (tag) => promptTerms.includes(tag) || lowerTitle.includes(tag),
-        )
-
-        const matchingProfileTags = trip.tags.filter((tag) =>
-          mockUserProfile.preferences.tripTypes.includes(tag),
-        )
-
-        let score = matchingPromptTerms.length * 3
-
-        if (useProfileBoost) {
-          score += matchingProfileTags.length * 2
-        }
-
-        if (trip.maxParticipants <= mockUserProfile.preferences.maxGroupSize) {
-          score += 2
-        }
-
-        if (isUpcomingTripStatus(trip.status)) {
-          score += 1
-        }
-
-        const firstStop = trip.timelines[0]
-        const lastStop = trip.timelines[trip.timelines.length - 1]
-        const destinationLabel =
-          firstStop && lastStop
-            ? `${firstStop.startingPoint} to ${lastStop.endPoint}`
-            : 'Route not specified'
-
-        return {
-          id: trip.id,
-          title: trip.title,
-          destination: destinationLabel,
-          summary: trip.description,
-          score,
-          reason: calculateReason(matchingPromptTerms, matchingProfileTags),
-        }
+        const updated = [...prev]
+        updated[index] = {
+          ...updated[index],
+          text: updated[index].text + chunk
+        };
+        return updated;
       })
-      .sort((first, second) => second.score - first.score)
-      .slice(0, 3)
-  }
+    })
 
-  const selectExternalIdeas = (submittedPrompt: string): string[] => {
-    const promptTerms = submittedPrompt
-      .toLowerCase()
-      .split(/[^a-z-]+/)
-      .filter((token) => token.length > 2)
+    connection.on("EndAiMessage", () => {
+      const id = aiMessageIdRef.current;
+      setMessages(prev => {
+        const index = prev.findIndex(m => m.id === id);
+        if (index === -1) return prev;
+        const updated = [...prev];
+        updated[index] = { ...updated[index], isComplete: true };
+        return updated;
+      });
+      aiMessageIdRef.current = null;
+      setActiveAiMessageId(null)
+      setIsTyping(false);
+    });
 
-    const matchingIdeas = aiKnowledgeTrips
-      .filter((idea) =>
-        idea.matchingTags.some(
-          (tag) => promptTerms.includes(tag) || submittedPrompt.toLowerCase().includes(tag),
-        ),
-      )
-      .slice(0, 2)
-      .map((idea) => idea.title)
+    connectionRef.current = connection
 
-    if (matchingIdeas.length > 0) {
-      return matchingIdeas
+    const start = async () => {
+      try {
+        await connection.start()
+        await connection.invoke("JoinAiChat")
+      }
+      catch (error) {
+        console.error(error)
+      }
+    }
+    start()
+    return () => {
+      const stop = async () => {
+        try {
+          await connection.invoke("LeaveAiChat")
+
+        }
+        catch (error) {
+          console.log(error)
+        }
+        await connection.stop()
+      }
+      stop()
     }
 
-    return aiKnowledgeTrips.slice(0, 2).map((idea) => idea.title)
-  }
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    const trimmedPrompt = prompt.trim()
-    if (!trimmedPrompt) {
+  }, [token, baseURL, dispatch])
+
+  useEffect(() => {
+    if (!token) {
       return
     }
-
-    const userMessage: AiChatMessage = {
-      id: `user-${Date.now()}`,
-      role: 'user',
-      content: trimmedPrompt,
+    const loadHistory = async () => {
+      await fetchChatHistory()
     }
+    void loadHistory()
+  }, [token])
 
-    setMessages((previous) => [...previous, userMessage])
-    setPrompt('')
-    setIsTyping(true)
 
-    const recommendations = rankRecommendations(trimmedPrompt, preferProfile)
-    const externalIdeas = selectExternalIdeas(trimmedPrompt)
-
-    const assistantMessage: AiChatMessage = {
-      id: `assistant-${Date.now() + 1}`,
-      role: 'assistant',
-      content:
-        recommendations.length > 0
-          ? `Great brief. I found ${recommendations.length} strong options based on your request.`
-          : 'I did not find a perfect match, but here are the closest options you can explore.',
-      recommendations,
-      externalIdeas,
+  useEffect(() => {
+    const thread = threadRef.current;
+    if (thread) {
+      // If we're near the bottom, keep scrolling with new content
+      const isAtBottom = thread.scrollHeight - thread.scrollTop - thread.clientHeight < 250;
+      if (isAtBottom) {
+        thread.scrollTop = thread.scrollHeight;
+      }
     }
+  }, [messages, isTyping, dispatch])
 
-    window.setTimeout(() => {
-      setMessages((previous) => [...previous, assistantMessage])
-      setIsTyping(false)
-    }, 420)
-  }
+
+
+
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+
+    if (!prompt.trim() || isTyping) return;
+
+    const text = prompt;
+
+    setMessages(prev => [
+      ...prev,
+      { id: crypto.randomUUID(), text, sender: "user", isComplete: true }
+    ]);
+
+    setPrompt("");
+    setIsTyping(true);
+
+    try {
+      await connectionRef.current?.invoke("SendAiMessage", text, preferProfile);
+    } catch (err) {
+      console.error(err);
+      setIsTyping(false);
+    }
+  };
 
   return (
-    <section className="page ai-page">
-      <header className="panel ai-header">
-        <p className="eyebrow">AI expedition advisor</p>
-        <h1>Plan by conversation, execute by structure.</h1>
-        <p>
-          Ask naturally, get ranked trip options, then jump directly into a workspace.
+    <section className="page ai-page-v2 container">
+      <header className="ai-header-v2" style={{ padding: '2rem 0' }}>
+        <p className="eyebrow">Expert Expedition Intelligence</p>
+        <h1>Plan by conversation.</h1>
+        <p style={{ maxWidth: '600px', opacity: 0.7 }}>
+          Ask naturally, get ranked trip options, and jump directly into a synchronized workspace.
         </p>
       </header>
 
-      <div className="ai-workspace-shell">
-        <aside className="panel ai-brief-rail">
-          <h2>Prompt shortcuts</h2>
-          <div className="ai-quick-prompts">
-            {quickPrompts.map((quickPrompt) => (
-              <button
-                key={quickPrompt}
-                type="button"
-                className="chip"
-                onClick={() => setPrompt(quickPrompt)}
-              >
-                {quickPrompt}
-              </button>
-            ))}
+      <div className="ai-workspace-v2">
+        <aside className="ai-sidebar-v2">
+          <div className="profile-section-v2">
           </div>
 
-          <label className="toggle">
-            <input
-              type="checkbox"
-              checked={preferProfile}
-              onChange={(event) => setPreferProfile(event.target.checked)}
-            />
-            Boost with onboarding preferences
-          </label>
+          <div className="profile-section-v2">
+            <h3>Configuration</h3>
+            <label className="toggle">
+              <input
+                type="checkbox"
+                checked={preferProfile}
+                onChange={(event) => setPreferProfile(event.target.checked)}
+              />
+              Personalized Matching
+            </label>
+          </div>
 
-          <Link className="btn btn-ghost" to="/discover">
-            Open discovery feed
-          </Link>
+          <div style={{ marginTop: 'auto', textAlign: 'center' }}>
+            <img src="/newstickers/sticker6.png" alt="" style={{ width: '160px', opacity: 0.8 }} />
+            <p className="empty-note" style={{ marginTop: '0.5rem' }}>AI is ready to assist.</p>
+          </div>
         </aside>
 
-        <section className="panel ai-chat-shell">
-          <div className="ai-thread" ref={threadRef}>
+        <section className="ai-chat-v2">
+          <div className="ai-thread-v2" ref={threadRef}>
             {messages.map((message) => (
-              <article
-                key={message.id}
-                className={
-                  message.role === 'assistant' ? 'ai-bubble assistant' : 'ai-bubble user'
-                }
-              >
-                <p className="ai-bubble-meta">
-                  {message.role === 'assistant' ? 'TripGenius AI' : 'You'}
-                </p>
-                <p>{message.content}</p>
-
-                {message.recommendations ? (
-                  <div className="ai-suggestion-list">
-                    {message.recommendations.map((recommendation) => (
-                      <div key={recommendation.id} className="ai-suggestion-card">
-                        <p className="list-title">
-                          {recommendation.title} - Score {recommendation.score}
-                        </p>
-                        <p>{recommendation.destination}</p>
-                        <p>{recommendation.summary}</p>
-                        <p>{recommendation.reason}</p>
-                        <Link className="btn btn-primary" to={`/trip/${recommendation.id}`}>
-                          Open trip
-                        </Link>
-                      </div>
-                    ))}
+              <article key={message.id} className={`ai-bubble-v2 ${message.sender}`}>
+                <header className="bubble-header">
+                  {message.sender === 'user' ? 'You' : 'TripGenius AI'}
+                </header>
+                {message.sender === 'assistant' ? (() => {
+                  const parsed = parseAiMessage(message.text)
+                  return (
+                    <>
+                      <Typewriter text={parsed.text} isStreaming={!message.isComplete && activeAiMessageId === message.id} />
+                      {parsed.trips && parsed.trips.length > 0 && (
+                        <div className="ai-trips-grid">
+                          {parsed.trips.map((trip) => (
+                            <Link key={trip.id} to={`/trip/${trip.id}`} className="ai-trip-card">
+                              <div className="panel">
+                                <div>
+                                  <div className="recommendation-badge">
+                                    <FiMapPin size={12} /> AI Match
+                                  </div>
+                                  <h4>{trip.title}</h4>
+                                </div>
+                                <div className="explore-btn">
+                                  <span>Explore Expedition</span>
+                                  <FiExternalLink size={14} />
+                                </div>
+                              </div>
+                            </Link>
+                          ))}
+                        </div>
+                      )}
+                    </>
+                  )
+                })() : (
+                  <div className="message-content">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{message.text}</ReactMarkdown>
                   </div>
-                ) : null}
-
-                {message.externalIdeas ? (
-                  <div className="match-reasons">
-                    {message.externalIdeas.map((idea) => (
-                      <span key={idea} className="reason-chip">
-                        External idea: {idea}
-                      </span>
-                    ))}
-                  </div>
-                ) : null}
+                )}
               </article>
             ))}
-
-            {isTyping ? (
-              <div className="ai-typing">
-                <FiMessageSquare aria-hidden="true" />
-                AI is thinking...
-              </div>
-            ) : null}
+            {isTyping && (
+              <article className="ai-bubble-v2 assistant typing-indicator-bubble">
+                <header className="bubble-header">
+                  TripGenius AI
+                </header>
+                <div className="ai-typing">
+                  <span className="dot"></span>
+                  <span className="dot"></span>
+                  <span className="dot"></span>
+                </div>
+              </article>
+            )}
           </div>
 
-          <form className="ai-composer" onSubmit={handleSubmit}>
-            <div className="ai-composer-row">
+          <form className="ai-composer-v2" onSubmit={handleSubmit}>
+            <div className="ai-composer-input-v2">
               <input
                 className="input"
                 value={prompt}
                 onChange={(event) => setPrompt(event.target.value)}
-                placeholder="Ask for the kind of trip you want..."
+                placeholder={isTyping ? "AI is thinking..." : "Ask for the kind of trip you want..."}
+                style={{ borderRadius: '12px' }}
+                disabled={isTyping}
               />
-              <button className="btn btn-primary" type="submit">
-                <FiSend aria-hidden="true" />
-                Send
+              <button
+                className="btn btn-primary"
+                type="submit"
+                style={{ borderRadius: '12px', opacity: isTyping ? 0.5 : 1, cursor: isTyping ? 'not-allowed' : 'pointer' }}
+                disabled={isTyping}
+              >
+                <FiSend />
               </button>
             </div>
           </form>

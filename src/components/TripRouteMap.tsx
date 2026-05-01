@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import mapboxgl from 'mapbox-gl'
-import type { TripTimelineStop } from '../types/models'
+import type { TimelineStop } from '../types/models'
 
 interface TripRouteMapProps {
-  timeline: TripTimelineStop[]
+  timeline: TimelineStop[]
   selectedDay: number
 }
 
@@ -41,9 +41,14 @@ const createRouteData = (
   ],
 })
 
-const buildFallbackCoordinates = (stop: TripTimelineStop): RouteCoordinates => [
-  stop.fromCoords,
-  stop.toCoords,
+const toMapboxCoordinate = (coordinate: [number, number]): [number, number] => [
+  coordinate[1],
+  coordinate[0],
+]
+
+const buildFallbackCoordinates = (stop: TimelineStop): RouteCoordinates => [
+  toMapboxCoordinate(stop.fromCoords),
+  toMapboxCoordinate(stop.toCoords),
 ]
 
 const normalizeRouteCoordinates = (coordinates: number[][]): RouteCoordinates =>
@@ -52,7 +57,7 @@ const normalizeRouteCoordinates = (coordinates: number[][]): RouteCoordinates =>
     .map((point) => [point[0], point[1]])
 
 const fetchDirectionsRoute = async (
-  stop: TripTimelineStop,
+  stop: TimelineStop,
   token: string,
 ): Promise<RouteData> => {
   const coordinateString = `${stop.fromCoords[1]},${stop.fromCoords[0]};${stop.toCoords[1]},${stop.toCoords[0]}`
@@ -116,24 +121,24 @@ const formatDistance = (distanceMeters: number): string => {
 }
 
 const createPointData = (
-  stop: TripTimelineStop,
+  stop: TimelineStop,
 ): GeoJSON.FeatureCollection<GeoJSON.Point> => ({
   type: 'FeatureCollection',
   features: [
     {
       type: 'Feature',
-      properties: { name: `From ${stop.fromCoords.join(', ')}` },
+      properties: { name: `From ${stop.startingPoint}` },
       geometry: {
         type: 'Point',
-        coordinates: stop.fromCoords,
+        coordinates: toMapboxCoordinate(stop.fromCoords),
       },
     },
     {
       type: 'Feature',
-      properties: { name: `To ${stop.toCoords.join(', ')}` },
+      properties: { name: `To ${stop.endPoint}` },
       geometry: {
         type: 'Point',
-        coordinates: stop.toCoords,
+        coordinates: toMapboxCoordinate(stop.toCoords),
       },
     },
   ],
@@ -145,7 +150,8 @@ export function TripRouteMap({ timeline, selectedDay }: TripRouteMapProps) {
   const routeCacheRef = useRef<Record<string, RouteData>>({})
   const token = import.meta.env.VITE_MAPBOX_PUBLIC_TOKEN
   const [routeState, setRouteState] = useState({
-    isLoading: false,
+    isLoading: true,
+    hasHydrated: false,
     hasError: false,
     durationSeconds: null as number | null,
     distanceMeters: null as number | null,
@@ -168,52 +174,13 @@ export function TripRouteMap({ timeline, selectedDay }: TripRouteMapProps) {
     const map = new mapboxgl.Map({
       container: containerRef.current,
       style: 'mapbox://styles/mapbox/streets-v12',
-      center: initialStop.fromCoords,
+      center: toMapboxCoordinate(initialStop.fromCoords),
       zoom: 5,
       pitch: 35,
       bearing: 0,
     })
 
     map.addControl(new mapboxgl.NavigationControl(), 'top-right')
-
-    map.on('load', () => {
-      map.addSource('route-line', {
-        type: 'geojson',
-        data: createRouteData(buildFallbackCoordinates(initialStop)),
-      })
-
-      map.addLayer({
-        id: 'route-line',
-        type: 'line',
-        source: 'route-line',
-        layout: {
-          'line-cap': 'round',
-          'line-join': 'round',
-        },
-        paint: {
-          'line-color': '#1f8a70',
-          'line-width': 5,
-          'line-opacity': 0.9,
-        },
-      })
-
-      map.addSource('route-points', {
-        type: 'geojson',
-        data: createPointData(initialStop),
-      })
-
-      map.addLayer({
-        id: 'route-points',
-        type: 'circle',
-        source: 'route-points',
-        paint: {
-          'circle-radius': 7,
-          'circle-color': '#ff7a59',
-          'circle-stroke-width': 2,
-          'circle-stroke-color': '#f8f5ef',
-        },
-      })
-    })
 
     mapRef.current = map
 
@@ -231,20 +198,62 @@ export function TripRouteMap({ timeline, selectedDay }: TripRouteMapProps) {
 
     let cancelled = false
 
+    const upsertRouteLayers = (routeData: RouteData) => {
+      const lineSource = map.getSource('route-line') as mapboxgl.GeoJSONSource | undefined
+      const pointSource = map.getSource('route-points') as mapboxgl.GeoJSONSource | undefined
+
+      if (lineSource) {
+        lineSource.setData(createRouteData(routeData.coordinates))
+      } else {
+        map.addSource('route-line', {
+          type: 'geojson',
+          data: createRouteData(routeData.coordinates),
+        })
+
+        map.addLayer({
+          id: 'route-line',
+          type: 'line',
+          source: 'route-line',
+          layout: {
+            'line-cap': 'round',
+            'line-join': 'round',
+          },
+          paint: {
+            'line-color': '#1f8a70',
+            'line-width': 5,
+            'line-opacity': 0.9,
+          },
+        })
+      }
+
+      if (pointSource) {
+        pointSource.setData(createPointData(selectedStop))
+      } else {
+        map.addSource('route-points', {
+          type: 'geojson',
+          data: createPointData(selectedStop),
+        })
+
+        map.addLayer({
+          id: 'route-points',
+          type: 'circle',
+          source: 'route-points',
+          paint: {
+            'circle-radius': 7,
+            'circle-color': '#ff7a59',
+            'circle-stroke-width': 2,
+            'circle-stroke-color': '#f8f5ef',
+          },
+        })
+      }
+    }
+
     const applyRouteToMap = (routeData: RouteData, hasError: boolean) => {
       if (cancelled) {
         return
       }
 
-      const lineSource = map.getSource('route-line') as mapboxgl.GeoJSONSource | undefined
-      const pointSource = map.getSource('route-points') as mapboxgl.GeoJSONSource | undefined
-
-      if (!lineSource || !pointSource) {
-        return
-      }
-
-      lineSource.setData(createRouteData(routeData.coordinates))
-      pointSource?.setData(createPointData(selectedStop))
+      upsertRouteLayers(routeData)
 
       const firstCoordinate = routeData.coordinates[0]
       if (!firstCoordinate) {
@@ -265,6 +274,7 @@ export function TripRouteMap({ timeline, selectedDay }: TripRouteMapProps) {
 
       setRouteState({
         isLoading: false,
+        hasHydrated: true,
         hasError,
         durationSeconds: routeData.durationSeconds,
         distanceMeters: routeData.distanceMeters,
@@ -327,9 +337,13 @@ export function TripRouteMap({ timeline, selectedDay }: TripRouteMapProps) {
     )
   }
 
+  const showInitialMapSkeleton = !routeState.hasHydrated
+
   let estimationText = 'Route preview ready.'
 
-  if (routeState.isLoading) {
+  if (showInitialMapSkeleton) {
+    estimationText = 'Syncing trip details with live route map...'
+  } else if (routeState.isLoading) {
     estimationText = 'Calculating real road route and ETA...'
   } else if (routeState.durationSeconds !== null && routeState.distanceMeters !== null) {
     estimationText = `Estimated drive: ${formatDuration(routeState.durationSeconds)} • ${formatDistance(routeState.distanceMeters)}`
@@ -339,9 +353,23 @@ export function TripRouteMap({ timeline, selectedDay }: TripRouteMapProps) {
 
   return (
     <div className="map-wrapper">
-      <div className="map-container" ref={containerRef} aria-label="Trip route map" />
+      <div className="map-surface" aria-busy={showInitialMapSkeleton}>
+        {showInitialMapSkeleton ? (
+          <div className="map-loading-skeleton" aria-hidden="true">
+            <div className="map-loading-line is-wide" />
+            <div className="map-loading-line is-mid" />
+            <div className="map-loading-line is-short" />
+          </div>
+        ) : null}
+
+        <div
+          className={showInitialMapSkeleton ? 'map-container is-loading' : 'map-container'}
+          ref={containerRef}
+          aria-label="Trip route map"
+        />
+      </div>
       <p className={routeState.hasError ? 'map-estimation is-warning' : 'map-estimation'}>
-        {routeState.isLoading ? (
+        {routeState.isLoading || showInitialMapSkeleton ? (
           <span className="inline-loading-content">
             <span className="inline-spinner" aria-hidden="true" />
             {estimationText}

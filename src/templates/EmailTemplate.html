@@ -1,0 +1,136 @@
+<!DOCTYPE html
+    PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <title>TripGenius Expedition</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <style type="text/css">
+        /* Client-specific Styles */
+        #outlook a {
+            padding: 0;
+        }
+
+        body {
+            width: 100% !important;
+            -webkit-text-size-adjust: 100%;
+            -ms-text-size-adjust: 100%;
+            margin: 0;
+            padding: 0;
+            background-color: #0c110d;
+        }
+
+        img {
+            outline: none;
+            text-decoration: none;
+            -ms-interpolation-mode: bicubic;
+            border: none;
+        }
+
+        table {
+            border-collapse: collapse !important;
+            mso-table-lspace: 0pt;
+            mso-table-rspace: 0pt;
+        }
+
+        /* Mobile Styles */
+        @media only screen and (max-width: 600px) {
+            .container {
+                width: 100% !important;
+            }
+
+            .content-padding {
+                padding: 30px 20px !important;
+            }
+        }
+    </style>
+</head>
+
+<body style="margin: 0; padding: 0; background-color: #0c110d; font-family: 'Inter', Helvetica, Arial, sans-serif;">
+    <table border="0" cellpadding="0" cellspacing="0" width="100%">
+        <tr>
+            <td align="center" style="padding: 40px 10px;">
+                <!-- Main Container Table -->
+                <table border="0" cellpadding="0" cellspacing="0" width="600" class="container"
+                    style="background-color: #121b14; border: 1px solid rgba(154, 198, 148, 0.24); border-radius: 24px; overflow: hidden; box-shadow: 0 12px 24px rgba(0, 0, 0, 0.4);">
+
+                    <!-- Header -->
+                    <tr>
+                        <td align="center"
+                            style="padding: 30px; background: linear-gradient(180deg, #1a251b 0%, #121b14 100%);">
+                            <img src="https://tripgenius.online/logo.png" alt="TripGenius" width="160"
+                                style="display: block; color: #f3fff1; font-size: 24px; font-weight: bold;" />
+                        </td>
+                    </tr>
+
+                    <!-- Body Content -->
+                    <tr>
+                        <td class="content-padding" style="padding: 40px 50px; color: #9bb59a; line-height: 1.6;">
+                            <h1 style="margin: 0 0 20px 0; color: #f3fff1; font-size: 26px; text-align: center;">
+                                {{subject}}</h1>
+
+                            <p style="margin: 0 0 20px 0; font-size: 16px;">
+                                Hello <strong style="color: #d3edcf;">{{user_name}}</strong>,
+                            </p>
+
+                            <p style="margin: 0 0 30px 0; font-size: 16px;">
+                                {{body_text}}
+                            </p>
+
+                            <!-- CTA Button -->
+                            <table border="0" cellpadding="0" cellspacing="0" width="100%">
+                                <tr>
+                                    <td align="center" style="padding: 10px 0 30px 0;">
+                                        <a href="{{action_url}}" target="_blank"
+                                            style="display: inline-block; padding: 16px 40px; background: linear-gradient(135deg, #1a6013, #42783d); background-color: #1a6013; color: #ffffff; text-decoration: none; font-weight: bold; border-radius: 50px; border: 1px solid #f3fff1; font-size: 16px;">
+                                            {{action_label}}
+                                        </a>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <p
+                                style="margin: 0; font-size: 13px; color: #5b745a; text-align: center; line-height: 1.4;">
+                                If you're having trouble clicking the button, copy and paste the URL below into your web
+                                browser:<br />
+                                <a href="{{action_url}}"
+                                    style="color: #2f7f28; word-break: break-all;">{{action_url}}</a>
+                            </p>
+                        </td>
+                    </tr>
+
+                    <!-- Divider -->
+                    <tr>
+                        <td style="padding: 0 50px;">
+                            <table border="0" cellpadding="0" cellspacing="0" width="100%"
+                                style="border-top: 1px solid rgba(154, 198, 148, 0.12);">
+                                <tr>
+                                    <td></td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+
+                    <!-- Footer -->
+                    <tr>
+                        <td align="center"
+                            style="padding: 30px 50px; background-color: #0c110d; color: #5b745a; font-size: 12px; line-height: 1.5;">
+                            <p style="margin: 0 0 10px 0;">
+                                © 2026 TripGenius Expedition Workspace. All rights reserved.
+                            </p>
+                            <p style="margin: 0;">
+                                You received this email because you're part of the TripGenius community.<br />
+                                <a href="#" style="color: #9bb59a; text-decoration: underline;">Unsubscribe</a> | <a
+                                    href="#" style="color: #9bb59a; text-decoration: underline;">Privacy Policy</a>
+                            </p>
+                        </td>
+                    </tr>
+
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+
+</html>
