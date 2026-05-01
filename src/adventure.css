@@ -3664,10 +3664,66 @@ thead {
 }
 
 @media (max-width: 900px) {
+  .profile-header-v2 {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 1rem 0;
+  }
+
+  .profile-tab-bar-v2 {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 0.5rem;
+    justify-content: flex-start;
+  }
+
+  .profile-tab-btn-v2 {
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
   .profile-identity-v2 {
     flex-direction: column;
     align-items: center;
     text-align: center;
+    gap: 1.5rem;
+  }
+
+  .profile-section-v2 {
+    padding: 1rem;
+  }
+
+  .chip-row {
+    justify-content: center;
+  }
+
+  .history-row-v2 {
+    grid-template-columns: 60px 1fr auto;
+    padding: 0.6rem;
+    gap: 0.8rem;
+  }
+
+  .history-thumb-v2 {
+    width: 60px;
+    height: 60px;
+  }
+
+  .notification-row-v2, .invite-row-v2 {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 1rem;
+  }
+
+  .invite-actions-v2 {
+    width: 100%;
+    margin-top: 0.5rem;
+  }
+
+  .invite-actions-v2 .btn {
+    flex: 1;
+    justify-content: center;
   }
 }
 
