@@ -93,24 +93,22 @@ export async function flushQueue() {
             req.onsuccess = () => resolve(req.result)
         })
 
-        // 1. Sortează după timestamp — primul intrat, primul trimis
+
         const sorted = all.sort((a, b) => a.timestamp - b.timestamp)
 
-        // 2. Deduplică — pentru același url+method păstrează doar ultimul
+
         const deduped = sorted.reduce((acc, item) => {
             const key = `${item.method}:${item.url}`
-            acc.set(key, item) // suprascrie cu cel mai recent
+            acc.set(key, item)
             return acc
         }, new Map<string, QueuedRequest>())
 
-        // 3. Șterge duplicatele din IDB înainte să trimiți
         const toSend = [...deduped.values()]
         const toDelete = sorted.filter(item => !toSend.includes(item))
         for (const item of toDelete) {
             await dequeueRequest(item.id)
         }
 
-        // 4. Trimite în ordine
         for (const item of toSend) {
             try {
                 await api.request({

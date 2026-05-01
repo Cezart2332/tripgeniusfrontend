@@ -173,7 +173,6 @@ export function AppLayout() {
   const isAndroid = /Android/i.test(navigator.userAgent);
   const isMobileDevice = isIos || isAndroid;
   const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone;
-  const token = useSelector((state: AuthStoreState) => state.auth.token)
 
   const syncUserFromProfileFetch = useCallback(async () => {
     if (isSyncingUserRef.current) {
@@ -206,6 +205,23 @@ export function AppLayout() {
   const unreadNotifications = useMemo(() => {
     return (user?.notifications ?? []).filter((notification) => !isNotificationRead(notification))
   }, [user])
+
+  const markAllAsRead = async () => {
+    if (!user || unreadNotifications.length === 0) return
+    try {
+      await api.post('/api/user/read-notifications')
+      const updatedNotifications = user.notifications.map((n) => ({
+        ...n,
+        isRead: true,
+        read: true,
+        IsRead: true,
+        Read: true,
+      }))
+      dispatch(setUser({ user: { ...user, notifications: updatedNotifications } }))
+    } catch (err) {
+      console.error('Failed to clear notifications:', err)
+    }
+  }
 
   const handleLogout = async () => {
     if (isLoggingOut) {
@@ -311,19 +327,7 @@ export function AppLayout() {
     window.scrollTo(0, 0)
   }, [location.pathname])
 
-  useEffect(() => {
-    if (!token) {
-      return
-    }
 
-    const intervalId = window.setInterval(() => {
-      void syncUserFromProfileFetch()
-    }, 15000)
-
-    return () => {
-      window.clearInterval(intervalId)
-    }
-  }, [token, syncUserFromProfileFetch])
 
   useEffect(() => {
     const dismissed = localStorage.getItem('pwa_prompt_dismissed');
@@ -363,6 +367,109 @@ export function AppLayout() {
   }
   return (
     <>
+      {/* Mobile-only compact header — logo + notification bell */}
+      <header className="mobile-topbar" aria-label="Mobile header">
+        <Link to="/" className="mobile-brand">
+          <img src="/fulllogo.svg" alt="TripGenius" className="mobile-brand-logo" />
+        </Link>
+        <div className="mobile-topbar-actions">
+          {deferredPrompt && (
+            <button
+              type="button"
+              className="mobile-icon-btn"
+              onClick={handleInstallClick}
+              aria-label="Install App"
+            >
+              <FiDownload />
+            </button>
+          )}
+          {user ? (
+            <div className="nav-notification-shell" ref={notificationMenuRef}>
+              <button
+                type="button"
+                className={isNotificationOpen ? 'mobile-icon-btn is-active' : 'mobile-icon-btn'}
+                aria-label="Notifications"
+                aria-haspopup="menu"
+                aria-expanded={isNotificationOpen}
+                disabled={isSyncingUser}
+                onClick={() => {
+                  if (isSyncingUser) return
+                  setIsNotificationOpen((prev) => !prev)
+                  void syncUserFromProfileFetch()
+                }}
+              >
+                {isSyncingUser ? (
+                  <span className="inline-spinner" aria-hidden="true" />
+                ) : (
+                  <FiBell />
+                )}
+                {unreadNotifications.length > 0 && (
+                  <span className="notification-badge" aria-label={`${unreadNotifications.length} unread`}>
+                    {unreadNotifications.length}
+                  </span>
+                )}
+              </button>
+
+              <AnimatePresence>
+                {isNotificationOpen ? (
+                  <motion.section
+                    className="header-notification-dropdown"
+                    initial={{ opacity: 0, y: -8, scale: 0.96 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -4, scale: 0.96 }}
+                    transition={{ duration: 0.15, ease: 'easeOut' }}
+                    role="menu"
+                    aria-label="Notifications menu"
+                  >
+                    <div className="header-notification-header">
+                      <h4>Notifications</h4>
+                      {unreadNotifications.length > 0 && (
+                        <button type="button" className="btn btn-ghost btn-sm" onClick={markAllAsRead}>
+                          Clear all
+                        </button>
+                      )}
+                    </div>
+                    {unreadNotifications.length > 0 ? (
+                      unreadNotifications.map((notification) => (
+                        <div key={notification.id} className="header-notification-item" role="menuitem">
+                          <p
+                            style={{
+                              margin: '0 0 0.25rem 0',
+                              color: '#f3fff1',
+                              fontSize: '0.85rem',
+                              fontWeight: 500,
+                              lineHeight: 1.4,
+                            }}
+                          >
+                            {getNotificationContent(notification)}
+                          </p>
+                          <p
+                            style={{
+                              margin: 0,
+                              color: 'rgba(243, 255, 241, 0.6)',
+                              fontSize: '0.75rem',
+                              lineHeight: 1.2,
+                            }}
+                          >
+                            {formatNotificationTimestamp(notification)}
+                          </p>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="header-notification-empty">No unread notifications.</p>
+                    )}
+                  </motion.section>
+                ) : null}
+              </AnimatePresence>
+            </div>
+          ) : (
+            <Link className="mobile-icon-btn" to="/login" aria-label="Login">
+              <FiLogIn />
+            </Link>
+          )}
+        </div>
+      </header>
+
       <div className="app-shell">
         <div className="ambient-orbs" aria-hidden="true">
         <span className="orb orb-one" />
