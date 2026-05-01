@@ -1,7 +1,7 @@
 import { AnimatePresence, motion } from 'framer-motion'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { ChangeEvent, FormEvent, KeyboardEvent } from 'react'
-import { FiBell, FiChevronDown, FiCompass, FiMail, FiUploadCloud, FiZap } from 'react-icons/fi'
+import { FiBell, FiChevronDown, FiCompass, FiMail, FiUploadCloud, FiZap, FiUser } from 'react-icons/fi'
 import { useDispatch, useSelector } from 'react-redux'
 
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
@@ -63,12 +63,12 @@ const DEFAULT_AVATAR_URL =
 const DEFAULT_PROFILE_DESCRIPTION = ''
 
 
-const profileTabs: Array<{ key: ProfileTab; label: string }> = [
-  { key: 'identity', label: 'Identity' },
-  { key: 'invites', label: 'Invites' },
-  { key: 'history', label: 'History' },
-  { key: 'matches', label: 'Matches' },
-  { key: 'notifications', label: 'Notifications' },
+const profileTabs: Array<{ key: ProfileTab; label: string; icon: any }> = [
+  { key: 'identity', label: 'Identity', icon: FiUser },
+  { key: 'invites', label: 'Invites', icon: FiMail },
+  { key: 'history', label: 'History', icon: FiZap },
+  { key: 'matches', label: 'Matches', icon: FiCompass },
+  { key: 'notifications', label: 'Notifications', icon: FiBell },
 ]
 
 const formatNotificationTimestamp = (notification: User['notifications'][number]): string => {
@@ -667,8 +667,12 @@ export function ProfilePage() {
               tabIndex={activeTab === tab.key ? 0 : -1}
               onClick={() => selectTab(tab.key)}
               onKeyDown={(event) => handleTabKeyDown(event, index)}
+              title={tab.label}
             >
-              {tab.label}
+              <span className="tab-label-desktop">{tab.label}</span>
+              <span className="tab-icon-mobile" aria-hidden="true">
+                <tab.icon />
+              </span>
             </button>
           ))}
         </nav>
@@ -703,7 +707,7 @@ export function ProfilePage() {
                 disabled={isSaving}
                 onChange={handleAvatarUpload}
               />
-              <img src="/newstickers/sticker2.png" alt="" style={{ width: '100%', maxWidth: '200px', marginTop: '2rem', opacity: 0.8 }} />
+              <img src="/newstickers/sticker2.png" alt="" className="profile-sticker-v2" style={{ width: '100%', maxWidth: '200px', marginTop: '2rem', opacity: 0.8 }} />
             </div>
 
             <form className="profile-form-v2" onSubmit={handleSave}>
