@@ -105,241 +105,205 @@ export function DiscoveryPage() {
   {
     return (
       <section className="page discovery-page">
-        <motion.section
-          className="panel discovery-auth-empty"
+        <motion.div
+          className="discovery-empty-state"
           initial={{ opacity: 0, y: 18 }}
           animate={{ opacity: 1, y: 0 }}
           transition={revealTransition}
         >
-          <p className="eyebrow">Discovery</p>
-          <h1>You are not logged in</h1>
-          <p>
-            Log in to unlock discovery filters, personalized matching, and trip collaboration.
-          </p>
-          <Link className="btn btn-primary" to="/login">
-            Go to login
-          </Link>
-        </motion.section>
+          <img
+            src="/newstickers/sticker5.png"
+            alt=""
+            className="discovery-empty-sticker"
+            aria-hidden="true"
+          />
+          <div>
+            <h1>Sign in to discover trips</h1>
+            <p>Unlock personalized filters, matching, and trip collaboration.</p>
+            <Link className="btn btn-primary" to="/login">
+              Go to login
+            </Link>
+          </div>
+        </motion.div>
       </section>
     )
   }
 
   return (
-    <section className="page discovery-page">
+    <section className="page discovery-page-v2">
+      {/* ── Header row ── */}
       <motion.header
-        className="panel discovery-headline"
+        className="discovery-header-v2"
         initial={{ opacity: 0, y: 18 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true, amount: 0.5 }}
         transition={revealTransition}
       >
-        <p className="eyebrow">Discovery command</p>
-        <h1>Scout trips with route-first filtering.</h1>
-        <p>
-          Use filter rails and preference toggles to narrow down high-fit trip spaces.
-        </p>
+        <div>
+          <h1>Discover trips</h1>
+          <p className="lead">
+            Filter by style, budget, and preferences to find the right expedition.
+          </p>
+        </div>
+        <div className="discovery-header-actions">
+          <Link className="btn btn-primary" to="/create-trip">
+            <FiPlusCircle aria-hidden="true" />
+            Create trip
+          </Link>
+        </div>
       </motion.header>
 
-      <div className="discovery-shell">
-        <aside className="panel discovery-filter-rail">
-          <div className="toolbar-actions">
-            <Link className="btn btn-primary" to="/create-trip">
-              <FiPlusCircle aria-hidden="true" />
-              Create trip
-            </Link>
+      {/* ── Toolbar ── */}
+      <div className="discovery-toolbar-v2">
+        <div className="discovery-search-group">
+          <input
+            id="discover-search"
+            className="input"
+            value={search}
+            onChange={(event) => onChangeText(event.target.value)}
+            placeholder="Search destination or theme..."
+          />
+        </div>
 
-            <button
-              className="btn btn-ghost"
-              type="button"
-              onClick={() => setShowFilters((current) => !current)}
-            >
-              <FiSliders aria-hidden="true" />
-              {showFilters ? 'Hide filters' : 'Show filters'}
-            </button>
-          </div>
+        <button
+          className="btn btn-ghost btn-sm"
+          type="button"
+          onClick={() => setShowFilters((current) => !current)}
+        >
+          <FiSliders aria-hidden="true" />
+          {showFilters ? 'Hide filters' : 'Filters'}
+        </button>
 
-          {showFilters ? (
-            <>
-              <label
-                className={
-                  autoApplyPreferences
-                    ? 'discovery-boost-toggle is-active'
-                    : 'discovery-boost-toggle'
-                }
-              >
-                <input
-                  className="visually-hidden"
-                  type="checkbox"
-                  checked={autoApplyPreferences}
-                  onChange={(event) => {
-                    const isChecked = event.target.checked
-                    setAutoApplyPreferences(isChecked)
-
-                    if (isChecked) {
-                      setSelectedType('all')
-                    }
-                  }}
-                />
-                <span className="discovery-boost-switch" aria-hidden="true">
-                  <span className="discovery-boost-thumb" />
-                </span>
-                <span className="discovery-boost-copy">
-                  <span className="discovery-boost-title">
-                    <FiZap aria-hidden="true" />
-                    Boost with onboarding preferences
-                  </span>
-                  <small>Use your profile preferences to auto-prioritize matching trips.</small>
-                </span>
-              </label>
-
-              <label className="field-label" htmlFor="discover-search">
-                Search destination or theme
-              </label>
-              <input
-                id="discover-search"
-                className="input"
-                value={search}
-                onChange={(event) => onChangeText(event.target.value)}
-                placeholder="Search by location or type"
-              />
-
-              <label className="field-label" htmlFor="discover-trip-type">
-                Trip type
-              </label>
-              <select
-                id="discover-trip-type"
-                className={
-                  autoApplyPreferences
-                    ? 'input discovery-trip-type is-locked'
-                    : 'input discovery-trip-type'
-                }
-                value={selectedType}
-                onChange={(event) => setSelectedType(event.target.value)}
-                disabled={autoApplyPreferences}
-                aria-disabled={autoApplyPreferences}
-              >
-                <option value="all">All types</option>
-                {tripTypeOptions.map((tripType) => (
-                  <option key={tripType} value={tripType}>
-                    {tripType}
-                  </option>
-                ))}
-              </select>
-              <p className={autoApplyPreferences ? 'discovery-field-note is-locked' : 'discovery-field-note'}>
-                {autoApplyPreferences
-                  ? 'Trip type is disabled while onboarding boost is enabled.'
-                  : 'Choose a trip style to narrow results manually.'}
-              </p>
-
-              <label className="field-label" htmlFor="discover-max-budget">
-                Budget per person up to {maxBudget} EUR
-              </label>
-              <input
-                id="discover-max-budget"
-                className="range"
-                type="range"
-                min={300}
-                max={2500}
-                step={50}
-                value={maxBudget}
-                onChange={(event) => setMaxBudget(Number(event.target.value))}
-              />
-            </>
-          ) : null}
-        </aside>
-
-        <section className="panel discovery-results-rail" aria-live="polite" aria-busy={showDiscoverySkeleton}>
-          {navigationState?.createdTripTitle ? (
-            <p className="info-banner">
-              {navigationState.createdTripTitle} was published and is now visible in discovery.
-            </p>
-          ) : null}
-
-          <h2>{showDiscoverySkeleton ? 'Updating results...' : `Results (${trips.length})`}</h2>
-          <p className={showDiscoverySkeleton ? 'discovery-search-status is-loading' : 'discovery-search-status'}>
-            {isSearchDebouncing
-              ? 'Filtering trips for your latest search...'
-              : showDiscoverySkeleton
-                ? 'Loading the latest matching trips...'
-                : 'Open any trip to switch between map, timeline, members, and chat.'}
-          </p>
-
-          <div className="trip-grid">
-            {showDiscoverySkeleton
-              ? Array.from({ length: 3 }, (_, index) => (
-                <article className="panel trip-card trip-card-skeleton" key={`trip-skeleton-${index}`} aria-hidden="true">
-                  <div className="trip-cover discovery-skeleton-block discovery-skeleton-cover" />
-                  <div className="trip-card-body">
-                    <div className="discovery-skeleton-block discovery-skeleton-pill" />
-                    <div className="discovery-skeleton-block discovery-skeleton-title" />
-                    <div className="discovery-skeleton-block discovery-skeleton-text" />
-                    <div className="discovery-skeleton-block discovery-skeleton-text is-short" />
-                    <div className="discovery-skeleton-block discovery-skeleton-submeta" />
-                    <div className="discovery-skeleton-stat-row">
-                      <div className="discovery-skeleton-block discovery-skeleton-stat" />
-                      <div className="discovery-skeleton-block discovery-skeleton-stat" />
-                    </div>
-                    <div className="discovery-skeleton-chip-row">
-                      <div className="discovery-skeleton-block discovery-skeleton-chip" />
-                      <div className="discovery-skeleton-block discovery-skeleton-chip" />
-                      <div className="discovery-skeleton-block discovery-skeleton-chip" />
-                    </div>
-                    <div className="discovery-skeleton-block discovery-skeleton-cta" />
-                  </div>
-                </article>
-              ))
-              : trips.map((trip, index) => (
-              <motion.article
-                className="panel trip-card"
-                key={trip.id}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, amount: 0.2 }}
-                transition={{ ...revealTransition, delay: index * 0.05 }}
-              >
-                <img src={trip.imageUrl} alt={trip.title} className="trip-cover" />
-                <div className="trip-card-body">
-
-                  <p className="trip-meta">
-                    {getTripStatusLabel(trip.status)}
-                  </p>
-                  <h2>{trip.title}</h2>
-                  <p>{trip.description}</p>
-                  <p className="trip-submeta">
-                    {trip.timelines.length} days - starts {formatDisplayDate(trip.startingDate)}
-                  </p>
-                  <div className="trip-stat-row">
-                    <span>
-                      {trip.currentMembers}/{trip.maxParticipants} members
-                    </span>
-                    <span>{trip.price} EUR / person</span>
-                  </div>
-                  <div className="chip-row">
-                    {trip.tags.map((tag) => (
-                      <span key={tag} className="chip chip-static">
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-                  <Link className="btn btn-primary" to={`/trip/${trip.id}`}>
-                      View details
-                  </Link>
-                </div>
-              </motion.article>
-            ))}
-
-            {!showDiscoverySkeleton && trips.length === 0 ? (
-              <div className="panel">
-                <h2>No trips match these filters right now.</h2>
-                <p>
-                  Disable profile boosting or raise budget range to reveal more options.
-                </p>
-              </div>
-            ) : null}
-          </div>
-        </section>
+        <label className="discovery-pref-toggle">
+          <input
+            type="checkbox"
+            checked={autoApplyPreferences}
+            onChange={(event) => {
+              const isChecked = event.target.checked
+              setAutoApplyPreferences(isChecked)
+              if (isChecked) {
+                setSelectedType('all')
+              }
+            }}
+          />
+          <FiZap aria-hidden="true" />
+          <span>Preference boost</span>
+        </label>
       </div>
+
+      {/* ── Collapsible filters ── */}
+      {showFilters ? (
+        <motion.div
+          className="discovery-filters-v2"
+          initial={{ opacity: 0, height: 0 }}
+          animate={{ opacity: 1, height: 'auto' }}
+          exit={{ opacity: 0, height: 0 }}
+          transition={{ duration: 0.3 }}
+        >
+          <div className="discovery-filter-item">
+            <label className="field-label" htmlFor="discover-trip-type">Trip type</label>
+            <select
+              id="discover-trip-type"
+              className="input"
+              value={selectedType}
+              onChange={(event) => setSelectedType(event.target.value)}
+              disabled={autoApplyPreferences}
+            >
+              <option value="all">All types</option>
+              {tripTypeOptions.map((tripType) => (
+                <option key={tripType} value={tripType}>
+                  {tripType}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="discovery-filter-item">
+            <label className="field-label" htmlFor="discover-max-budget">
+              Budget up to {maxBudget} EUR
+            </label>
+            <input
+              id="discover-max-budget"
+              className="range"
+              type="range"
+              min={300}
+              max={2500}
+              step={50}
+              value={maxBudget}
+              onChange={(event) => setMaxBudget(Number(event.target.value))}
+            />
+          </div>
+        </motion.div>
+      ) : null}
+
+      {/* ── Banner ── */}
+      {navigationState?.createdTripTitle ? (
+        <p className="info-banner">
+          {navigationState.createdTripTitle} was published and is now visible in discovery.
+        </p>
+      ) : null}
+
+      {/* ── Results ── */}
+      <section className="discovery-results-v2" aria-live="polite" aria-busy={showDiscoverySkeleton}>
+        <div className="discovery-results-meta">
+          <h2>{showDiscoverySkeleton ? 'Loading...' : `${trips.length} trips found`}</h2>
+        </div>
+
+        <div className="discovery-trip-list">
+          {showDiscoverySkeleton
+            ? Array.from({ length: 3 }, (_, index) => (
+              <article className="discovery-trip-row discovery-trip-skeleton" key={`trip-skeleton-${index}`} aria-hidden="true">
+                <div className="discovery-trip-thumb discovery-skeleton-block" />
+                <div className="discovery-trip-info">
+                  <div className="discovery-skeleton-block" style={{ height: '1rem', width: '120px' }} />
+                  <div className="discovery-skeleton-block" style={{ height: '1.4rem', width: '280px' }} />
+                  <div className="discovery-skeleton-block" style={{ height: '0.85rem', width: '200px' }} />
+                </div>
+              </article>
+            ))
+            : trips.map((trip, index) => (
+            <motion.article
+              className="discovery-trip-row"
+              key={trip.id}
+              initial={{ opacity: 0, y: 16 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, amount: 0.15 }}
+              transition={{ ...revealTransition, delay: index * 0.04 }}
+            >
+              <img src={trip.imageUrl} alt={trip.title} className="discovery-trip-thumb" />
+              <div className="discovery-trip-info">
+                <span className="discovery-trip-status">{getTripStatusLabel(trip.status)}</span>
+                <h3>{trip.title}</h3>
+                <p className="discovery-trip-desc">{trip.description}</p>
+                <div className="discovery-trip-meta-row">
+                  <span>{trip.timelines?.length ?? 0} days</span>
+                  <span>·</span>
+                  <span>starts {formatDisplayDate(trip.startingDate)}</span>
+                  <span>·</span>
+                  <span>{trip.currentMembers}/{trip.maxParticipants} members</span>
+                  <span>·</span>
+                  <span>{trip.price} EUR</span>
+                </div>
+                <div className="discovery-trip-tags">
+                  {trip.tags.map((tag) => (
+                    <span key={tag} className="chip chip-static chip-sm">{tag}</span>
+                  ))}
+                </div>
+              </div>
+              <Link className="btn btn-primary btn-sm discovery-trip-cta" to={`/trip/${trip.id}`}>
+                View
+              </Link>
+            </motion.article>
+          ))}
+
+          {!showDiscoverySkeleton && trips.length === 0 ? (
+            <div className="discovery-no-results">
+              <h3>No trips match these filters.</h3>
+              <p>Try adjusting your budget or disabling preference boost.</p>
+            </div>
+          ) : null}
+        </div>
+      </section>
     </section>
   )
 }
-

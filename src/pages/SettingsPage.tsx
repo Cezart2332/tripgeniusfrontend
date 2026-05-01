@@ -1,7 +1,8 @@
 import { AnimatePresence, motion } from 'framer-motion'
 import { useEffect, useRef, useState } from 'react'
 import type { FormEvent, KeyboardEvent } from 'react'
-import { Link, useSearchParams,useNavigate } from 'react-router-dom'
+import { Link, useSearchParams, useNavigate } from 'react-router-dom'
+import { FiAlertTriangle, FiMail, FiShield, FiMessageSquare } from 'react-icons/fi'
 import type { User } from '../types/models'
 import api from '../data/api'
 import { useDispatch, useSelector } from 'react-redux'
@@ -28,8 +29,8 @@ const settingsTabs: Array<{ key: SettingsTab; label: string }> = [
   { key: 'danger', label: 'Danger zone' },
 ]
 
-const sectionTransition = {
-  duration: 0.24,
+const revealTransition = {
+  duration: 0.58,
   ease: [0.22, 1, 0.36, 1] as const,
 }
 
@@ -87,16 +88,16 @@ export function SettingsPage() {
   if(!user)
   {
     return (
-      <section className="page settings-page">
+      <section className="page settings-page-v2 container">
         <FeedbackToast toast={toast} clearToast={() => setToast(null)} />
-        <section className="panel settings-section settings-empty-state">
-          <p className="eyebrow">Settings center</p>
+        <div className="discovery-empty-state">
+          <img src="/newstickers/sticker5.png" alt="" className="discovery-empty-sticker" />
           <h1>You are not logged in</h1>
-          <p>Log in to update account details, security settings, and support tickets.</p>
+          <p>Log in to manage your account details and security settings.</p>
           <Link className="btn btn-primary" to="/login">
             Go to login
           </Link>
-        </section>
+        </div>
       </section>
     )
   }
@@ -150,7 +151,7 @@ export function SettingsPage() {
   const changeEmail = async (newEmail: string) => {
       const res = await api.patch('api/user/change-mail', {newEmail})
       console.log(res)
-      const newUser  = await api.get('api/user/me')
+      const newUser = await api.get('api/user/me')
       dispatch(setUser({user: newUser.data}))
   }
 
@@ -189,7 +190,6 @@ export function SettingsPage() {
 
   const changePassword = async (oldPassword : string, newPassword : string) => {
     await api.patch("api/user/change-password", {oldPassword, newPassword})
-
   }
 
   const updatePassword = async (event: FormEvent<HTMLFormElement>) => {
@@ -224,7 +224,7 @@ export function SettingsPage() {
   }
 
   const reportBug = async(description : string) =>{
-     await api.post('api/user/bug-report', {description})
+     await api.post('api/bug/bug-report', {description: description})
   }
 
   const reportBugSend = async (event: FormEvent<HTMLFormElement>) => {
@@ -297,222 +297,233 @@ export function SettingsPage() {
 
 
   return (
-    <section className="page settings-page">
+    <section className="page settings-page-v2 container">
       <FeedbackToast toast={toast} clearToast={() => setToast(null)} />
-      <header className="panel settings-head">
-        <p className="eyebrow">Settings center</p>
-        <h1>Manage account, security, and platform health.</h1>
-        <p>Switch sections below to focus one task at a time.</p>
+      
+      <header className="profile-header-v2">
+        <div>
+          <p className="eyebrow">Settings center</p>
+          <h1>Platform Workspace</h1>
+        </div>
+        <nav
+          ref={tabListRef}
+          className="profile-tab-bar-v2"
+          aria-label="Settings sections"
+          role="tablist"
+        >
+          {settingsTabs.map((tab, index) => (
+            <button
+              key={tab.key}
+              type="button"
+              id={`settings-tab-${tab.key}`}
+              className={activeTab === tab.key ? 'profile-tab-btn-v2 is-active' : 'profile-tab-btn-v2'}
+              role="tab"
+              aria-selected={activeTab === tab.key}
+              aria-controls={`settings-panel-${tab.key}`}
+              tabIndex={activeTab === tab.key ? 0 : -1}
+              disabled={isBackendActionLocked}
+              onClick={() => selectTab(tab.key)}
+              onKeyDown={(event) => handleTabKeyDown(event, index)}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </nav>
       </header>
-
-      <nav
-        ref={tabListRef}
-        className="settings-tab-bar"
-        aria-label="Settings sections"
-        role="tablist"
-      >
-        {settingsTabs.map((tab, index) => (
-          <button
-            key={tab.key}
-            type="button"
-            id={`settings-tab-${tab.key}`}
-            className={activeTab === tab.key ? 'settings-tab-btn is-active' : 'settings-tab-btn'}
-            role="tab"
-            aria-selected={activeTab === tab.key}
-            aria-controls={`settings-panel-${tab.key}`}
-            tabIndex={activeTab === tab.key ? 0 : -1}
-            disabled={isBackendActionLocked}
-            onClick={() => selectTab(tab.key)}
-            onKeyDown={(event) => handleTabKeyDown(event, index)}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </nav>
 
       <AnimatePresence mode="wait" initial={false}>
         {activeTab === 'account' ? (
-          <motion.form
+          <motion.div
             key="account"
-            className="panel settings-section"
-            onSubmit={updateEmail}
-            id="settings-panel-account"
-            role="tabpanel"
-            aria-labelledby="settings-tab-account"
-            tabIndex={0}
-            initial={{ opacity: 0, y: 14 }}
+            initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={sectionTransition}
+            exit={{ opacity: 0, y: -12 }}
+            transition={revealTransition}
+            className="settings-grid-v2"
           >
-            <h2>Account email</h2>
-            <p>Use a reliable inbox for invites, updates, and trip notifications.</p>
-            <label className="field-label" htmlFor="settings-email">
-              New email
-            </label>
-            <input
-              id="settings-email"
-              className="input"
-              type="email"
-              value={email}
-              disabled={isUpdatingEmail || isDeletingAccount}
-              onChange={(event) => setEmail(event.target.value)}
-              required
-            />
-            <button
-              className="btn btn-primary"
-              type="submit"
-              disabled={isUpdatingEmail || isDeletingAccount}
-              aria-busy={isUpdatingEmail}
-            >
-              {isUpdatingEmail ? (
-                <span className="btn-loading-content">
-                  <span className="inline-spinner" aria-hidden="true" />
-                  Saving email...
-                </span>
-              ) : (
-                'Save email'
-              )}
-            </button>
-          </motion.form>
+            <div className="settings-card-v2">
+              <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'flex-start' }}>
+                <div className="notification-icon-v2">
+                  <FiMail />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <h2>Account Identity</h2>
+                  <p>Update your primary email address for invites and trip synchronization.</p>
+                  
+                  <form onSubmit={updateEmail} className="profile-form-v2">
+                    <label className="field-label" htmlFor="settings-email">
+                      Primary Expedition Email
+                    </label>
+                    <input
+                      id="settings-email"
+                      className="input"
+                      type="email"
+                      value={email}
+                      disabled={isUpdatingEmail || isDeletingAccount}
+                      onChange={(event) => setEmail(event.target.value)}
+                      required
+                    />
+                    <button
+                      className="btn btn-primary"
+                      type="submit"
+                      disabled={isUpdatingEmail || isDeletingAccount}
+                      aria-busy={isUpdatingEmail}
+                    >
+                      {isUpdatingEmail ? 'Syncing...' : 'Update Email'}
+                    </button>
+                  </form>
+                </div>
+              </div>
+            </div>
+            
+            <div style={{ textAlign: 'center', opacity: 0.6 }}>
+               <img src="/newstickers/sticker4.png" alt="" style={{ width: '120px' }} />
+            </div>
+          </motion.div>
         ) : null}
 
         {activeTab === 'security' ? (
-          <motion.form
+          <motion.div
             key="security"
-            className="panel settings-section"
-            onSubmit={updatePassword}
-            id="settings-panel-security"
-            role="tabpanel"
-            aria-labelledby="settings-tab-security"
-            tabIndex={0}
-            initial={{ opacity: 0, y: 14 }}
+            initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={sectionTransition}
+            exit={{ opacity: 0, y: -12 }}
+            transition={revealTransition}
+            className="settings-grid-v2"
           >
-            <h2>Password security</h2>
-            <p>Change your password regularly to keep trip workspaces safe.</p>
+            <div className="settings-card-v2">
+              <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'flex-start' }}>
+                <div className="notification-icon-v2">
+                  <FiShield />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <h2>Shield Settings</h2>
+                  <p>Protect your expeditions with a strong, rotated password.</p>
+                  
+                  <form onSubmit={updatePassword} className="profile-form-v2">
+                    <div className="profile-section-v2" style={{ background: 'transparent', padding: 0, border: 'none' }}>
+                      <label className="field-label" htmlFor="settings-current-password">
+                        Current Shield Key
+                      </label>
+                      <input
+                        id="settings-current-password"
+                        className="input"
+                        type="password"
+                        value={currentPassword}
+                        disabled={isUpdatingPassword || isDeletingAccount}
+                        onChange={(event) => setCurrentPassword(event.target.value)}
+                        required
+                      />
 
-            <label className="field-label" htmlFor="settings-current-password">
-              Current password
-            </label>
-            <input
-              id="settings-current-password"
-              className="input"
-              type="password"
-              value={currentPassword}
-              disabled={isUpdatingPassword || isDeletingAccount}
-              onChange={(event) => setCurrentPassword(event.target.value)}
-              required
-            />
-
-            <label className="field-label" htmlFor="settings-next-password">
-              New password
-            </label>
-            <input
-              id="settings-next-password"
-              className="input"
-              type="password"
-              value={nextPassword}
-              disabled={isUpdatingPassword || isDeletingAccount}
-              onChange={(event) => setNextPassword(event.target.value)}
-              required
-            />
-
-            <button
-              className="btn btn-primary"
-              type="submit"
-              disabled={isUpdatingPassword || isDeletingAccount}
-              aria-busy={isUpdatingPassword}
-            >
-              {isUpdatingPassword ? (
-                <span className="btn-loading-content">
-                  <span className="inline-spinner" aria-hidden="true" />
-                  Saving password...
-                </span>
-              ) : (
-                'Save password'
-              )}
-            </button>
-          </motion.form>
+                      <label className="field-label" htmlFor="settings-next-password" style={{ marginTop: '1rem' }}>
+                        New Shield Key
+                      </label>
+                      <input
+                        id="settings-next-password"
+                        className="input"
+                        type="password"
+                        value={nextPassword}
+                        disabled={isUpdatingPassword || isDeletingAccount}
+                        onChange={(event) => setNextPassword(event.target.value)}
+                        required
+                      />
+                    </div>
+                    
+                    <button
+                      className="btn btn-primary"
+                      type="submit"
+                      disabled={isUpdatingPassword || isDeletingAccount}
+                      aria-busy={isUpdatingPassword}
+                    >
+                      {isUpdatingPassword ? 'Rotating keys...' : 'Rotate Password'}
+                    </button>
+                  </form>
+                </div>
+              </div>
+            </div>
+          </motion.div>
         ) : null}
 
         {activeTab === 'support' ? (
-          <motion.form
+          <motion.div
             key="support"
-            className="panel settings-section"
-            onSubmit={reportBugSend}
-            id="settings-panel-support"
-            role="tabpanel"
-            aria-labelledby="settings-tab-support"
-            tabIndex={0}
-            initial={{ opacity: 0, y: 14 }}
+            initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={sectionTransition}
+            exit={{ opacity: 0, y: -12 }}
+            transition={revealTransition}
+            className="settings-grid-v2"
           >
-            <h2>Support and bug reports</h2>
-            <p>
-              Share reproducible details so the team can triage and fix issues faster.
-            </p>
-            <label className="field-label" htmlFor="settings-bug-report">
-              What happened?
-            </label>
-            <textarea
-              id="settings-bug-report"
-              className="input input-area"
-              rows={6}
-              value={bugReport}
-              onChange={(event) => setBugReport(event.target.value)}
-              placeholder="Describe issue, expected behavior, and reproduction steps."
-              required
-            />
-            <button className="btn btn-primary" type="submit">
-              Send report
-            </button>
-          </motion.form>
+            <div className="settings-card-v2">
+              <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'flex-start' }}>
+                <div className="notification-icon-v2">
+                  <FiMessageSquare />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <h2>Platform Health</h2>
+                  <p>Found a glitch in the map? Report it to the expedition technicians.</p>
+                  
+                  <form onSubmit={reportBugSend} className="profile-form-v2">
+                    <label className="field-label" htmlFor="settings-bug-report">
+                      Detailed Anomaly Report
+                    </label>
+                    <textarea
+                      id="settings-bug-report"
+                      className="input input-area"
+                      rows={6}
+                      value={bugReport}
+                      onChange={(event) => setBugReport(event.target.value)}
+                      placeholder="Describe the issue, steps to reproduce, and expected outcome..."
+                      required
+                    />
+                    <button className="btn btn-primary" type="submit" disabled={isReportingBug}>
+                      {isReportingBug ? 'Transmitting...' : 'Send Signal'}
+                    </button>
+                  </form>
+                </div>
+              </div>
+            </div>
+          </motion.div>
         ) : null}
 
         {activeTab === 'danger' ? (
-          <motion.section
+          <motion.div
             key="danger"
-            className="panel settings-section danger-panel"
-            id="settings-panel-danger"
-            role="tabpanel"
-            aria-labelledby="settings-tab-danger"
-            tabIndex={0}
-            initial={{ opacity: 0, y: 14 }}
+            initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={sectionTransition}
+            exit={{ opacity: 0, y: -12 }}
+            transition={revealTransition}
+            className="settings-grid-v2"
           >
-            <h2>Danger zone</h2>
-            <p>
-              Deleting your account removes profile data, trips, and chat history.
-              This action cannot be undone.
-            </p>
-            <button
-              className="btn btn-danger"
-              type="button"
-              onClick={deleteAccount}
-              disabled={isBackendActionLocked}
-              aria-busy={isDeletingAccount}
-            >
-              {isDeletingAccount ? (
-                <span className="btn-loading-content">
-                  <span className="inline-spinner" aria-hidden="true" />
-                  Deleting account...
-                </span>
-              ) : (
-                'Delete account'
-              )}
-            </button>
-          </motion.section>
+            <div className="settings-card-v2" style={{ borderColor: 'rgba(255, 100, 100, 0.2)' }}>
+              <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'flex-start' }}>
+                <div className="notification-icon-v2" style={{ background: 'rgba(255, 100, 100, 0.1)', color: '#ff6b6b' }}>
+                  <FiAlertTriangle />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <h2 style={{ color: '#ff6b6b' }}>Burn Sequence</h2>
+                  <p>Permanently erase your explorer profile and all expedition history. This cannot be reversed.</p>
+                  
+                  <div style={{ marginTop: '2rem' }}>
+                    <button
+                      className="btn btn-danger btn-lg"
+                      type="button"
+                      onClick={deleteAccount}
+                      disabled={isBackendActionLocked}
+                      aria-busy={isDeletingAccount}
+                    >
+                      {isDeletingAccount ? 'Burning...' : 'Erase Account Forever'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div style={{ textAlign: 'center', opacity: 0.4 }}>
+               <img src="/newstickers/sticker6.png" alt="" style={{ width: '150px' }} />
+            </div>
+          </motion.div>
         ) : null}
       </AnimatePresence>
     </section>
   )
 }
-
-

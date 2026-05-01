@@ -1,10 +1,12 @@
 import { AnimatePresence, motion } from 'framer-motion'
-import { useEffect, useMemo, useRef, useState } from 'react'
-import type { FormEvent, KeyboardEvent } from 'react'
+import { useEffect, useMemo, useState, useRef } from 'react'
+import type { ChangeEvent, FormEvent, KeyboardEvent } from 'react'
+import { FiUserPlus, FiX, FiUploadCloud } from 'react-icons/fi'
 import { useSelector } from 'react-redux'
-import { Link, useParams, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { TripRouteMap } from '../components/TripRouteMap'
-import type { ChatMessage, MemberRole, Trip, TripMember, User } from '../types/models'
+import type { ChatMessage, MemberRole, TimelineStop, Trip, TripMember, User } from '../types/models'
+import * as signalR from '@microsoft/signalr'
 import api from '../data/api'
 import { AxiosError } from 'axios'
 import {
@@ -12,10 +14,11 @@ import {
   formatDisplayDateRange,
   toLocalStartOfDay,
 } from '../utils/dateDisplay'
+import { useDebouncedCallback } from 'use-debounce'
 
 const MILLISECONDS_PER_DAY = 1000 * 60 * 60 * 24
 
-type TripWorkspaceTab = 'overview' | 'map' | 'members' | 'chat'
+type TripWorkspaceTab = 'overview' | 'map' | 'members' | 'chat' | 'settings'
 
 interface TripTabItem {
   key: TripWorkspaceTab
@@ -31,17 +34,24 @@ interface AuthStoreState {
 
 type TripFetchState = 'loading' | 'ready' | 'not-found' | 'error'
 
+type TripParticipationState = 'accepted' | 'invited' | 'requested' | 'visitor'
+
 const memberTabs: TripTabItem[] = [
   { key: 'overview', label: 'Overview' },
-  { key: 'map', label: 'Map + Timeline' },
-  { key: 'members', label: 'Members' },
-  { key: 'chat', label: 'Chat' },
+  { key: 'map', label: 'Timeline' },
+  { key: 'members', label: 'Expedition' },
+  { key: 'chat', label: 'Signal Room' },
+]
+
+const ownerTabs: TripTabItem[] = [
+  ...memberTabs,
+  { key: 'settings', label: 'Workspace Settings' },
 ]
 
 const visitorTabs: TripTabItem[] = [
   { key: 'overview', label: 'Overview' },
-  { key: 'map', label: 'Map + Timeline' },
-  { key: 'members', label: 'Members' },
+  { key: 'map', label: 'Public Map' },
+  { key: 'members', label: 'Public Expedition' },
 ]
 
 const defaultSelectedDay = (startDate: string, timelineLength: number): number => {
@@ -80,7 +90,6 @@ const calculateRouteDistanceKm = (
   fromCoords: [number, number],
   toCoords: [number, number],
 ): number => {
-  // Timeline coordinates are stored as [lng, lat] in map data.
   const [fromLng, fromLat] = fromCoords
   const [toLng, toLat] = toCoords
 
@@ -99,10 +108,62 @@ const calculateRouteDistanceKm = (
   return EARTH_RADIUS_KM * c
 }
 
-const roleOrder: MemberRole[] = ['owner', 'admin', 'member']
+const normalizeMemberRole = (role: unknown): MemberRole => {
+  if (typeof role !== 'string') {
+    return 'member'
+  }
 
-const tabTransition = {
-  duration: 0.26,
+  const normalizedRole = role.trim().toLowerCase()
+
+  if (normalizedRole === 'owner' || normalizedRole === 'admin' || normalizedRole === 'member') {
+    return normalizedRole
+  }
+
+  return 'member'
+}
+
+const normalizeTripMemberStatus = (status: unknown): TripParticipationState => {
+  if (typeof status !== 'string') {
+    return 'visitor'
+  }
+
+  const normalizedStatus = status.trim().toLowerCase()
+
+  if (normalizedStatus === 'accepted' || normalizedStatus === 'member') {
+    return 'accepted'
+  }
+
+  if (normalizedStatus === 'invited') {
+    return 'invited'
+  }
+
+  if (normalizedStatus === 'requested' || normalizedStatus === 'request') {
+    return 'requested'
+  }
+
+  return 'visitor'
+}
+
+const getTripMemberStatusLabel = (status: unknown): string => {
+  const normalizedStatus = normalizeTripMemberStatus(status)
+
+  if (normalizedStatus === 'invited') {
+    return 'Waiting to accept'
+  }
+
+  if (normalizedStatus === 'requested') {
+    return 'Waiting for approval'
+  }
+
+  if (normalizedStatus === 'accepted') {
+    return 'Member'
+  }
+
+  return 'Visitor'
+}
+
+const revealTransition = {
+  duration: 0.58,
   ease: [0.22, 1, 0.36, 1] as const,
 }
 
@@ -156,174 +217,285 @@ export function TripPage() {
         setFetchState('error')
       }
     }
-
     fetchTrip()
-
     return () => {
       isMounted = false
     }
   }, [tripId])
 
-  if (!tripId) {
+  if (!tripId || fetchState === 'not-found') {
     return (
-      <section className="page trip-page">
-        <section className="panel">
-          <p className="eyebrow">Trip space</p>
+      <section className="page trip-page-v2 container">
+        <div className="discovery-empty-state">
+          <img src="/newstickers/sticker5.png" alt="" className="discovery-empty-sticker" />
           <h1>Trip not found</h1>
-          <p>This trip does not exist anymore or the link is invalid.</p>
+          <p>This expedition room has been archived or the coordinates are invalid.</p>
           <Link className="btn btn-primary" to="/discover">
             Back to discovery
           </Link>
-        </section>
+        </div>
       </section>
     )
   }
 
   if (fetchState === 'loading') {
     return (
-      <section className="page trip-page">
-        <section className="panel">
-          <p className="eyebrow">Trip space</p>
-          <h1>Loading trip workspace</h1>
-          <p>Fetching the latest trip details and membership state...</p>
-        </section>
+      <section className="page trip-page-v2 container">
+        <div className="discovery-empty-state">
+          <h1>Syncing coordinates...</h1>
+          <p>Connecting to the trip satellite for high-fidelity data.</p>
+        </div>
       </section>
     )
   }
 
   if (fetchState === 'error') {
     return (
-      <section className="page trip-page">
-        <section className="panel">
-          <p className="eyebrow">Trip space</p>
-          <h1>Could not load this trip</h1>
-          <p>There was a problem reaching the trip service. Please try again later.</p>
+      <section className="page trip-page-v2 container">
+        <div className="discovery-empty-state">
+           <img src="/newstickers/sticker6.png" alt="" className="discovery-empty-sticker" />
+          <h1>Communication error</h1>
+          <p>We lost contact with the server. Check your signal and try again.</p>
           <Link className="btn btn-primary" to="/discover">
             Back to discovery
           </Link>
-        </section>
+        </div>
       </section>
     )
   }
 
+  if (!trip) return null
 
-
-  if (!trip) {
-    return (
-      <section className="page trip-page">
-        <section className="panel">
-          <p className="eyebrow">Trip space</p>
-          <h1>Trip not found</h1>
-          <p>This trip does not exist anymore or the link is invalid.</p>
-          <Link className="btn btn-primary" to="/discover">
-            Back to discovery
-          </Link>
-        </section>
-      </section>
-    )
-  }
-
-  return <TripPageContent key={trip.id} trip={trip} isMember={trip.isUserMember} />
+  return <TripPageContent key={trip.id} trip={trip} />
 }
 
 interface TripPageContentProps {
   trip: Trip
-  isMember: boolean
 }
 
-function TripPageContent({ trip, isMember }: TripPageContentProps) {
+interface OwnerTripEditState {
+  title: string
+  description: string
+  status: Trip['status']
+  startingDate: string
+  endingDate: string
+  maxParticipants: string
+  tags: string[]
+  customTag: string
+  imagePreviewUrl: string
+  imageFile: File | null
+}
+
+const normalizeDateInputValue = (value: string): string => {
+  if (!value) return ''
+  const parsed = new Date(value)
+  if (Number.isNaN(parsed.getTime())) return ''
+  const year = parsed.getFullYear()
+  const month = `${parsed.getMonth() + 1}`.padStart(2, '0')
+  const day = `${parsed.getDate()}`.padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+const createOwnerTripEditState = (trip: Trip): OwnerTripEditState => ({
+  title: trip.title,
+  description: trip.description,
+  status: trip.status,
+  startingDate: normalizeDateInputValue(trip.startingDate),
+  endingDate: normalizeDateInputValue(trip.endingDate),
+  maxParticipants: String(trip.maxParticipants),
+  tags: trip.tags,
+  customTag: '',
+  imagePreviewUrl: trip.imageUrl,
+  imageFile: null,
+})
+
+function TripPageContent({ trip }: TripPageContentProps) {
+  const navigate = useNavigate()
   const authenticatedUser = useSelector((state: AuthStoreState) => state.auth.user)
+  const token = useSelector((state: AuthStoreState) => state.auth.token)
+  const baseURL = import.meta.env.VITE_BASE_URL;
   const [searchParams, setSearchParams] = useSearchParams()
+  const [tripDetails, setTripDetails] = useState<Trip>(trip)
+  const connectionRef = useRef<signalR.HubConnection | null>(null);
+  const [ownerTripDraft, setOwnerTripDraft] = useState<OwnerTripEditState>(
+    createOwnerTripEditState(trip),
+  )
+  const [isSavingTripDetails, setIsSavingTripDetails] = useState(false)
+  const [tripDetailsFeedback, setTripDetailsFeedback] = useState<{
+    tone: 'success' | 'info' | 'error'
+    message: string
+  } | null>(null)
+  const [isRequestingAccess, setIsRequestingAccess] = useState(false)
+  const [timelines, setTimelines] = useState<TimelineStop[]>(
+    () => [...trip.timelines].sort((a, b) => a.day - b.day),
+  )
   const [selectedDay, setSelectedDay] = useState(
     defaultSelectedDay(trip.startingDate, trip.timelines.length),
   )
   const [members, setMembers] = useState<TripMember[]>(trip.members)
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([])
   const [newMessage, setNewMessage] = useState('')
-  const [requestedJoin, setRequestedJoin] = useState(false)
-  const tabListRef = useRef<HTMLElement | null>(null)
 
-  const tabs = isMember ? memberTabs : visitorTabs
+  useEffect(() => {
+    const fetchMessages = async () => {
+      try {
+        const res = await api.get(`api/trip/get-messages/${trip.id}`)
+        if (res.status === 200) {
+          setChatMessages(res.data)
+        }
+      } catch (error) {
+        console.error('Failed to load messages:', error)
+      }
+    }
+
+    const connection = new signalR.HubConnectionBuilder().withUrl(`${baseURL}/hubs/trip-chat?access_token=${token}`).withAutomaticReconnect().build()
+
+
+    connection.on("ReceiveMessage", (msg: ChatMessage) => {
+      setChatMessages((prev) => [...prev, msg])
+    })
+
+    connectionRef.current = connection
+    const start = async () => {
+      try
+      {
+        await connection.start()
+        await connection.invoke("JoinTrip",trip.id)
+      }
+      catch(err)
+      {
+        console.error(`Connection failed: ${err}`)
+      }
+    }
+    start()
+
+
+    fetchMessages()
+    return () => {
+      const stop = async () => {
+        try
+        {
+          await connection.invoke("LeaveTrip",trip.id)
+        }
+        catch(error)
+        {
+          console.error(error)
+        }
+        await connection.stop()
+      }
+    stop()
+    }
+
+
+
+  }, [trip.id, token,baseURL])
+
+  const [isInviteModalOpen, setIsInviteModalOpen] = useState(false)
+  const [inviteUsernameQuery, setInviteUsernameQuery] = useState('')
+  const [isSearchingInviteUser, setIsSearchingInviteUser] = useState(false)
+  const [isInvitingUserId, setIsInvitingUserId] = useState<string | null>(null)
+  const [isUpdatingRoleMemberId, setIsUpdatingRoleMemberId] = useState<string | null>(null)
+  const [isRemovingMemberId, setIsRemovingMemberId] = useState<string | null>(null)
+  const [isRemovingTimelineId, setIsRemovingTimelineId] = useState<number | null>(null)
+  const [candidates, setCandidates] = useState<User[]>([])
+  const [inviteFeedback, setInviteFeedback] = useState<{
+    tone: 'success' | 'info' | 'error'
+    message: string
+  } | null>(null)
+  const [isProcessingRequestMemberId, setIsProcessingRequestMemberId] = useState<string | null>(null)
+  const tripRoleData = trip as Trip & {
+    userRole?: unknown
+    viewerRole?: unknown
+    memberRole?: unknown
+  }
+
   const requestedTab = searchParams.get('view')
-  const normalizedRequestedTab = requestedTab === 'timeline' ? 'map' : requestedTab
-
-  const activeWorkspaceTab: TripWorkspaceTab =
-    normalizedRequestedTab && tabs.some((tab) => tab.key === normalizedRequestedTab)
-      ? (normalizedRequestedTab as TripWorkspaceTab)
-      : isMember
-        ? 'map'
-        : 'overview'
+  const normalizedRequestedTab = 
+    requestedTab === 'timeline' ? 'map' : 
+    requestedTab === 'edit' ? 'settings' : 
+    requestedTab
 
   const currentStop =
-    trip.timelines.find((timelineStop) => timelineStop.day === selectedDay) ??
-    trip.timelines[0]
+    timelines.find((timelineStop) => timelineStop.day === selectedDay) ??
+    timelines[0]
 
   const selectedRouteDistanceKm = useMemo(
-    () => calculateRouteDistanceKm(currentStop.fromCoords, currentStop.toCoords),
+    () =>
+      currentStop
+        ? calculateRouteDistanceKm(currentStop.fromCoords, currentStop.toCoords)
+        : 0,
     [currentStop],
   )
 
   const normalizedUserName = authenticatedUser?.username.trim().toLowerCase()
 
-  const viewerMember = members.find(
-    (member) => {
-      if (authenticatedUser && member.id === String(authenticatedUser.id)) {
-        return true
-      }
+  const viewerMember = members.find((m) => {
+    if (authenticatedUser && String(m.id) === String(authenticatedUser.id)) return true
+    if (!normalizedUserName) return false
+    const nmn = m.username.trim().toLowerCase()
+    return nmn === normalizedUserName || nmn.includes(normalizedUserName)
+  })
 
-      if (!normalizedUserName) {
-        return false
-      }
+  const tripPayloadRole =
+    tripRoleData.userRole ?? tripRoleData.viewerRole ?? tripRoleData.memberRole
+  const viewerRole: MemberRole = viewerMember ? normalizeMemberRole(viewerMember.role) : normalizeMemberRole(tripPayloadRole)
+  const viewerParticipationState = useMemo<TripParticipationState>(() => {
+    const viewerId = authenticatedUser?.id != null ? String(authenticatedUser.id) : null
+    const viewerUsername = authenticatedUser?.username.trim().toLowerCase() ?? null
 
-      const normalizedMemberName = member.username.trim().toLowerCase()
+    const matchingMember = members.find((member) => {
+      const memberRecord = member as unknown as Record<string, unknown>
+      const memberId = memberRecord.id != null ? String(memberRecord.id) : null
+      const memberUsername = typeof member.username === 'string' ? member.username.trim().toLowerCase() : ''
 
       return (
-        normalizedMemberName === normalizedUserName ||
-        normalizedMemberName.includes(normalizedUserName)
+        (viewerId !== null && memberId === viewerId) ||
+        (viewerUsername !== null && memberUsername === viewerUsername)
       )
-    },
-  )
+    })
 
-  const viewerRole: MemberRole = viewerMember?.role ?? 'member'
-  const canManageMembers = viewerRole === 'owner' || viewerRole === 'admin'
-
-  const handleRoleChange = (memberId: string, nextRole: MemberRole) => {
-    setMembers((previous) =>
-      previous.map((member) =>
-        member.id === memberId ? { ...member, role: nextRole } : member,
-      ),
-    )
-  }
-
-  const handleRemove = (memberId: string) => {
-    setMembers((previous) => previous.filter((member) => member.id !== memberId))
-  }
-
-  const sendMessage = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    const content = newMessage.trim()
-    if (!content) {
-      return
+    if (!matchingMember) {
+      return 'visitor'
     }
 
-    const now = new Date()
-    const at = `${now.getHours().toString().padStart(2, '0')}:${now
-      .getMinutes()
-      .toString()
-      .padStart(2, '0')}`
+    const memberRecord = matchingMember as unknown as Record<string, unknown>
+    return normalizeTripMemberStatus(
+      memberRecord.status ?? memberRecord.memberStatus ?? memberRecord.member_status,
+    )
+  }, [authenticatedUser?.id, authenticatedUser?.username, members])
 
-    setChatMessages((previous) => [
-      ...previous,
-      {
-        id: `chat-${previous.length + 1}`,
-        author: 'You',
-        role: 'owner',
-        content,
-        at,
-      },
-    ])
-    setNewMessage('')
-  }
+  const isAcceptedMember = viewerParticipationState === 'accepted'
+  const isInvitedOrRequested = viewerParticipationState === 'invited' || viewerParticipationState === 'requested'
+
+  const acceptedMembers = useMemo(
+    () => members.filter((member) => normalizeTripMemberStatus((member as unknown as Record<string, unknown>).status ?? (member as unknown as Record<string, unknown>).memberStatus ?? (member as unknown as Record<string, unknown>).member_status) === 'accepted'),
+    [members],
+  )
+
+  const pendingMembers = useMemo(
+    () => members.filter((member) => {
+      const memberStatus = normalizeTripMemberStatus(
+        (member as unknown as Record<string, unknown>).status ??
+          (member as unknown as Record<string, unknown>).memberStatus ??
+          (member as unknown as Record<string, unknown>).member_status,
+      )
+      return memberStatus === 'invited' || memberStatus === 'requested'
+    }),
+    [members],
+  )
+
+  const canInviteMembers = viewerRole === 'owner' || viewerRole === 'admin'
+  const canEditMemberRoles = viewerRole === 'owner'
+  const canRemoveMembers = viewerRole === 'owner'
+  const canManageTimelines = viewerRole === 'owner'
+  const canManageTripDetails = viewerRole === 'owner'
+
+  const tabs = isAcceptedMember ? (canManageTripDetails ? ownerTabs : memberTabs) : visitorTabs
+
+  const activeTab: TripWorkspaceTab =
+    normalizedRequestedTab && tabs.some((t) => t.key === normalizedRequestedTab)
+      ? (normalizedRequestedTab as TripWorkspaceTab)
+      : isAcceptedMember ? 'map' : 'overview'
 
   const selectTab = (nextTab: TripWorkspaceTab) => {
     const nextParams = new URLSearchParams(searchParams)
@@ -331,363 +503,664 @@ function TripPageContent({ trip, isMember }: TripPageContentProps) {
     setSearchParams(nextParams, { replace: true })
   }
 
-  const focusTabAt = (index: number) => {
-    const tabButtons = tabListRef.current?.querySelectorAll<HTMLButtonElement>(
-      '[role="tab"]',
-    )
-
-    tabButtons?.[index]?.focus()
+  const handleTabKeyDown = (event: KeyboardEvent<HTMLButtonElement>, currentIndex: number) => {
+    let nextIndex: number | null = null
+    if (event.key === 'ArrowRight') nextIndex = (currentIndex + 1) % tabs.length
+    if (event.key === 'ArrowLeft') nextIndex = (currentIndex - 1 + tabs.length) % tabs.length
+    if (event.key === 'Home') nextIndex = 0
+    if (event.key === 'End') nextIndex = tabs.length - 1
+    if (nextIndex === null) return
+    event.preventDefault()
+    selectTab(tabs[nextIndex].key)
   }
 
-  const handleTabKeyDown = (
-    event: KeyboardEvent<HTMLButtonElement>,
-    currentIndex: number,
-  ) => {
-    let nextIndex: number | null = null
+  // API Methods
+  const handleOwnerDraftChange = (field: Exclude<keyof OwnerTripEditState, 'imageFile'>, value: string) => {
+    setOwnerTripDraft((p) => ({ ...p, [field]: value }))
+  }
 
-    if (event.key === 'ArrowRight') {
-      nextIndex = (currentIndex + 1) % tabs.length
+  const resetOwnerTripDraft = () => {
+    setOwnerTripDraft(createOwnerTripEditState(tripDetails))
+  }
+
+  const handleImageUpload = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      setOwnerTripDraft(prev => ({
+        ...prev,
+        imageFile: file,
+        imagePreviewUrl: e.target?.result as string
+      }))
     }
+    reader.readAsDataURL(file)
+  }
 
-    if (event.key === 'ArrowLeft') {
-      nextIndex = (currentIndex - 1 + tabs.length) % tabs.length
+  const saveOwnerTripDetails = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    setIsSavingTripDetails(true)
+    try {
+      const formData = new FormData()
+      formData.append('id', tripDetails.id)
+      formData.append('title', ownerTripDraft.title)
+      formData.append('description', ownerTripDraft.description)
+      formData.append('startingDate', new Date(ownerTripDraft.startingDate).toISOString())
+      formData.append('endingDate', new Date(ownerTripDraft.endingDate).toISOString())
+      formData.append('status', ownerTripDraft.status)
+      formData.append('maxParticipants', ownerTripDraft.maxParticipants)
+      ownerTripDraft.tags.forEach(t => formData.append('tags', t))
+      if (ownerTripDraft.imageFile) formData.append('image', ownerTripDraft.imageFile)
+
+      const res = await api.patch('api/trip/update-trip', formData)
+      
+      const payload = res.data
+      const updatedTrip = payload && typeof payload === 'object' && 'trip' in payload ? payload.trip : payload
+
+      if (updatedTrip && updatedTrip.id) {
+        setTripDetails(updatedTrip)
+      } else {
+        setTripDetails(prev => ({
+          ...prev,
+          title: ownerTripDraft.title,
+          description: ownerTripDraft.description,
+          startingDate: new Date(ownerTripDraft.startingDate).toISOString(),
+          endingDate: new Date(ownerTripDraft.endingDate).toISOString(),
+          status: ownerTripDraft.status,
+          maxParticipants: Number(ownerTripDraft.maxParticipants),
+          tags: ownerTripDraft.tags,
+          imageUrl: ownerTripDraft.imageFile ? ownerTripDraft.imagePreviewUrl : prev.imageUrl
+        }))
+      }
+
+      setTripDetailsFeedback({ tone: 'success', message: 'Trip details updated.' })
+    } catch {
+      setTripDetailsFeedback({ tone: 'error', message: 'Failed to update trip.' })
+    } finally {
+      setIsSavingTripDetails(false)
     }
+  }
 
-    if (event.key === 'Home') {
-      nextIndex = 0
+  const debounceSearchInviteCanditate = useDebouncedCallback(async (query: string) => {
+    const trimmed = query.trim()
+    if (trimmed.length < 2) {
+      setCandidates([])
+      return
     }
-
-    if (event.key === 'End') {
-      nextIndex = tabs.length - 1
+    setIsSearchingInviteUser(true)
+    try {
+      const res = await api.post(`api/user/search-users`,{username:query})
+      setCandidates(res.data)
+    } catch {
+      setInviteFeedback({ tone: 'error', message: 'User search failed.' })
+    } finally {
+      setIsSearchingInviteUser(false)
     }
+  }, 400)
 
-    if (nextIndex === null) {
+  const handleInviteAction = async (candidate: User) => {
+    const candidateId = String(candidate.id)
+    if (isInvitingUserId === candidateId) {
       return
     }
 
-    event.preventDefault()
-    const nextTab = tabs[nextIndex]
-    selectTab(nextTab.key)
-    focusTabAt(nextIndex)
+    setIsInvitingUserId(candidateId)
+    try {
+      await api.post('api/trip/membership-request', {userId: candidate.id, tripId: tripDetails.id, invitedBy: authenticatedUser?.id })
+      setInviteFeedback({ tone: 'success', message: `Invite sent to ${candidate.username}.` })
+    } catch {
+      setInviteFeedback({ tone: 'error', message: 'Failed to send invite.' })
+    } finally {
+      setIsInvitingUserId(null)
+    }
   }
 
-  const renderTimelineSelector = () => (
-    <div className="timeline-list trip-route-timeline-list">
-      {trip.timelines.map((timelineStop) => (
-        <button
-          key={timelineStop.day}
-          type="button"
-          className={
-            selectedDay === timelineStop.day
-              ? 'timeline-item is-active'
-              : 'timeline-item'
+  const handleRespondToRequest = async (member: TripMember, action: 'Accepted' | 'Declined') => {
+    if (isProcessingRequestMemberId === member.id) return
+
+    setIsProcessingRequestMemberId(member.id)
+    try {
+      const res = await api.patch('api/trip/membership-response', {
+        tripId: tripDetails.id,
+        invitedId: member.id,
+        memberStatus: 'Requested',
+        action: action === 'Accepted' ? 'accept' : 'decline',
+      })
+
+      if (res.status >= 200 && res.status < 300) {
+        if (action === 'Accepted') {
+          setMembers(prev => prev.map(m => m.id === member.id ? { ...m, status: 'accepted' } : m))
+          setTripDetailsFeedback({ tone: 'success', message: `${member.username} added to expedition.` })
+        } else {
+          setMembers(prev => prev.filter(m => m.id !== member.id))
+          setTripDetailsFeedback({ tone: 'info', message: `${member.username}'s request was declined.` })
+        }
+      }
+    } catch {
+      setTripDetailsFeedback({ tone: 'error', message: 'Failed to respond to request.' })
+    } finally {
+      setIsProcessingRequestMemberId(null)
+    }
+  }
+
+  const handleRequestToJoin = async () => {
+    if (!authenticatedUser || isAcceptedMember || isInvitedOrRequested || isRequestingAccess) {
+      return
+    }
+
+
+    setIsRequestingAccess(true)
+    try {
+      const res = await api.post('api/trip/membership-request', {userId: authenticatedUser.id, tripId: tripDetails.id, invitedBy: authenticatedUser?.id })
+      if (res.status >= 200 && res.status < 300) {
+        setTripDetailsFeedback({ tone: 'success', message: 'Join request sent. Waiting for approval.' })
+        setMembers((prev) => [
+          ...prev,
+          {
+            id: String(authenticatedUser.id),
+            username: authenticatedUser.username,
+            role: 'member',
+            avatarUrl: authenticatedUser.profileUrl,
+            status: 'requested',
+          },
+        ])
+      }
+    } catch {
+      setTripDetailsFeedback({ tone: 'error', message: 'Failed to request access.' })
+    } finally {
+      setIsRequestingAccess(false)
+    }
+  }
+
+  const handleRoleChange = async (userId: string, newRole: MemberRole) => {
+    if (isUpdatingRoleMemberId === userId) {
+      return
+    }
+
+    setIsUpdatingRoleMemberId(userId)
+    try {
+      await api.patch('api/trip/change-role', { id:userId,tripId:trip.id, role: newRole })
+      setMembers(prev => prev.map(m => m.id === userId ? { ...m, role: newRole } : m))
+    } catch {
+      setTripDetailsFeedback({ tone: 'error', message: 'Failed to update role.' })
+    } finally {
+      setIsUpdatingRoleMemberId(null)
+    }
+  }
+
+  const handleRemove = async (userId: string) => {
+    if (isRemovingMemberId === userId) {
+      return
+    }
+
+    if (!window.confirm('Are you sure you want to remove this explorer?')) return
+
+    setIsRemovingMemberId(userId)
+    try {
+      await api.delete(`api/trip/remove-member/${tripDetails.id}/${userId}`)
+      setMembers(prev => prev.filter(m => m.id !== userId))
+    } catch {
+      setTripDetailsFeedback({ tone: 'error', message: 'Failed to remove member.' })
+    } finally {
+      setIsRemovingMemberId(null)
+    }
+  }
+
+  const handleRemoveTimeline = async (timelineId: number) => {
+    if (isRemovingTimelineId === timelineId) {
+      return
+    }
+
+    if (!window.confirm('Are you sure you want to remove this timeline stop?')) return
+
+    setIsRemovingTimelineId(timelineId)
+    try
+    {
+      const res = await api.delete(`api/trip/timeline-remove/${trip.id}/${timelineId}`)
+      if(res.status === 200)
+      {    
+        setTimelines((previous) => {
+          const next = previous.filter((stop) => stop.id !== timelineId)
+
+          if (next.length === 0) {
+            setSelectedDay(1)
+            return next
           }
-          onClick={() => setSelectedDay(timelineStop.day)}
-        >
-          <span>Day {timelineStop.day}</span>
-          <strong>
-            {timelineStop.startingPoint} to {timelineStop.endPoint}
-          </strong>
-          <small>{timelineStop.note}</small>
-        </button>
-      ))}
-    </div>
-  )
 
-  const renderMap = () => (
-    <section
-      className="panel trip-tab-panel"
-      id="trip-panel-map"
-      role="tabpanel"
-      aria-labelledby="trip-tab-map"
-      tabIndex={0}
-    >
-      <h2>Map and timeline</h2>
-      <p>Select a day on the timeline and see the route update instantly on the map.</p>
+          if (!next.some((stop) => stop.day === selectedDay)) {
+            setSelectedDay(next[0].day)
+          }
 
-      <div className="trip-route-combined">
-        <div className="trip-route-timeline">
-          <h3>Timeline days</h3>
-          {renderTimelineSelector()}
+          return next
+        })
+        }
+    }
+    catch(error)
+    {
+      console.error(error)
+    } finally {
+      setIsRemovingTimelineId(null)
+    }
+
+  }
+
+  const sendMessage = async (e: FormEvent) => {
+    console.log(newMessage)
+    e.preventDefault()
+    if(!connectionRef.current || !newMessage.trim()) return
+    await connectionRef.current.invoke("SendMessage",trip.id,newMessage)
+
+    setNewMessage('')
+  }
+
+  // Renderers
+  const renderOverview = () => (
+    <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={revealTransition} className="trip-workspace-v2">
+      <div className="trip-main-content">
+        <div className="day-card-v2" style={{ marginBottom: '2rem' }}>
+          <h3>Expedition Summary</h3>
+          <p style={{ lineHeight: 1.6, color: 'var(--text-380)' }}>{tripDetails.description}</p>
         </div>
 
-        <div className="trip-route-map">
-          <p className="trip-submeta">
-            Day {currentStop.day}: {currentStop.startingPoint} to {currentStop.endPoint}
-          </p>
-          <TripRouteMap timeline={trip.timelines} selectedDay={selectedDay} />
-        </div>
-      </div>
-    </section>
-  )
-
-  const renderOverviewRoutePreview = () => (
-    <section className="trip-overview-preview">
-      <img src={trip.imageUrl} alt={trip.title} className="trip-overview-cover" />
-
-      <div className="trip-overview-content">
-        <div className="trip-overview-day">
-          <p className="eyebrow">Route for selected day</p>
-          <h3>Day {currentStop.day}</h3>
-          <div className="trip-overview-route-line">
-            <span className="trip-overview-location">{currentStop.startingPoint}</span>
-            <span className="trip-overview-distance-pill">
-              {selectedRouteDistanceKm.toFixed(1)} km
-            </span>
-            <span className="trip-overview-location">{currentStop.endPoint}</span>
+        <div className="trip-stats-bar-v2">
+          <div className="trip-stat-v2">
+            <label>Timeline</label>
+            <span>{timelines.length} Days</span>
           </div>
-          <p className="trip-submeta">{formatDisplayDate(currentStop.date)}</p>
-          <p className="trip-overview-note">{currentStop.note}</p>
+          <div className="trip-stat-v2">
+            <label>Expedition Size</label>
+            <span>{acceptedMembers.length}/{tripDetails.maxParticipants} Explorers</span>
+          </div>
+          <div className="trip-stat-v2">
+            <label>Starting</label>
+            <span>{formatDisplayDate(tripDetails.startingDate)}</span>
+          </div>
         </div>
 
-        <div className="trip-overview-map">
-          <TripRouteMap timeline={trip.timelines} selectedDay={selectedDay} />
+        <div className="builder-section-v2">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+            <h3>Route Preview</h3>
+            {currentStop && <span className="chip chip-static">{currentStop.day} OF {timelines.length}</span>}
+          </div>
+          
+          {currentStop ? (
+            <div className="stop-row-v2" style={{ border: 'none' }}>
+               <div className="stop-connector-v2">
+                  <div className="stop-dot-v2" style={{ background: 'var(--green-580)' }} />
+                  <div className="stop-line-v2" />
+                  <div className="stop-dot-v2" />
+               </div>
+               <div>
+                  <h4 style={{ color: '#f3fff1', marginBottom: '0.4rem' }}>{currentStop.startingPoint} → {currentStop.endPoint}</h4>
+                  <p style={{ fontSize: '0.85rem', color: 'var(--text-380)' }}>{currentStop.note}</p>
+                  <div style={{ marginTop: '1rem', display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                     <span style={{ fontSize: '0.8rem', opacity: 0.5 }}>{selectedRouteDistanceKm.toFixed(1)} KM</span>
+                     <span className="dot" />
+                     <span style={{ fontSize: '0.8rem', opacity: 0.5 }}>{formatDisplayDate(currentStop.date)}</span>
+                  </div>
+               </div>
+            </div>
+          ) : (
+            <p className="empty-note">No coordinates mapped yet.</p>
+          )}
+
+          <div className="trip-overview-map" style={{ height: '300px', borderRadius: '16px', overflow: 'hidden', marginTop: '2rem' }}>
+            <TripRouteMap timeline={timelines} selectedDay={selectedDay} />
+          </div>
         </div>
       </div>
-    </section>
+
+      <aside className="trip-sidebar-v2">
+        <div className="day-card-v2">
+          <h3>Your Access</h3>
+          {viewerParticipationState === 'accepted' ? (
+            <p className="empty-note" style={{ marginTop: '0.75rem' }}>
+              You are part of this expedition.
+            </p>
+          ) : viewerParticipationState === 'invited' ? (
+            <p className="empty-note" style={{ marginTop: '0.75rem' }}>
+              You have an invitation to join this expedition.
+            </p>
+          ) : viewerParticipationState === 'requested' ? (
+            <p className="empty-note" style={{ marginTop: '0.75rem' }}>
+              Your join request is pending review.
+            </p>
+          ) : authenticatedUser ? (
+            <button className="btn btn-primary" onClick={handleRequestToJoin} disabled={isRequestingAccess}>
+              {isRequestingAccess ? 'Requesting...' : 'Request to join'}
+            </button>
+          ) : (
+            <Link className="btn btn-primary" to="/login">
+              Log in to request access
+            </Link>
+          )}
+        </div>
+        <div className="day-card-v2">
+          <h3>Tags</h3>
+          <div className="chip-row" style={{ marginTop: '1rem' }}>
+            {tripDetails.tags.map(t => <span key={t} className="chip chip-static chip-sm">{t}</span>)}
+          </div>
+        </div>
+        <img src="/newstickers/sticker2.png" alt="" style={{ width: '100%', marginTop: '2rem', opacity: 0.6 }} />
+      </aside>
+    </motion.div>
   )
 
-  const renderMembers = () => (
-    <section
-      className="panel trip-tab-panel"
-      id="trip-panel-members"
-      role="tabpanel"
-      aria-labelledby="trip-tab-members"
-      tabIndex={0}
-    >
-      <h2>{isMember ? 'Members and roles' : 'Current members'}</h2>
-      <p>
-        {isMember
-          ? 'Owners and admins can update roles and remove members.'
-          : 'Review who is currently in this trip.'}
-      </p>
-
-      <ul className="member-list">
-        {members.map((member) => (
-          <li key={member.id} className="member-row">
-            <img className="avatar" src={member.avatarUrl} alt={member.username} />
-            <div>
-              <p className="list-title">{member.username}</p>
+  const renderTimeline = () => (
+    <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={revealTransition} className="trip-workspace-v2">
+      <div className="trip-main-content">
+        <div className="timeline-flow-v2">
+          {timelines.map((stop) => (
+            <div key={stop.day} className="timeline-day-v2">
+              <div className="day-marker-v2" />
+              <div className={selectedDay === stop.day ? 'day-card-v2 is-selected' : 'day-card-v2'} onClick={() => setSelectedDay(stop.day)} style={{ cursor: 'pointer' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <div>
+                    <p className="eyebrow">Day {stop.day}</p>
+                    <h3 style={{ margin: '0.2rem 0' }}>{stop.startingPoint} → {stop.endPoint}</h3>
+                    <p style={{ fontSize: '0.85rem', color: 'var(--text-380)' }}>{stop.note}</p>
+                  </div>
+                  {canManageTimelines && (
+                    <div className="invite-actions-v2">
+                       <button className="btn btn-ghost btn-sm" onClick={() => navigate(`/edit-timeline/${trip.id}/${stop.id}`)}>Edit</button>
+                       <button
+                         className="btn btn-ghost btn-sm"
+                         style={{ color: '#ff6b6b' }}
+                         disabled={isRemovingTimelineId === stop.id}
+                         onClick={() => handleRemoveTimeline(stop.id)}
+                       >
+                         {isRemovingTimelineId === stop.id ? 'Removing...' : 'Remove'}
+                       </button>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
+          ))}
+          {canManageTimelines && (
+            <button className="btn btn-primary" onClick={() => navigate(`/add-timeline/${trip.id}`)}>
+               <FiPlusCircle /> Add Day
+            </button>
+          )}
+        </div>
+      </div>
+      <div className="trip-sidebar-v2" style={{ position: 'sticky', top: '2rem' }}>
+         <div className="day-card-v2" style={{ padding: 0, height: '600px', overflow: 'hidden' }}>
+            <TripRouteMap timeline={timelines} selectedDay={selectedDay} />
+         </div>
+      </div>
+    </motion.div>
+  )
 
-            {isMember && canManageMembers && member.role !== 'owner' ? (
-              <>
-                <select
-                  className="input member-role-select"
-                  value={member.role}
-                  onChange={(event) =>
-                    handleRoleChange(member.id, event.target.value as MemberRole)
-                  }
-                >
-                  {roleOrder.map((role) => (
-                    <option key={role} value={role}>
-                      {role}
-                    </option>
-                  ))}
-                </select>
-                <button
-                  className="btn btn-danger"
-                  type="button"
-                  onClick={() => handleRemove(member.id)}
-                >
-                  Remove
-                </button>
-              </>
-            ) : (
-              <span className="role-pill">{member.role}</span>
+  const renderExpedition = () => (
+    <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={revealTransition}>
+      <div className="profile-section-v2" style={{ marginBottom: '2rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <h3>The Expedition Team</h3>
+            <p>Collaborators and explorers currently in the room.</p>
+          </div>
+          {canInviteMembers && (
+            <button className="btn btn-primary" onClick={() => setIsInviteModalOpen(true)}>
+              <FiUserPlus /> Invite Explorer
+            </button>
+          )}
+        </div>
+      </div>
+
+      <div className="discovery-grid">
+        {acceptedMembers.map((m) => (
+          <div key={m.id} className="history-row-v2" style={{ background: 'rgba(9, 14, 10, 0.4)', gridTemplateColumns: '60px 1fr auto' }}>
+            <img src={m.avatarUrl || '/newstickers/sticker1.png'} alt="" className="avatar" style={{ width: '50px', height: '50px', borderRadius: '14px' }} />
+            <div>
+              <h4 style={{ color: '#f3fff1' }}>{m.username}</h4>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <p className="eyebrow" style={{ fontSize: '0.65rem' }}>{normalizeMemberRole(m.role)}</p>
+                {canEditMemberRoles && normalizeMemberRole(m.role) !== 'owner' && (
+                  <select 
+                    className="input-trigger" 
+                    style={{ fontSize: '0.65rem', padding: '0.1rem 0.4rem', background: 'rgba(255,255,255,0.05)', border: 'none', borderRadius: '4px', color: 'var(--green-580)' }}
+                    value={normalizeMemberRole(m.role)}
+                    disabled={isUpdatingRoleMemberId === m.id || isRemovingMemberId === m.id}
+                    onChange={(e) => handleRoleChange(m.id, e.target.value as MemberRole)}
+                  >
+                    <option value="admin">Admin</option>
+                    <option value="member">Member</option>
+                  </select>
+                )}
+              </div>
+            </div>
+            {canRemoveMembers && normalizeMemberRole(m.role) !== 'owner' && (
+              <button
+                className="btn btn-ghost btn-sm"
+                style={{ color: '#ff6b6b' }}
+                disabled={isRemovingMemberId === m.id}
+                onClick={() => handleRemove(m.id)}
+              >
+                {isRemovingMemberId === m.id ? 'Removing...' : 'Remove'}
+              </button>
             )}
-          </li>
+          </div>
         ))}
-      </ul>
-    </section>
+      </div>
+
+      {pendingMembers.length > 0 && (
+        <div className="profile-section-v2" style={{ marginTop: '1.5rem' }}>
+          <h3>Pending participants</h3>
+          <div className="discovery-grid" style={{ marginTop: '1rem' }}>
+            {pendingMembers.map((m) => {
+              const memberRecord = m as unknown as Record<string, unknown>
+              const memberStatusLabel = getTripMemberStatusLabel(
+                memberRecord.status ?? memberRecord.memberStatus ?? memberRecord.member_status,
+              )
+
+              return (
+                <div key={m.id} className="history-row-v2" style={{ background: 'rgba(9, 14, 10, 0.4)', gridTemplateColumns: '60px 1fr auto' }}>
+                  <img src={m.avatarUrl || '/newstickers/sticker1.png'} alt="" className="avatar" style={{ width: '50px', height: '50px', borderRadius: '14px' }} />
+                      <div>
+                        <h4 style={{ color: '#f3fff1' }}>{m.username}</h4>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          <p className="eyebrow" style={{ fontSize: '0.65rem' }}>{memberStatusLabel}</p>
+                          {memberStatusLabel === 'Waiting for approval' && canInviteMembers && (
+                            <div style={{ display: 'flex', gap: '0.5rem', marginLeft: '0.75rem' }}>
+                              <button
+                                className="btn btn-primary btn-sm"
+                                disabled={isProcessingRequestMemberId === m.id}
+                                onClick={() => handleRespondToRequest(m, 'Accepted')}
+                              >
+                                {isProcessingRequestMemberId === m.id ? 'Processing...' : 'Accept'}
+                              </button>
+                              <button
+                                className="btn btn-ghost btn-sm"
+                                disabled={isProcessingRequestMemberId === m.id}
+                                onClick={() => handleRespondToRequest(m, 'Declined')}
+                                style={{ color: '#ff6b6b' }}
+                              >
+                                Decline
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+    </motion.div>
   )
 
   const renderChat = () => (
-    <section
-      className="panel trip-tab-panel"
-      id="trip-panel-chat"
-      role="tabpanel"
-      aria-labelledby="trip-tab-chat"
-      tabIndex={0}
-    >
-      <h2>Group chat</h2>
-      <p>Coordinate fast decisions, logistics, and check-ins with everyone.</p>
-
-      <div className="chat-box">
-        {chatMessages.map((message) => (
-          <div key={message.id} className="chat-message">
-            <p className="chat-meta">
-              {message.author} ({message.role}) - {message.at}
-            </p>
-            <p>{message.content}</p>
+    <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={revealTransition} className="ai-chat-v2" style={{ height: '70vh' }}>
+       <div className="ai-thread-v2">
+          {chatMessages.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '4rem 0' }}>
+               <img src="/newstickers/sticker3.png" alt="" style={{ width: '120px', opacity: 0.4 }} />
+               <p className="empty-note">Signal room is quiet. Start the conversation.</p>
+            </div>
+          ) : (
+            chatMessages.map(msg => (
+              <div
+                key={msg.id}
+                className={msg.username === authenticatedUser?.username ? 'ai-bubble-v2 user' : 'ai-bubble-v2 assistant'}
+              >
+                 <p style={{ fontSize: '0.75rem', opacity: 0.6, marginBottom: '0.3rem' }}>{msg.username}</p>
+                 <p>{msg.content}</p>
+                 <span style={{ fontSize: '0.65rem', opacity: 0.4, float: 'right', marginTop: '0.3rem' }}>
+                   {new Date(msg.sentAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                 </span>
+              </div>
+            ))
+          )}
+       </div>
+       <form className="ai-composer-v2" onSubmit={sendMessage}>
+          <div className="ai-composer-input-v2">
+             <input className="input" placeholder="Broadcast a signal to the team..." value={newMessage} onChange={e => setNewMessage(e.target.value)} />
+             <button className="btn btn-primary" type="submit">Send</button>
           </div>
-        ))}
-      </div>
-
-      <form className="chat-form" onSubmit={sendMessage}>
-        <input
-          className="input"
-          placeholder="Write a message to your group"
-          value={newMessage}
-          onChange={(event) => setNewMessage(event.target.value)}
-        />
-        <button className="btn btn-primary" type="submit">
-          Send
-        </button>
-      </form>
-    </section>
+       </form>
+    </motion.div>
   )
 
-  const renderOverview = () => {
-    if (isMember) {
-      return (
-        <section
-          className="panel trip-tab-panel"
-          id="trip-panel-overview"
-          role="tabpanel"
-          aria-labelledby="trip-tab-overview"
-          tabIndex={0}
-        >
-          <h2>Trip workspace overview</h2>
-          <p>
-            Navigate the sections above to focus on one operational area at a
-            time: map, timeline, member management, or chat.
-          </p>
-          <div className="trip-stat-row">
-            <span>{trip.currentMembers}/{trip.maxParticipants} members</span>
-            <span>{trip.timelines.length} days in timeline</span>
-            <span>{trip.price} EUR per person</span>
+  const renderSettings = () => (
+    <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={revealTransition}>
+      <form className="builder-form-v2" onSubmit={saveOwnerTripDetails}>
+        <div className="builder-section-v2">
+          <h3>Expedition Metadata</h3>
+          <div style={{ display: 'grid', gridTemplateColumns: '240px 1fr', gap: '2rem', marginBottom: '2rem' }}>
+             <label className="avatar-wrapper-v2" style={{ width: '240px', height: '160px', borderRadius: '24px' }}>
+                <img src={ownerTripDraft.imagePreviewUrl} alt="" className="avatar-preview-v2" />
+                <div className="avatar-upload-overlay-v2">
+                   <FiUploadCloud size={24} />
+                   <span>Upload Cover</span>
+                </div>
+                <input type="file" className="visually-hidden" accept="image/*" onChange={handleImageUpload} />
+             </label>
+             <div style={{ display: 'grid', gap: '1.5rem', flex: 1 }}>
+                <div className="form-group">
+                  <label className="field-label">Workspace Title</label>
+                  <input className="input" value={ownerTripDraft.title} onChange={e => handleOwnerDraftChange('title', e.target.value)} />
+                </div>
+                <div className="form-group">
+                  <label className="field-label">Expedition Status</label>
+                  <select className="input" value={ownerTripDraft.status} onChange={e => handleOwnerDraftChange('status', e.target.value)}>
+                    <option value="Upcoming">Upcoming</option>
+                    <option value="Started">Started</option>
+                    <option value="Finished">Finished</option>
+                  </select>
+                </div>
+             </div>
           </div>
-
-          {renderOverviewRoutePreview()}
-
-          <div className="chip-row">
-            {trip.tags.map((tag) => (
-              <span key={tag} className="chip chip-static">
-                {tag}
-              </span>
-            ))}
+          <div className="form-group" style={{ marginTop: '1.5rem' }}>
+            <label className="field-label">Mission Briefing</label>
+            <textarea className="input" rows={4} value={ownerTripDraft.description} onChange={e => handleOwnerDraftChange('description', e.target.value)} />
           </div>
-          <p className="info-banner">
-            Route defaults to today&apos;s day. If the trip has not started yet,
-            day 1 is selected automatically.
-          </p>
-        </section>
-      )
-    }
-
-    return (
-      <section
-        className="panel trip-tab-panel"
-        id="trip-panel-overview"
-        role="tabpanel"
-        aria-labelledby="trip-tab-overview"
-        tabIndex={0}
-      >
-        <h2>Join this trip</h2>
-        <p>
-          You are not in this group yet. Explore the map, timeline, and members,
-          then send a request if this trip fits your style.
-        </p>
-        <div className="trip-stat-row">
-          <span>{trip.price} EUR / person</span>
-          <span>{trip.maxParticipants} max members</span>
-          <span>{trip.timelines.length} timeline days</span>
         </div>
 
-        {renderOverviewRoutePreview()}
+        <div className="builder-section-v2">
+           <h3>Chronology & Capacity</h3>
+           <div className="builder-grid-v2">
+              <div className="form-group">
+                <label className="field-label">Starting Sync</label>
+                <input className="input" type="date" value={ownerTripDraft.startingDate} onChange={e => handleOwnerDraftChange('startingDate', e.target.value)} />
+              </div>
+              <div className="form-group">
+                <label className="field-label">Ending Sync</label>
+                <input className="input" type="date" value={ownerTripDraft.endingDate} onChange={e => handleOwnerDraftChange('endingDate', e.target.value)} />
+              </div>
+           </div>
+           <div className="form-group" style={{ marginTop: '1.5rem', maxWidth: '300px' }}>
+              <label className="field-label">Explorer Capacity</label>
+              <input className="input" type="number" value={ownerTripDraft.maxParticipants} onChange={e => handleOwnerDraftChange('maxParticipants', e.target.value)} />
+           </div>
+        </div>
 
-        <div className="chip-row">
-          {trip.tags.map((tag) => (
-            <span key={tag} className="chip chip-static">
-              {tag}
+        <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end', alignItems: 'center' }}>
+          {tripDetailsFeedback && (
+            <span className={`info-banner ${tripDetailsFeedback.tone}`} style={{ padding: '0.4rem 0.8rem', margin: 0, fontSize: '0.85rem' }}>
+              {tripDetailsFeedback.message}
             </span>
-          ))}
+          )}
+          <button className="btn btn-ghost" type="button" onClick={resetOwnerTripDraft}>Reset</button>
+          <button className="btn btn-primary btn-lg" type="submit" disabled={isSavingTripDetails}>
+            {isSavingTripDetails ? 'Syncing...' : 'Save Workspace'}
+          </button>
         </div>
-
-        <button
-          type="button"
-          className="btn btn-primary"
-          onClick={() => setRequestedJoin(true)}
-          disabled={requestedJoin}
-        >
-          {requestedJoin ? 'Request sent' : 'Request to join'}
-        </button>
-
-        {requestedJoin ? (
-          <p className="info-banner">
-            Join request sent. Trip owners and admins will review it soon.
-          </p>
-        ) : null}
-      </section>
-    )
-  }
-
-  const renderActiveTab = () => {
-    switch (activeWorkspaceTab) {
-      case 'map':
-        return renderMap()
-      case 'members':
-        return renderMembers()
-      case 'chat':
-        return isMember ? renderChat() : renderOverview()
-      case 'overview':
-      default:
-        return renderOverview()
-    }
-  }
+      </form>
+    </motion.div>
+  )
 
   return (
-    <section className="page trip-page">
-      <header className="panel trip-header">
-        <p className="eyebrow">{isMember ? 'Trip workspace' : 'Trip details'}</p>
-        <h1>{trip.title}</h1>
-        <p>{trip.description}</p>
-        <p className="trip-meta">
-          {formatDisplayDateRange(trip.startingDate, trip.endingDate)} - {trip.currentMembers}/{trip.maxParticipants}{' '}
-          members
-        </p>
+    <section className="page trip-page-v2 container">
+      <header className="trip-hero-v2">
+        <img src={tripDetails.imageUrl} alt="" className="trip-hero-img-v2" />
+        <div className="trip-hero-overlay-v2">
+          <div className="trip-hero-meta-v2">
+            <span className="chip chip-static">{tripDetails.status}</span>
+            <span className="chip chip-static">{formatDisplayDateRange(tripDetails.startingDate, tripDetails.endingDate)}</span>
+            {!isAcceptedMember && viewerParticipationState !== 'visitor' && (
+              <span className="chip chip-static">
+                {viewerParticipationState === 'invited' ? 'Invitation pending' : 'Request pending'}
+              </span>
+            )}
+          </div>
+          <h1>{tripDetails.title}</h1>
+        </div>
       </header>
 
-      <nav
-        ref={tabListRef}
-        className="trip-view-bar"
-        aria-label="Trip workspace sections"
-        role="tablist"
-      >
-        {tabs.map((tab, index) => (
-          <button
-            key={tab.key}
-            type="button"
-            id={`trip-tab-${tab.key}`}
-            className={
-              activeWorkspaceTab === tab.key
-                ? 'trip-view-btn is-active'
-                : 'trip-view-btn'
-            }
-            role="tab"
-            aria-selected={activeWorkspaceTab === tab.key}
-            aria-controls={`trip-panel-${tab.key}`}
-            tabIndex={activeWorkspaceTab === tab.key ? 0 : -1}
-            onClick={() => selectTab(tab.key)}
-            onKeyDown={(event) => handleTabKeyDown(event, index)}
-          >
+      <nav className="profile-tab-bar-v2" style={{ marginBottom: '3rem' }}>
+        {tabs.map((tab, idx) => (
+          <button key={tab.key} className={activeTab === tab.key ? 'profile-tab-btn-v2 is-active' : 'profile-tab-btn-v2'} onClick={() => selectTab(tab.key)} onKeyDown={e => handleTabKeyDown(e, idx)}>
             {tab.label}
           </button>
         ))}
       </nav>
 
-      <AnimatePresence mode="wait" initial={false}>
-        <motion.div
-          key={activeWorkspaceTab}
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -8 }}
-          transition={tabTransition}
-        >
-          {renderActiveTab()}
-        </motion.div>
+      <AnimatePresence mode="wait">
+        {activeTab === 'overview' && renderOverview()}
+        {activeTab === 'map' && renderTimeline()}
+        {activeTab === 'members' && renderExpedition()}
+        {activeTab === 'chat' && renderChat()}
+        {activeTab === 'settings' && renderSettings()}
+      </AnimatePresence>
+
+      {/* Invite Modal */}
+      <AnimatePresence>
+        {isInviteModalOpen && (
+          <div className="modal-scrim" onClick={() => setIsInviteModalOpen(false)}>
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="builder-section-v2" style={{ width: '100%', maxWidth: '500px', background: 'var(--bg-900)' }} onClick={e => e.stopPropagation()}>
+               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2rem' }}>
+                  <h3>Invite Explorer</h3>
+                  <button className="btn btn-ghost btn-sm" onClick={() => setIsInviteModalOpen(false)}><FiX /></button>
+               </div>
+               <input className="input" placeholder="Search by username..." value={inviteUsernameQuery} onChange={e => { setInviteUsernameQuery(e.target.value); debounceSearchInviteCanditate(e.target.value); }} />
+               {isSearchingInviteUser ? (
+                 <p className="empty-note" style={{ marginTop: '0.75rem' }}>Searching users...</p>
+               ) : null}
+               
+               <div style={{ marginTop: '2rem', display: 'grid', gap: '1rem' }}>
+                  {candidates.map(c => (
+                    <div key={c.id} className="history-row-v2" style={{ gridTemplateColumns: '40px 1fr auto', padding: '0.6rem' }}>
+                       <img src={c.profileUrl || '/newstickers/sticker1.png'} alt="" style={{ width: '30px', height: '30px', borderRadius: '8px' }} />
+                       <span style={{ fontSize: '0.9rem' }}>{c.username}</span>
+                       <button
+                         className="btn btn-primary btn-sm"
+                         disabled={isInvitingUserId === String(c.id)}
+                         onClick={() => handleInviteAction(c)}
+                       >
+                         {isInvitingUserId === String(c.id) ? 'Inviting...' : 'Invite'}
+                       </button>
+                    </div>
+                  ))}
+               </div>
+               {inviteFeedback && <p className={`info-banner ${inviteFeedback.tone}`} style={{ marginTop: '1rem' }}>{inviteFeedback.message}</p>}
+            </motion.div>
+          </div>
+        )}
       </AnimatePresence>
     </section>
   )
 }
+
+const FiPlusCircle = () => <svg stroke="currentColor" fill="none" strokeWidth="2" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>

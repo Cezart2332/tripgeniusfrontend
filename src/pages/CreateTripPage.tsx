@@ -4,20 +4,22 @@ import type { FormEvent, ReactNode } from 'react'
 import {
   FiArrowLeft,
   FiCalendar,
-  FiChevronDown,
   FiMapPin,
   FiUploadCloud,
   FiX,
+  FiPlusCircle,
+  FiTrash2,
+  FiCheckCircle,
+  FiTag
 } from 'react-icons/fi'
 import { Link, useNavigate } from 'react-router-dom'
 import { tripTypeOptions } from '../data/tripTypeOptions'
 import type { User } from '../types/models'
 import { useSelector } from 'react-redux'
-import type { TripStatus, TripTimelineStop } from '../types/models'
+import type { TripStatus } from '../types/models'
 import api from '../data/api'
-import { AxiosError } from 'axios'
 import { FeedbackToast } from '../components/FeedbackToast'
-import type { FeedbackToastState, FeedbackToastTone } from '../components/FeedbackToast'
+import type { FeedbackToastState } from '../components/FeedbackToast'
 import waitForBackendButtonUnlock from '../utils/interactionDelay'
 
 interface TimelineDraftStop {
@@ -46,7 +48,6 @@ interface CreateTripFormState {
   timeline: TimelineDraftStop[]
 }
 
-type LocationField = 'from' | 'to'
 
 interface LocationSelection {
   name: string
@@ -104,28 +105,22 @@ interface CalendarState {
 
 type BuilderStep = 'details' | 'timeline' | 'overview'
 
-const builderSteps: Array<{ key: BuilderStep; label: string }> = [
-  { key: 'details', label: 'Trip details' },
-  { key: 'timeline', label: 'Route timeline' },
-  { key: 'overview', label: 'Overview' },
+const builderSteps: Array<{ key: BuilderStep; label: string; description: string }> = [
+  { key: 'details', label: 'Identity', description: 'Define the core of your expedition' },
+  { key: 'timeline', label: 'Route', description: 'Chart the coordinates and stops' },
+  { key: 'overview', label: 'Review', description: 'Final inspection before launch' },
 ]
 
 const revealTransition = {
-  duration: 0.55,
+  duration: 0.58,
   ease: [0.22, 1, 0.36, 1] as const,
-}
-
-const modalTransition = {
-  duration: 0.25,
-  ease: [0.2, 0.8, 0.2, 1] as const,
 }
 
 const builderPaneTransition = {
-  duration: 0.3,
+  duration: 0.35,
   ease: [0.22, 1, 0.36, 1] as const,
 }
 
-const weekdayLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
 const monthFormatter = new Intl.DateTimeFormat('en-US', {
   month: 'long',
@@ -138,23 +133,6 @@ const dateLabelFormatter = new Intl.DateTimeFormat('en-GB', {
   year: 'numeric',
 })
 
-const statusOptions: Array<{ value: TripStatus; label: string; hint: string }> = [
-  {
-    value: 'Upcoming',
-    label: 'Upcoming',
-    hint: 'Trip is planned and not started yet.',
-  },
-  {
-    value: 'Started',
-    label: 'Started',
-    hint: 'Trip is currently running and members can follow live updates.',
-  },
-  {
-    value: 'Finished',
-    label: 'Finished',
-    hint: 'Trip already ended and should appear in history.',
-  },
-]
 
 const getDateOffset = (offset: number): string => {
   const nextDate = new Date()
@@ -194,26 +172,11 @@ const createInitialFormState = (): CreateTripFormState => {
 }
 
 
-
-const sanitizeTag = (tag: string): string =>
-  tag.trim().toLowerCase().replace(/\s+/g, '-')
-
 const parseLocalDate = (value: string): Date | null => {
   const [yearValue, monthValue, dayValue] = value.split('-').map(Number)
-  if (!yearValue || !monthValue || !dayValue) {
-    return null
-  }
-
+  if (!yearValue || !monthValue || !dayValue) return null
   const date = new Date(yearValue, monthValue - 1, dayValue)
-
-  if (
-    date.getFullYear() !== yearValue ||
-    date.getMonth() !== monthValue - 1 ||
-    date.getDate() !== dayValue
-  ) {
-    return null
-  }
-
+  if (date.getFullYear() !== yearValue || date.getMonth() !== monthValue - 1 || date.getDate() !== dayValue) return null
   return date
 }
 
@@ -226,10 +189,7 @@ function formatLocalDate(date: Date): string {
 
 const formatDateLabel = (value: string): string => {
   const parsedDate = parseLocalDate(value)
-  if (!parsedDate) {
-    return 'Select date'
-  }
-
+  if (!parsedDate) return 'Select date'
   return dateLabelFormatter.format(parsedDate)
 }
 
@@ -238,17 +198,11 @@ const buildCalendarCells = (monthCursor: Date): Array<Date | null> => {
   const month = monthCursor.getMonth()
   const firstDay = new Date(year, month, 1)
   const daysInMonth = new Date(year, month + 1, 0).getDate()
-
   const leadingEmptyCells = firstDay.getDay()
-  const cells: Array<Date | null> = Array.from(
-    { length: leadingEmptyCells },
-    () => null,
-  )
-
+  const cells: Array<Date | null> = Array.from({ length: leadingEmptyCells }, () => null)
   for (let day = 1; day <= daysInMonth; day += 1) {
     cells.push(new Date(year, month, day))
   }
-
   return cells
 }
 
@@ -257,1297 +211,457 @@ const isSameDay = (left: Date, right: Date): boolean =>
   left.getMonth() === right.getMonth() &&
   left.getDate() === right.getDate()
 
-function ModalSurface({
-  isOpen,
-  title,
-  subtitle,
-  onClose,
-  children,
-}: ModalSurfaceProps) {
+function ModalSurface({ isOpen, title, subtitle, onClose, children }: ModalSurfaceProps) {
   useEffect(() => {
-    if (!isOpen) {
-      return
-    }
-
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        onClose()
-      }
-    }
-
+    if (!isOpen) return
+    const onKeyDown = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
     window.addEventListener('keydown', onKeyDown)
-    return () => {
-      window.removeEventListener('keydown', onKeyDown)
-    }
+    return () => window.removeEventListener('keydown', onKeyDown)
   }, [isOpen, onClose])
 
   return (
     <AnimatePresence>
-      {isOpen ? (
-        <motion.div
-          className="modal-scrim"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={modalTransition}
-          onClick={onClose}
-        >
-          <motion.div
-            className="modal-card"
-            initial={{ opacity: 0, y: 14, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 10, scale: 0.98 }}
-            transition={modalTransition}
-            onClick={(event) => event.stopPropagation()}
-            role="dialog"
-            aria-modal="true"
-          >
-            <div className="modal-head">
-              <div>
-                <h2>{title}</h2>
-                {subtitle ? <p>{subtitle}</p> : null}
-              </div>
-              <button className="modal-close" type="button" onClick={onClose}>
-                <FiX aria-hidden="true" />
-                <span className="visually-hidden">Close modal</span>
-              </button>
-            </div>
-            {children}
+      {isOpen && (
+        <motion.div className="modal-scrim" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose}>
+          <motion.div className="builder-section-v2" style={{ maxWidth: '500px', width: '90%', background: 'var(--bg-900)' }} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} onClick={e => e.stopPropagation()}>
+             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2rem' }}>
+                <div>
+                   <h3>{title}</h3>
+                   {subtitle && <p className="eyebrow">{subtitle}</p>}
+                </div>
+                <button className="btn btn-ghost btn-sm" onClick={onClose}><FiX /></button>
+             </div>
+             {children}
           </motion.div>
         </motion.div>
-      ) : null}
+      )}
     </AnimatePresence>
   )
 }
 
-function LocationAutocompleteField({
-  id,
-  label,
-  placeholder,
-  value,
-  mapboxToken,
-  onValueChange,
-  onLocationSelect,
-}: LocationAutocompleteFieldProps) {
+function LocationAutocompleteField({ id, label, placeholder, value, mapboxToken, onValueChange, onLocationSelect }: LocationAutocompleteFieldProps) {
   const [isFocused, setIsFocused] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
   const [suggestions, setSuggestions] = useState<LocationSuggestion[]>([])
 
-  const query = value.trim()
-
   useEffect(() => {
-    if (!mapboxToken || query.length < 2) {
+    if (!mapboxToken || value.trim().length < 2) {
       setSuggestions([])
-      setIsLoading(false)
-      setError(null)
       return
     }
-
     const controller = new AbortController()
-    const debounceTimer = window.setTimeout(async () => {
+    const timer = setTimeout(async () => {
       setIsLoading(true)
-      setError(null)
-
       try {
-        const endpoint = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(
-          query,
-        )}.json?autocomplete=true&limit=6&types=place,locality,address,poi&access_token=${mapboxToken}`
-
-        const response = await fetch(endpoint, {
-          signal: controller.signal,
-        })
-
-        if (!response.ok) {
-          throw new Error('Location search temporarily unavailable.')
-        }
-
-        const payload = (await response.json()) as MapboxGeocodingResponse
-
-        const parsedSuggestions = (payload.features ?? [])
-          .map((feature) => ({
-            id: feature.id,
-            name: feature.text || feature.place_name,
-            placeName: feature.place_name,
-            lng: Number(feature.center?.[0]),
-            lat: Number(feature.center?.[1]),
-          }))
-          .filter(
-            (feature) =>
-              Number.isFinite(feature.lng) &&
-              Number.isFinite(feature.lat) &&
-              feature.placeName,
-          )
-
-        setSuggestions(parsedSuggestions)
-      } catch (searchError) {
-        if (controller.signal.aborted) {
-          return
-        }
-
-        const message =
-          searchError instanceof Error
-            ? searchError.message
-            : 'Could not fetch location suggestions.'
-        setError(message)
-        setSuggestions([])
-      } finally {
-        if (!controller.signal.aborted) {
-          setIsLoading(false)
-        }
-      }
-    }, 280)
-
-    return () => {
-      controller.abort()
-      window.clearTimeout(debounceTimer)
-    }
-  }, [mapboxToken, query])
-
-  const showDropdown = isFocused && (isLoading || suggestions.length > 0 || !!error)
+        const res = await fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(value)}.json?autocomplete=true&limit=6&access_token=${mapboxToken}`, { signal: controller.signal })
+        const data = await res.json() as MapboxGeocodingResponse
+        setSuggestions(data.features?.map(f => ({
+          id: f.id,
+          name: f.text,
+          placeName: f.place_name,
+          lng: f.center[0],
+          lat: f.center[1]
+        })) || [])
+      } finally { setIsLoading(false) }
+    }, 300)
+    return () => { clearTimeout(timer); controller.abort() }
+  }, [value, mapboxToken])
 
   return (
-    <div className="location-autocomplete">
-      <label className="field-label" htmlFor={id}>
-        {label}
-      </label>
-      <div className="location-input-shell">
-        <FiMapPin aria-hidden="true" className="location-input-icon" />
-        <input
-          id={id}
-          className="input location-input"
-          value={value}
-          onChange={(event) => onValueChange(event.target.value)}
-          onFocus={() => setIsFocused(true)}
-          onBlur={() => {
-            window.setTimeout(() => {
-              setIsFocused(false)
-            }, 120)
-          }}
-          placeholder={placeholder}
-          required
-        />
+    <div className="form-group" style={{ position: 'relative' }}>
+      <label className="field-label" htmlFor={id}>{label}</label>
+      <div className="location-input-shell" style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.03)', borderRadius: '12px', padding: '0 1rem' }}>
+        <FiMapPin style={{ opacity: 0.4 }} />
+        <input id={id} className="input" style={{ border: 'none', background: 'transparent' }} value={value} onChange={e => onValueChange(e.target.value)} onFocus={() => setIsFocused(true)} onBlur={() => setTimeout(() => setIsFocused(false), 200)} placeholder={placeholder} />
       </div>
-
-      {showDropdown ? (
-        <div className="location-dropdown">
-          {isLoading ? (
-            <p className="location-meta">
-              <span className="inline-loading-content">
-                <span className="inline-spinner" aria-hidden="true" />
-                Searching places...
-              </span>
-            </p>
-          ) : null}
-          {!isLoading && error ? <p className="location-meta is-error">{error}</p> : null}
-          {!isLoading && !error && suggestions.length === 0 ? (
-            <p className="location-meta">No matches found for this location.</p>
-          ) : null}
-
-          {!isLoading && !error
-            ? suggestions.map((suggestion) => (
-                <button
-                  key={suggestion.id}
-                  type="button"
-                  className="location-option"
-                  onMouseDown={(event) => {
-                    event.preventDefault()
-                    onLocationSelect(suggestion)
-                    setIsFocused(false)
-                  }}
-                >
-                  <span className="location-option-main">{suggestion.name}</span>
-                  <span className="location-option-sub">{suggestion.placeName}</span>
-                </button>
-              ))
-            : null}
+      {isFocused && (suggestions.length > 0 || isLoading) && (
+        <div className="location-dropdown" style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 10, background: 'var(--bg-900)', border: '1px solid rgba(154,198,148,0.1)', borderRadius: '12px', marginTop: '0.5rem', overflow: 'hidden', boxShadow: '0 10px 25px rgba(0,0,0,0.4)' }}>
+           {isLoading && <p style={{ padding: '1rem', fontSize: '0.8rem', opacity: 0.5 }}>Syncing satellites...</p>}
+           {suggestions.map(s => (
+             <button key={s.id} type="button" className="location-option" style={{ width: '100%', textAlign: 'left', padding: '1rem', border: 'none', background: 'transparent', cursor: 'pointer' }} onMouseDown={() => onLocationSelect(s)}>
+                <div style={{ fontWeight: 600, color: '#f3fff1' }}>{s.name}</div>
+                <div style={{ fontSize: '0.75rem', opacity: 0.5 }}>{s.placeName}</div>
+             </button>
+           ))}
         </div>
-      ) : null}
+      )}
     </div>
   )
-}
-
-const getCalendarValue = (
-  target: CalendarTarget,
-  formState: CreateTripFormState,
-): string => {
-  return formState[target.field]
-}
-
-const getCoordinateCaption = (lng: string, lat: string): string => {
-  const parsedLng = Number(lng)
-  const parsedLat = Number(lat)
-
-  if (!Number.isFinite(parsedLng) || !Number.isFinite(parsedLat)) {
-    return 'No coordinates yet. Select a location from the search list.'
-  }
-
-  return `Lat ${parsedLat.toFixed(5)} / Lng ${parsedLng.toFixed(5)}`
 }
 
 export function CreateTripPage() {
   const navigate = useNavigate()
   const user = useSelector((state: AuthStoreState) => state.auth.user)
-  const mapboxPublicToken =
-    (import.meta.env.VITE_MAPBOX_PUBLIC_TOKEN as string | undefined)?.trim() ?? ''
+  const mapboxToken = (import.meta.env.VITE_MAPBOX_PUBLIC_TOKEN as string)?.trim() ?? ''
 
-  const [formState, setFormState] = useState<CreateTripFormState>(
-    createInitialFormState,
-  )
-  const [activeBuilderStep, setActiveBuilderStep] = useState<BuilderStep>('details')
+  const [formState, setFormState] = useState<CreateTripFormState>(createInitialFormState)
+  const [activeStep, setActiveStep] = useState<BuilderStep>('details')
   const [toast, setToast] = useState<FeedbackToastState | null>(null)
-  const [creationError, setCreationError] = useState<string | null>(null)
-  const [statusModalOpen, setStatusModalOpen] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [isPublishingTrip, setIsPublishingTrip] = useState(false)
   const [calendarState, setCalendarState] = useState<CalendarState | null>(null)
 
-  const activeBuilderStepIndex = Math.max(
-    0,
-    builderSteps.findIndex((step) => step.key === activeBuilderStep),
-  )
-  const isFirstBuilderStep = activeBuilderStepIndex === 0
-  const isLastBuilderStep = activeBuilderStepIndex === builderSteps.length - 1
-  const nextBuilderStep = !isLastBuilderStep
-    ? builderSteps[activeBuilderStepIndex + 1]
-    : null
+  const activeIndex = builderSteps.findIndex(s => s.key === activeStep)
+  const isFirst = activeIndex === 0
+  const isLast = activeIndex === builderSteps.length - 1
 
-  const showToast = (message: string, tone: FeedbackToastTone) => {
-    setToast({
-      id: Date.now(),
-      message,
-      tone,
-    })
+  const calendarCells = useMemo(() => calendarState ? buildCalendarCells(calendarState.monthCursor) : [], [calendarState])
+  const selectedCalendarDate = useMemo(() => calendarState ? parseLocalDate(formState[calendarState.target.field]) : null, [calendarState, formState])
+
+  const openCalendar = (field: 'startDate' | 'endDate') => {
+    const val = formState[field]
+    const date = parseLocalDate(val) || new Date()
+    setCalendarState({ target: { kind: 'trip', field }, monthCursor: new Date(date.getFullYear(), date.getMonth(), 1) })
   }
 
-  const calendarCells = useMemo(() => {
-    if (!calendarState) {
-      return []
-    }
-
-    return buildCalendarCells(calendarState.monthCursor)
-  }, [calendarState])
-
-  const selectedCalendarDate = useMemo(() => {
-    if (!calendarState) {
-      return null
-    }
-
-    return parseLocalDate(getCalendarValue(calendarState.target, formState))
-  }, [calendarState, formState])
-
-  const openCalendar = (target: CalendarTarget) => {
-    const currentValue = getCalendarValue(target, formState)
-    const parsedDate = parseLocalDate(currentValue) ?? new Date()
-
-    setCalendarState({
-      target,
-      monthCursor: new Date(parsedDate.getFullYear(), parsedDate.getMonth(), 1),
-    })
+  const shiftMonth = (step: number) => {
+    setCalendarState(p => p ? { ...p, monthCursor: new Date(p.monthCursor.getFullYear(), p.monthCursor.getMonth() + step, 1) } : p)
   }
 
-  const closeCalendar = () => {
+  const selectDate = (date: Date) => {
+    if (!calendarState) return
+    setFormState(p => ({ ...p, [calendarState.target.field]: formatLocalDate(date) }))
     setCalendarState(null)
   }
 
-  const shiftCalendarMonth = (step: number) => {
-    setCalendarState((previous) => {
-      if (!previous) {
-        return previous
-      }
+  const handleCreate = async (e: FormEvent) => {
+    e.preventDefault()
 
-      return {
-        ...previous,
-        monthCursor: new Date(
-          previous.monthCursor.getFullYear(),
-          previous.monthCursor.getMonth() + step,
-          1,
-        ),
-      }
-    })
-  }
-
-  const selectCalendarDate = (date: Date) => {
-    if (!calendarState) {
+    if (isPublishingTrip) {
       return
     }
 
-    const serializedDate = formatLocalDate(date)
+    setError(null)
+    if (!formState.title.trim()) { setError('Mission title is required.'); return }
+    if (!formState.coverImageFile) { setError('A cover image is required for identification.'); return }
 
-    setFormState((previous) => ({
-      ...previous,
-      [calendarState.target.field]: serializedDate,
-    }))
-
-    closeCalendar()
-  }
-
-  const updateTimelineStop = (
-    index: number,
-    field: keyof TimelineDraftStop,
-    value: string,
-  ) => {
-    setFormState((previous) => ({
-      ...previous,
-      timeline: previous.timeline.map((stop, stopIndex) =>
-        stopIndex === index ? { ...stop, [field]: value } : stop,
-      ),
-    }))
-  }
-
-  const updateTimelineLocationValue = (
-    index: number,
-    field: LocationField,
-    value: string,
-  ) => {
-    setFormState((previous) => ({
-      ...previous,
-      timeline: previous.timeline.map((stop, stopIndex) => {
-        if (stopIndex !== index) {
-          return stop
-        }
-
-        if (field === 'from') {
-          return {
-            ...stop,
-            from: value,
-            fromLng: '',
-            fromLat: '',
-          }
-        }
-
-        return {
-          ...stop,
-          to: value,
-          toLng: '',
-          toLat: '',
-        }
-      }),
-    }))
-  }
-
-  const applyTimelineLocationSelection = (
-    index: number,
-    field: LocationField,
-    selection: LocationSelection,
-  ) => {
-    setFormState((previous) => ({
-      ...previous,
-      timeline: previous.timeline.map((stop, stopIndex) => {
-        if (stopIndex !== index) {
-          return stop
-        }
-
-        if (field === 'from') {
-          return {
-            ...stop,
-            from: selection.placeName,
-            fromLng: selection.lng.toFixed(6),
-            fromLat: selection.lat.toFixed(6),
-          }
-        }
-
-        return {
-          ...stop,
-          to: selection.placeName,
-          toLng: selection.lng.toFixed(6),
-          toLat: selection.lat.toFixed(6),
-        }
-      }),
-    }))
-  }
-
-  const addTimelineStop = () => {
-    setFormState((previous) => ({
-      ...previous,
-      timeline: [...previous.timeline, createTimelineStopDraft()],
-    }))
-  }
-
-  const removeTimelineStop = (index: number) => {
-    setFormState((previous) => {
-      if (previous.timeline.length <= 1) {
-        return previous
-      }
-
-      return {
-        ...previous,
-        timeline: previous.timeline.filter((_, stopIndex) => stopIndex !== index),
-      }
-    })
-  }
-
-  const toggleTripTag = (tag: string) => {
-    setFormState((previous) => {
-      const alreadySelected = previous.tags.includes(tag)
-
-      return {
-        ...previous,
-        tags: alreadySelected
-          ? previous.tags.filter((tripTag) => tripTag !== tag)
-          : [...previous.tags, tag],
-      }
-    })
-  }
-
-  const addCustomTag = () => {
-    const normalizedTag = sanitizeTag(formState.customTag)
-    if (!normalizedTag) {
-      return
-    }
-
-    setFormState((previous) => {
-      if (previous.tags.includes(normalizedTag)) {
-        return { ...previous, customTag: '' }
-      }
-
-      return {
-        ...previous,
-        tags: [...previous.tags, normalizedTag],
-        customTag: '',
-      }
-    })
-  }
-
-  const handleCoverImageUpload = (
-    event: React.ChangeEvent<HTMLInputElement>,
-  ) => {
-    const selectedFile = event.target.files?.[0]
-    setCreationError(null)
-
-    if (!selectedFile) {
-      return
-    }
-
-    const reader = new FileReader()
-
-    reader.onload = () => {
-      const result = reader.result
-      if (typeof result !== 'string') {
-        setCreationError('Could not read the selected image file.')
-        return
-      }
-
-      setFormState((previous) => ({
-        ...previous,
-        coverImageDataUrl: result,
-        coverImageFileName: selectedFile.name,
-        coverImageFile:selectedFile
-      }))
-    }
-
-    reader.onerror = () => {
-      setCreationError('Could not read the selected image file.')
-    }
-
-    reader.readAsDataURL(selectedFile)
-  }
-
-  const createTrip = async (
-    title: string,
-    description: string,
-    image: File | null,
-    startingDate: Date,
-    endingDate: Date,
-    status: TripStatus,
-    tags: string[],
-    maxParticipants: number,
-    price: number,
-    timelines: TripTimelineStop[],
-  ) => {
-    const formData = new FormData()
-    formData.append('title', title)
-    formData.append('description', description)
-    if (image) {
-      formData.append('image', image)
-    }
-    formData.append('startingDate', startingDate.toISOString())
-    formData.append('endingDate', endingDate.toISOString())
-    formData.append('status', status)
-    tags.forEach((tag) => formData.append('tags', tag))
-    formData.append('maxParticipants', String(maxParticipants))
-    formData.append('price', String(price))
-    timelines.forEach((timeline, i) =>{
-      formData.append(`Timelines[${i}].Day`, String(timeline.day))
-      formData.append(`Timelines[${i}].StartingPoint`, timeline.startingPoint)
-      formData.append(`Timelines[${i}].FromCoords[0]`, String(timeline.fromCoords[0]))
-      formData.append(`Timelines[${i}].FromCoords[1]`, String(timeline.fromCoords[1]))
-      formData.append(`Timelines[${i}].EndPoint`, timeline.endPoint)
-      formData.append(`Timelines[${i}].ToCoords[0]`, String(timeline.toCoords[0]))
-      formData.append(`Timelines[${i}].ToCoords[1]`, String(timeline.toCoords[1]))
-      formData.append(`Timelines[${i}].Note`, String(timeline.note))
-    })
-
-
-    return api.post('/api/trip/create-trip', formData)
-  }
-
-  const handleCreateTrip = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    setCreationError(null)
-
-    if (!formState.title.trim()) {
-      setCreationError('Trip title is required.')
-      return
-    }
-
-    if (!formState.description.trim()) {
-      setCreationError('Please add a short trip description.')
-      return
-    }
-
-    if (!formState.coverImageDataUrl) {
-      setCreationError('Please upload a cover image file for the trip.')
-      return
-    }
-
-    if (formState.tags.length === 0) {
-      setCreationError('Select at least one trip tag.')
-      return
-    }
-
-    const startDate = parseLocalDate(formState.startDate)
-    const endDate = parseLocalDate(formState.endDate)
-
-    if (!startDate || !endDate) {
-      setCreationError('Please select valid start and end dates from the calendar.')
-      return
-    }
-
-    if (startDate.getTime() > endDate.getTime()) {
-      setCreationError('Trip end date must be the same as or after the start date.')
-      return
-    }
-
-    const minimumEndDate = new Date(startDate)
-    minimumEndDate.setDate(startDate.getDate() + (formState.timeline.length - 1))
-
-    if (endDate.getTime() < minimumEndDate.getTime()) {
-      setCreationError(
-        `End date should include all timeline days. Choose ${formatDateLabel(
-          formatLocalDate(minimumEndDate),
-        )} or later.`,
-      )
-      return
-    }
-
-    if (!mapboxPublicToken) {
-      setCreationError(
-        'Mapbox token is missing, so location lookup cannot provide coordinates.',
-      )
-      return
-    }
-
-    let timeline: TripTimelineStop[]
+    setIsPublishingTrip(true)
 
     try {
-      timeline = formState.timeline.map((stop, index) => {
-        if (!stop.from.trim() || !stop.to.trim()) {
-          throw new Error(`Timeline day ${index + 1} needs both From and To locations.`)
-        }
-
-        const fromLat = Number(stop.fromLat)
-        const fromLng = Number(stop.fromLng)
-        const toLat = Number(stop.toLat)
-        const toLng = Number(stop.toLng)
-        
-        if (
-          !Number.isFinite(fromLng) ||
-          !Number.isFinite(fromLat) ||
-          !Number.isFinite(toLng) ||
-          !Number.isFinite(toLat)
-        ) {
-          throw new Error(
-            `Timeline day ${index + 1} is missing coordinates. Pick a place from the search suggestions for both From and To.`,
-          )
-        }
-
-        const timelineDate = new Date(startDate)
-        timelineDate.setDate(startDate.getDate() + index)
-
-        return {
-          day: index + 1,
-          date: formatLocalDate(timelineDate),
-          startingPoint: stop.from.trim(),
-          endPoint: stop.to.trim(),
-          fromCoords: [fromLat, fromLng],
-          toCoords: [toLat, toLng],
-          note: stop.note.trim() || 'Trip stop details will be updated by trip admins.',
-        }
+      const formData = new FormData()
+      formData.append('title', formState.title)
+      formData.append('description', formState.description)
+      if (formState.coverImageFile) formData.append('image', formState.coverImageFile)
+      formData.append('startingDate', new Date(formState.startDate).toISOString())
+      formData.append('endingDate', new Date(formState.endDate).toISOString())
+      formData.append('status', formState.status)
+      formState.tags.forEach(t => formData.append('tags', t))
+      formData.append('maxParticipants', String(formState.maxMembers))
+      formData.append('price', String(formState.budgetPerPerson))
+      
+      formState.timeline.forEach((stop, i) => {
+        formData.append(`Timelines[${i}].Day`, String(i + 1))
+        formData.append(`Timelines[${i}].StartingPoint`, stop.from)
+        formData.append(`Timelines[${i}].FromCoords[0]`, stop.fromLat)
+        formData.append(`Timelines[${i}].FromCoords[1]`, stop.fromLng)
+        formData.append(`Timelines[${i}].EndPoint`, stop.to)
+        formData.append(`Timelines[${i}].ToCoords[0]`, stop.toLat)
+        formData.append(`Timelines[${i}].ToCoords[1]`, stop.toLng)
+        formData.append(`Timelines[${i}].Note`, stop.note)
       })
-    } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : 'Please complete all timeline fields before publishing.'
-      setCreationError(message)
-      return
-    }
 
-    try {
-      await createTrip(
-        formState.title,
-        formState.description,
-        formState.coverImageFile,
-        startDate,
-        endDate,
-        formState.status,
-        formState.tags,
-        formState.maxMembers,
-        formState.budgetPerPerson,
-        timeline,
-      )
-
-      showToast('Your trip has been created successfully', 'success')
-      window.setTimeout(() => {
-        navigate('/discover', { replace: true })
-      }, 2000)
-    } catch (err: unknown) {
-      if (err instanceof AxiosError) {
-        const message =
-          err.response?.data?.message ||
-          err.response?.data ||
-          'There was a problem creating your trip'
-        showToast(String(message), 'error')
-      } else {
-        showToast('There was a problem creating your trip', 'error')
-      }
+      await api.post('/api/trip/create-trip', formData)
+      setToast({ id: Date.now(), message: 'Expedition synchronized!', tone: 'success' })
+      setTimeout(() => navigate('/discover'), 2000)
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Synchronization failed.')
     } finally {
       await waitForBackendButtonUnlock()
+      setIsPublishingTrip(false)
     }
-
-    
-
-
-
-  }
-
-  const hasMapboxToken = Boolean(mapboxPublicToken)
-  const selectedStatusOption =
-    statusOptions.find((option) => option.value === formState.status) ?? statusOptions[0]
-
-  const getTimelineDateLabel = (index: number): string => {
-    const parsedStartDate = parseLocalDate(formState.startDate)
-    if (!parsedStartDate) {
-      return `Day ${index + 1}`
-    }
-
-    const timelineDate = new Date(parsedStartDate)
-    timelineDate.setDate(parsedStartDate.getDate() + index)
-    return formatDateLabel(formatLocalDate(timelineDate))
-  }
-
-  const selectBuilderStep = (nextStep: BuilderStep) => {
-    setCreationError(null)
-    setActiveBuilderStep(nextStep)
-  }
-
-  const goToNextBuilderStep = () => {
-    if (isLastBuilderStep) {
-      return
-    }
-
-    selectBuilderStep(builderSteps[activeBuilderStepIndex + 1].key)
-  }
-
-  const goToPreviousBuilderStep = () => {
-    if (isFirstBuilderStep) {
-      return
-    }
-
-    selectBuilderStep(builderSteps[activeBuilderStepIndex - 1].key)
   }
 
   if (!user) {
     return (
-      <section className="page profile-page">
-        <FeedbackToast toast={toast} clearToast={() => setToast(null)} />
-        <section className="panel profile-editor-card">
-          <p className="eyebrow">Profile</p>
-          <h1>You are not logged in</h1>
-          <p>Log in to edit your profile and unlock personalized trip discovery.</p>
-          <Link className="btn btn-primary" to="/login">
-            Go to login
-          </Link>
-        </section>
+      <section className="page container">
+        <div className="discovery-empty-state">
+          <h1>Identity verification failed</h1>
+          <p>Please log in to register new expeditions.</p>
+          <Link className="btn btn-primary" to="/login">Go to login</Link>
+        </div>
       </section>
     )
   }
 
   return (
-    <section className="page create-trip-page">
+    <section className="page builder-workspace-v2 container">
       <FeedbackToast toast={toast} clearToast={() => setToast(null)} />
-      <motion.form
-        className="panel create-trip-panel"
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={revealTransition}
-        onSubmit={handleCreateTrip}
-      >
-        <div className="profile-section-head">
-          <div>
-            <p className="eyebrow">Create trip</p>
-            <h1>Publish a new trip</h1>
-            <p>
-              Use custom controls for status and dates, and select timeline locations
-              from search suggestions to auto-fill latitude and longitude.
-            </p>
-          </div>
-          <Link className="btn btn-ghost" to="/discover">
-            <FiArrowLeft aria-hidden="true" />
-            Back to discovery
-          </Link>
-        </div>
-
-        <ol className="builder-stepper" aria-label="Create trip steps">
-          {builderSteps.map((step, index) => {
-            const isActive = step.key === activeBuilderStep
-            const isComplete = index < activeBuilderStepIndex
-
-            return (
-              <li
-                key={step.key}
-                className={
-                  isActive
-                    ? 'builder-step-item is-active'
-                    : isComplete
-                      ? 'builder-step-item is-complete'
-                      : 'builder-step-item'
-                }
-              >
-                <button
-                  type="button"
-                  className="builder-step-btn"
-                  onClick={() => selectBuilderStep(step.key)}
-                  aria-current={isActive ? 'step' : undefined}
-                >
-                  <span className="builder-step-index">{index + 1}</span>
-                  <span>{step.label}</span>
-                </button>
-              </li>
-            )
-          })}
-        </ol>
-
-        <p className="field-help builder-step-caption">
-          Step {activeBuilderStepIndex + 1} of {builderSteps.length}
+      
+      <header className="builder-header-v2">
+        <p className="eyebrow">Expedition Registry</p>
+        <h1>{builderSteps[activeIndex].label}</h1>
+        <p style={{ maxWidth: '600px', margin: '0.5rem auto', color: 'var(--text-380)' }}>
+          {builderSteps[activeIndex].description}
         </p>
+      </header>
 
-        {!hasMapboxToken ? (
-          <p className="info-banner is-error">
-            Mapbox token is missing. Add VITE_MAPBOX_PUBLIC_TOKEN in your environment
-            to enable location autocomplete and coordinate auto-fill.
-          </p>
-        ) : null}
+      <div className="builder-steps-v2">
+        {builderSteps.map((s, i) => (
+          <div key={s.key} className={activeIndex === i ? 'step-indicator-v2 is-active' : 'step-indicator-v2'} />
+        ))}
+      </div>
 
-        <AnimatePresence mode="wait" initial={false}>
-          <motion.div
-            key={activeBuilderStep}
-            className="builder-step-panel"
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            transition={builderPaneTransition}
-          >
-            {activeBuilderStep === 'details' ? (
-              <div className="create-trip-grid create-trip-grid-single">
-                <div>
-                  <label className="field-label" htmlFor="create-trip-title">
-                    Trip title
-                  </label>
-                  <input
-                    id="create-trip-title"
-                    className="input"
-                    value={formState.title}
-                    onChange={(event) =>
-                      setFormState((previous) => ({
-                        ...previous,
-                        title: event.target.value,
-                      }))
-                    }
-                    placeholder="Ex: Balkan Summer Roadtrip"
-                    required
-                  />
+      <motion.form onSubmit={handleCreate} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={revealTransition}>
+        <AnimatePresence mode="wait">
+          {activeStep === 'details' && (
+            <motion.div key="details" className="builder-form-v2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={builderPaneTransition}>
+              <div className="builder-section-v2">
+                <h3>Core Identity</h3>
+                <div className="form-group" style={{ marginTop: '2rem' }}>
+                  <label className="field-label">Trip Title</label>
+                  <input className="input" placeholder="Ex: Arctic Survival Expedition" value={formState.title} onChange={e => setFormState(p => ({ ...p, title: e.target.value }))} />
+                </div>
+                <div className="form-group" style={{ marginTop: '1.5rem' }}>
+                  <label className="field-label">Description</label>
+                  <textarea className="input" rows={4} placeholder="Describe the mission goals..." value={formState.description} onChange={e => setFormState(p => ({ ...p, description: e.target.value }))} />
+                </div>
+              </div>
 
-                  <label className="field-label" htmlFor="create-trip-description">
-                    Description
-                  </label>
-                  <textarea
-                    id="create-trip-description"
-                    className="input input-area"
-                    rows={4}
-                    value={formState.description}
-                    onChange={(event) =>
-                      setFormState((previous) => ({
-                        ...previous,
-                        description: event.target.value,
-                      }))
-                    }
-                    placeholder="Write what this trip is about"
-                    required
-                  />
-
-                  <label className="field-label" htmlFor="create-trip-cover-file">
-                    Cover image file
-                  </label>
-                  <label className="upload-dropzone" htmlFor="create-trip-cover-file">
-                    <FiUploadCloud className="upload-icon" aria-hidden="true" />
-                    <span>Drop an image or click to upload</span>
-                    <small className="file-note">{formState.coverImageFileName}</small>
-                  </label>
-                  <input
-                    id="create-trip-cover-file"
-                    className="visually-hidden"
-                    type="file"
-                    accept="image/png,image/jpeg,image/webp"
-                    onChange={handleCoverImageUpload}
-                  />
-
-                  {formState.coverImageDataUrl ? (
-                    <img
-                      src={formState.coverImageDataUrl}
-                      alt="Trip cover preview"
-                      className="trip-cover-preview"
-                    />
-                  ) : null}
-
-                  <div className="create-fields-row">
-                    <div>
-                      <label className="field-label">Status</label>
-                      <button
-                        className="input input-trigger"
-                        type="button"
-                        onClick={() => setStatusModalOpen(true)}
-                      >
-                        <span className="input-trigger-content">
-                          {selectedStatusOption.label}
-                        </span>
-                        <FiChevronDown aria-hidden="true" />
-                      </button>
-                      <p className="field-help">{selectedStatusOption.hint}</p>
-                    </div>
-
-                    <div>
-                      <label className="field-label" htmlFor="create-trip-budget">
-                        Budget / person (EUR)
-                      </label>
-                      <input
-                        id="create-trip-budget"
-                        className="input"
-                        type="number"
-                        min={1}
-                        value={formState.budgetPerPerson}
-                        onChange={(event) =>
-                          setFormState((previous) => ({
-                            ...previous,
-                            budgetPerPerson: Number(event.target.value),
-                          }))
-                        }
-                        required
-                      />
-                    </div>
+              <div className="builder-grid-v2">
+                <div className="builder-section-v2">
+                  <h3>Logistics</h3>
+                  <div className="form-group" style={{ marginTop: '1.5rem' }}>
+                    <label className="field-label">Start Date</label>
+                    <button type="button" className="input input-trigger" onClick={() => openCalendar('startDate')}>
+                       <span>{formatDateLabel(formState.startDate)}</span>
+                       <FiCalendar />
+                    </button>
                   </div>
-
-                  <div className="create-fields-row">
-                    <div>
-                      <label className="field-label">Start date</label>
-                      <button
-                        className="input input-trigger"
-                        type="button"
-                        onClick={() =>
-                          openCalendar({
-                            kind: 'trip',
-                            field: 'startDate',
-                          })
-                        }
-                      >
-                        <span className="input-trigger-content">
-                          <FiCalendar aria-hidden="true" />
-                          {formatDateLabel(formState.startDate)}
-                        </span>
-                        <FiChevronDown aria-hidden="true" />
-                      </button>
-                    </div>
-
-                    <div>
-                      <label className="field-label">End date</label>
-                      <button
-                        className="input input-trigger"
-                        type="button"
-                        onClick={() =>
-                          openCalendar({
-                            kind: 'trip',
-                            field: 'endDate',
-                          })
-                        }
-                      >
-                        <span className="input-trigger-content">
-                          <FiCalendar aria-hidden="true" />
-                          {formatDateLabel(formState.endDate)}
-                        </span>
-                        <FiChevronDown aria-hidden="true" />
-                      </button>
-                    </div>
-                  </div>
-
-                  <label className="field-label" htmlFor="create-trip-max-members">
-                    Maximum members
-                  </label>
-                  <input
-                    id="create-trip-max-members"
-                    className="input"
-                    type="number"
-                    min={2}
-                    value={formState.maxMembers}
-                    onChange={(event) =>
-                      setFormState((previous) => ({
-                        ...previous,
-                        maxMembers: Number(event.target.value),
-                      }))
-                    }
-                    required
-                  />
-
-                  <label className="field-label">Trip tags</label>
-                  <div className="chip-row">
-                    {tripTypeOptions.map((tripType) => {
-                      const selected = formState.tags.includes(tripType)
-
-                      return (
-                        <button
-                          key={tripType}
-                          type="button"
-                          className={selected ? 'chip is-selected' : 'chip'}
-                          onClick={() => toggleTripTag(tripType)}
-                        >
-                          {tripType}
-                        </button>
-                      )
-                    })}
-                  </div>
-
-                  <div className="custom-tag-row">
-                    <input
-                      className="input"
-                      value={formState.customTag}
-                      onChange={(event) =>
-                        setFormState((previous) => ({
-                          ...previous,
-                          customTag: event.target.value,
-                        }))
-                      }
-                      placeholder="Add custom tag"
-                    />
-                    <button
-                      type="button"
-                      className="btn btn-ghost"
-                      onClick={addCustomTag}
-                    >
-                      Add tag
+                  <div className="form-group" style={{ marginTop: '1rem' }}>
+                    <label className="field-label">End Date</label>
+                    <button type="button" className="input input-trigger" onClick={() => openCalendar('endDate')}>
+                       <span>{formatDateLabel(formState.endDate)}</span>
+                       <FiCalendar />
                     </button>
                   </div>
                 </div>
-              </div>
-            ) : null}
 
-            {activeBuilderStep === 'timeline' ? (
-              <div className="timeline-editor">
-                <h2>Timeline route stops</h2>
-                <p>
-                  Add route stops for each day. Dates are automatically assigned in
-                  order, starting from your trip start date.
-                </p>
-
-                {formState.timeline.map((stop, index) => (
-                  <section key={`timeline-stop-${index}`} className="timeline-stop-card">
-                    <div className="timeline-stop-header">
-                      <p className="list-title">Day {index + 1}</p>
-                      {formState.timeline.length > 1 ? (
-                        <button
-                          type="button"
-                          className="btn btn-ghost timeline-remove-btn"
-                          onClick={() => removeTimelineStop(index)}
-                        >
-                          Remove day
-                        </button>
-                      ) : null}
-                    </div>
-
-                    <div className="create-fields-row">
-                      <div>
-                        <LocationAutocompleteField
-                          id={`timeline-from-${index}`}
-                          label="From"
-                          placeholder="Search departure location"
-                          mapboxToken={mapboxPublicToken ?? ''}
-                          value={stop.from}
-                          onValueChange={(value) =>
-                            updateTimelineLocationValue(index, 'from', value)
-                          }
-                          onLocationSelect={(selection) =>
-                            applyTimelineLocationSelection(index, 'from', selection)
-                          }
-                        />
-                        <p className="coord-caption">
-                          {getCoordinateCaption(stop.fromLng, stop.fromLat)}
-                        </p>
-                      </div>
-
-                      <div>
-                        <LocationAutocompleteField
-                          id={`timeline-to-${index}`}
-                          label="To"
-                          placeholder="Search destination location"
-                          mapboxToken={mapboxPublicToken ?? ''}
-                          value={stop.to}
-                          onValueChange={(value) =>
-                            updateTimelineLocationValue(index, 'to', value)
-                          }
-                          onLocationSelect={(selection) =>
-                            applyTimelineLocationSelection(index, 'to', selection)
-                          }
-                        />
-                        <p className="coord-caption">
-                          {getCoordinateCaption(stop.toLng, stop.toLat)}
-                        </p>
-                      </div>
-                    </div>
-
-                    <label className="field-label" htmlFor={`timeline-note-${index}`}>
-                      Stop note
-                    </label>
-                    <textarea
-                      id={`timeline-note-${index}`}
-                      className="input input-area"
-                      rows={2}
-                      value={stop.note}
-                      onChange={(event) =>
-                        updateTimelineStop(index, 'note', event.target.value)
-                      }
-                      placeholder="Plan for this day"
-                    />
-                  </section>
-                ))}
-
-                <button
-                  type="button"
-                  className="btn btn-ghost"
-                  onClick={addTimelineStop}
-                >
-                  Add another day stop
-                </button>
-              </div>
-            ) : null}
-
-            {activeBuilderStep === 'overview' ? (
-              <section className="panel create-publish-overview">
-                <h2>Trip overview</h2>
-                <p>Review your details before publishing.</p>
-
-                <div className="trip-stat-row">
-                  <span>Title: {formState.title || 'Missing'}</span>
-                  <span>Status: {selectedStatusOption.label}</span>
-                  <span>Timeline days: {formState.timeline.length}</span>
-                </div>
-
-                <div className="trip-stat-row">
-                  <span>Start: {formatDateLabel(formState.startDate)}</span>
-                  <span>End: {formatDateLabel(formState.endDate)}</span>
-                  <span>Budget: {Math.max(1, formState.budgetPerPerson)} EUR</span>
-                  <span>Max members: {Math.max(2, formState.maxMembers)}</span>
-                </div>
-
-                <section className="overview-block">
-                  <p className="list-title">Description</p>
-                  <p>{formState.description || 'Missing description'}</p>
-                </section>
-
-                <section className="overview-block">
-                  <p className="list-title">Trip tags</p>
-                  <div className="chip-row">
-                    {formState.tags.length > 0
-                      ? formState.tags.map((tag) => (
-                          <span key={tag} className="chip is-selected">
-                            {tag}
-                          </span>
-                        ))
-                      : 'No tags selected yet.'}
+                <div className="builder-section-v2">
+                  <h3>Capacity & Cost</h3>
+                  <div className="form-group" style={{ marginTop: '1.5rem' }}>
+                    <label className="field-label">Budget per Person (EUR)</label>
+                    <input type="number" className="input" value={formState.budgetPerPerson} onChange={e => setFormState(p => ({ ...p, budgetPerPerson: Number(e.target.value) }))} />
                   </div>
-                </section>
+                  <div className="form-group" style={{ marginTop: '1rem' }}>
+                    <label className="field-label">Max Explorers</label>
+                    <input type="number" className="input" value={formState.maxMembers} onChange={e => setFormState(p => ({ ...p, maxMembers: Number(e.target.value) }))} />
+                  </div>
+                </div>
+              </div>
 
-                {formState.coverImageDataUrl ? (
-                  <section className="overview-block">
-                    <p className="list-title">Cover preview</p>
-                    <img
-                      src={formState.coverImageDataUrl}
-                      alt="Trip cover preview"
-                      className="trip-cover-preview"
-                    />
-                  </section>
-                ) : null}
-
-                <section className="overview-block">
-                  <p className="list-title">Timeline summary</p>
-                  <div className="overview-timeline-list">
-                    {formState.timeline.map((stop, index) => (
-                      <article
-                        key={`overview-stop-${index}`}
-                        className="overview-timeline-item"
+              <div className="builder-section-v2">
+                <h3>Tags & Vibe</h3>
+                <p className="eyebrow" style={{ marginTop: '0.5rem', marginBottom: '1rem' }}>Select trip styles or add your own</p>
+                <div className="chip-row">
+                  {tripTypeOptions.map((tag) => {
+                    const isSelected = formState.tags.includes(tag)
+                    return (
+                      <button
+                        key={tag}
+                        type="button"
+                        className={isSelected ? 'chip is-selected' : 'chip'}
+                        onClick={() => {
+                          setFormState(prev => ({
+                            ...prev,
+                            tags: isSelected 
+                              ? prev.tags.filter(t => t !== tag)
+                              : [...prev.tags, tag]
+                          }))
+                        }}
                       >
-                        <p className="list-title">
-                          Day {index + 1} · {getTimelineDateLabel(index)}
-                        </p>
-                        <p>
-                          {stop.from.trim() || 'Missing departure'} to{' '}
-                          {stop.to.trim() || 'Missing destination'}
-                        </p>
-                        <p className="trip-submeta">
-                          {stop.note.trim() || 'No note added for this day.'}
-                        </p>
-                      </article>
-                    ))}
+                        {tag}
+                      </button>
+                    )
+                  })}
+                  {/* Custom Tags already added */}
+                  {formState.tags.filter(t => !tripTypeOptions.includes(t)).map(tag => (
+                    <button
+                        key={tag}
+                        type="button"
+                        className="chip is-selected"
+                        onClick={() => {
+                          setFormState(prev => ({
+                            ...prev,
+                            tags: prev.tags.filter(t => t !== tag)
+                          }))
+                        }}
+                      >
+                        {tag} <FiX size={12} style={{ marginLeft: '4px' }} />
+                      </button>
+                  ))}
+                </div>
+                
+                <div className="form-group" style={{ marginTop: '1.5rem', display: 'flex', gap: '0.5rem' }}>
+                  <div style={{ position: 'relative', flex: 1 }}>
+                    <FiTag style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', opacity: 0.4 }} />
+                    <input 
+                      className="input" 
+                      style={{ paddingLeft: '2.8rem' }}
+                      placeholder="Add custom mission tag..." 
+                      value={formState.customTag}
+                      onChange={e => setFormState(p => ({ ...p, customTag: e.target.value }))}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault()
+                          const tag = formState.customTag.trim().toLowerCase()
+                          if (tag && !formState.tags.includes(tag)) {
+                            setFormState(p => ({
+                              ...p,
+                              tags: [...p.tags, tag],
+                              customTag: ''
+                            }))
+                          }
+                        }
+                      }}
+                    />
                   </div>
-                </section>
-              </section>
-            ) : null}
-          </motion.div>
+                  <button 
+                    type="button" 
+                    className="btn btn-ghost"
+                    onClick={() => {
+                      const tag = formState.customTag.trim().toLowerCase()
+                      if (tag && !formState.tags.includes(tag)) {
+                        setFormState(p => ({
+                          ...p,
+                          tags: [...p.tags, tag],
+                          customTag: ''
+                        }))
+                      }
+                    }}
+                  >
+                    <FiPlusCircle />
+                  </button>
+                </div>
+              </div>
+
+              <div className="builder-section-v2">
+                <h3>Visual Identification</h3>
+                <label className="upload-dropzone" htmlFor="cover-upload" style={{ background: 'rgba(255,255,255,0.02)', border: '2px dashed rgba(154,198,148,0.1)', height: '240px', borderRadius: '24px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+                   {formState.coverImageDataUrl ? (
+                     <img src={formState.coverImageDataUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '22px' }} />
+                   ) : (
+                     <>
+                       <FiUploadCloud size={40} style={{ opacity: 0.3, marginBottom: '1rem' }} />
+                       <p style={{ opacity: 0.5 }}>Click to upload cover satellite image</p>
+                     </>
+                   )}
+                </label>
+                <input id="cover-upload" type="file" className="visually-hidden" onChange={e => {
+                  const file = e.target.files?.[0]
+                  if (file) {
+                    const reader = new FileReader()
+                    reader.onload = () => setFormState(p => ({ ...p, coverImageDataUrl: reader.result as string, coverImageFile: file }))
+                    reader.readAsDataURL(file)
+                  }
+                }} />
+              </div>
+            </motion.div>
+          )}
+
+          {activeStep === 'timeline' && (
+            <motion.div key="timeline" className="builder-form-v2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={builderPaneTransition}>
+               <div className="timeline-flow-v2">
+                  {formState.timeline.map((stop, i) => (
+                    <div key={i} className="timeline-day-v2">
+                       <div className="day-marker-v2" />
+                       <div className="builder-section-v2">
+                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
+                             <h3>Day {i + 1} Coordinates</h3>
+                             {formState.timeline.length > 1 && (
+                               <button type="button" className="btn btn-ghost btn-sm" onClick={() => setFormState(p => ({ ...p, timeline: p.timeline.filter((_, idx) => idx !== i) }))}>
+                                  <FiTrash2 />
+                               </button>
+                             )}
+                          </div>
+                          <div className="builder-grid-v2">
+                             <LocationAutocompleteField id={`from-${i}`} label="Starting Point" placeholder="Search locality..." mapboxToken={mapboxToken} value={stop.from} onValueChange={v => setFormState(p => ({ ...p, timeline: p.timeline.map((s, idx) => idx === i ? { ...s, from: v } : s) }))} onLocationSelect={s => setFormState(p => ({ ...p, timeline: p.timeline.map((st, idx) => idx === i ? { ...st, from: s.placeName, fromLat: String(s.lat), fromLng: String(s.lng) } : st) }))} />
+                             <LocationAutocompleteField id={`to-${i}`} label="End Point" placeholder="Search locality..." mapboxToken={mapboxToken} value={stop.to} onValueChange={v => setFormState(p => ({ ...p, timeline: p.timeline.map((s, idx) => idx === i ? { ...s, to: v } : s) }))} onLocationSelect={s => setFormState(p => ({ ...p, timeline: p.timeline.map((st, idx) => idx === i ? { ...st, to: s.placeName, toLat: String(s.lat), toLng: String(s.lng) } : st) }))} />
+                          </div>
+                          <div className="form-group" style={{ marginTop: '1.5rem' }}>
+                             <label className="field-label">Navigation Note</label>
+                             <input className="input" placeholder="Planned activities for the day..." value={stop.note} onChange={e => setFormState(p => ({ ...p, timeline: p.timeline.map((s, idx) => idx === i ? { ...s, note: e.target.value } : s) }))} />
+                          </div>
+                       </div>
+                    </div>
+                  ))}
+               </div>
+               <button type="button" className="btn btn-ghost" style={{ alignSelf: 'center', marginTop: '2rem' }} onClick={() => setFormState(p => ({ ...p, timeline: [...p.timeline, createTimelineStopDraft()] }))}>
+                  <FiPlusCircle /> Extend Timeline
+               </button>
+            </motion.div>
+          )}
+
+          {activeStep === 'overview' && (
+            <motion.div key="overview" className="builder-form-v2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={builderPaneTransition}>
+               <div className="builder-section-v2" style={{ textAlign: 'center' }}>
+                  <FiCheckCircle size={48} style={{ color: 'var(--green-580)', marginBottom: '1rem' }} />
+                  <h3>Pre-Flight Check</h3>
+                  <p>All expedition data is synchronized. Review the summary below.</p>
+               </div>
+
+               <div className="trip-stats-bar-v2">
+                  <div className="trip-stat-v2">
+                     <label>Mission</label>
+                     <span>{formState.title || 'Untitled'}</span>
+                  </div>
+                  <div className="trip-stat-v2">
+                     <label>Chronology</label>
+                     <span>{formState.timeline.length} Days</span>
+                  </div>
+                  <div className="trip-stat-v2">
+                     <label>Budget</label>
+                     <span>{formState.budgetPerPerson} EUR</span>
+                  </div>
+               </div>
+
+               <div className="builder-section-v2">
+                  <h3>Mission Briefing</h3>
+                  <p style={{ marginTop: '1rem', color: 'var(--text-380)', lineHeight: 1.6 }}>{formState.description}</p>
+                  
+                  <div className="chip-row" style={{ marginTop: '1.5rem' }}>
+                      {formState.tags.map(tag => (
+                        <span key={tag} className="chip-static">{tag}</span>
+                      ))}
+                  </div>
+               </div>
+            </motion.div>
+          )}
         </AnimatePresence>
 
-        {creationError ? <p className="info-banner is-error">{creationError}</p> : null}
+        {error && <p className="info-banner is-error" style={{ marginTop: '2rem' }}>{error}</p>}
 
-        <div className="create-actions">
-          {!isFirstBuilderStep ? (
-            <button
-              type="button"
-              className="btn btn-ghost"
-              onClick={goToPreviousBuilderStep}
-            >
-              Previous step
-            </button>
-          ) : null}
-
-          <button
-            type="button"
-            className="btn btn-ghost"
-            onClick={() => {
-              setFormState(createInitialFormState())
-              setCreationError(null)
-              setActiveBuilderStep('details')
-            }}
-          >
-            Reset fields
-          </button>
-
-          {!isLastBuilderStep ? (
-            <button
-              className="btn btn-primary"
-              type="button"
-              onClick={goToNextBuilderStep}
-            >
-              {nextBuilderStep ? `Next: ${nextBuilderStep.label}` : 'Next step'}
-            </button>
-          ) : (
-            <button className="btn btn-primary" type="submit">
-              Publish trip
-            </button>
-          )}
+        <div className="create-actions" style={{ marginTop: '3rem', display: 'flex', gap: '1rem', justifyContent: 'center' }}>
+           {!isFirst && <button type="button" className="btn btn-ghost btn-lg" disabled={isPublishingTrip} onClick={() => setActiveStep(builderSteps[activeIndex - 1].key)}>Previous Step</button>}
+           {isLast ? (
+             <button type="submit" className="btn btn-primary btn-lg" style={{ minWidth: '240px' }} disabled={isPublishingTrip}>
+               {isPublishingTrip ? 'Publishing...' : 'Publish Expedition'}
+             </button>
+           ) : (
+             <button type="button" className="btn btn-primary btn-lg" style={{ minWidth: '240px' }} disabled={isPublishingTrip} onClick={() => setActiveStep(builderSteps[activeIndex + 1].key)}>Next Step</button>
+           )}
         </div>
       </motion.form>
 
-      <ModalSurface
-        isOpen={statusModalOpen}
-        title="Trip status"
-        subtitle="Choose how the trip should appear in discovery."
-        onClose={() => setStatusModalOpen(false)}
-      >
-        <div className="option-stack">
-          {statusOptions.map((option) => (
-            <button
-              key={option.value}
-              type="button"
-              className={
-                option.value === formState.status
-                  ? 'option-item is-active'
-                  : 'option-item'
-              }
-              onClick={() => {
-                setFormState((previous) => ({
-                  ...previous,
-                  status: option.value,
-                }))
-                setStatusModalOpen(false)
-              }}
-            >
-              <span>{option.label}</span>
-              <small>{option.hint}</small>
-            </button>
-          ))}
-        </div>
-      </ModalSurface>
-
-      <ModalSurface
-        isOpen={Boolean(calendarState)}
-        title="Select date"
-        subtitle="Pick a date from the custom trip calendar."
-        onClose={closeCalendar}
-      >
-        {calendarState ? (
-          <div className="calendar-shell">
-            <div className="calendar-head">
-              <button
-                type="button"
-                className="icon-btn"
-                onClick={() => shiftCalendarMonth(-1)}
-              >
-                <FiChevronDown aria-hidden="true" className="icon-rotated" />
-                <span className="visually-hidden">Previous month</span>
-              </button>
-              <p>{monthFormatter.format(calendarState.monthCursor)}</p>
-              <button
-                type="button"
-                className="icon-btn"
-                onClick={() => shiftCalendarMonth(1)}
-              >
-                <FiChevronDown aria-hidden="true" className="icon-rotated-down" />
-                <span className="visually-hidden">Next month</span>
-              </button>
+      {/* Calendar Modal */}
+      <ModalSurface isOpen={Boolean(calendarState)} title="Chronology Sync" subtitle="Pick a date for the mission timeline" onClose={() => setCalendarState(null)}>
+         <div className="calendar-shell">
+            <div className="calendar-head" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+               <button type="button" className="btn btn-ghost btn-sm" onClick={() => shiftMonth(-1)}><FiArrowLeft /></button>
+               <h4 style={{ color: '#f3fff1' }}>{calendarState && monthFormatter.format(calendarState.monthCursor)}</h4>
+               <button type="button" className="btn btn-ghost btn-sm" onClick={() => shiftMonth(1)}><FiArrowLeft style={{ transform: 'rotate(180deg)' }} /></button>
             </div>
-
-            <div className="calendar-weekdays">
-              {weekdayLabels.map((weekday) => (
-                <span key={weekday}>{weekday}</span>
-              ))}
+            <div className="calendar-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '0.4rem' }}>
+               {calendarCells.map((date, i) => {
+                 if (!date) return <div key={i} />
+                 const isSel = selectedCalendarDate && isSameDay(date, selectedCalendarDate)
+                 return (
+                   <button key={i} type="button" className={isSel ? 'calendar-day is-selected' : 'calendar-day'} style={{ padding: '0.8rem', borderRadius: '12px', border: 'none', background: isSel ? 'var(--green-580)' : 'rgba(255,255,255,0.03)', color: isSel ? '#fff' : '#f3fff1', cursor: 'pointer' }} onClick={() => selectDate(date)}>
+                      {date.getDate()}
+                   </button>
+                 )
+               })}
             </div>
-
-            <div className="calendar-grid">
-              {calendarCells.map((calendarDate, index) => {
-                if (!calendarDate) {
-                  return <span key={`empty-${index}`} className="calendar-empty" />
-                }
-
-                const isSelected = selectedCalendarDate
-                  ? isSameDay(calendarDate, selectedCalendarDate)
-                  : false
-                const isToday = isSameDay(calendarDate, new Date())
-
-                return (
-                  <button
-                    key={calendarDate.toISOString()}
-                    type="button"
-                    className={
-                      isSelected
-                        ? 'calendar-day is-selected'
-                        : isToday
-                          ? 'calendar-day is-today'
-                          : 'calendar-day'
-                    }
-                    onClick={() => selectCalendarDate(calendarDate)}
-                  >
-                    {calendarDate.getDate()}
-                  </button>
-                )
-              })}
-            </div>
-          </div>
-        ) : null}
+         </div>
       </ModalSurface>
     </section>
   )

@@ -1,6 +1,7 @@
 import { type FormEvent, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useDispatch } from 'react-redux'
+import { GoogleLogin } from '@react-oauth/google'
 import api from '../data/api'
 import { setCredentials, setToken } from '../data/authSlice'
 import { AxiosError } from 'axios'
@@ -17,15 +18,10 @@ const GoogleIcon = () => (
   </svg>
 )
 
-const loginHighlights = [
-  'Open your trip workspace instantly after sign-in.',
-  'Continue where your group left off in map, chat, and timeline.',
-  'Keep your profile-driven discovery recommendations active.',
-]
-
 export function LoginPage() {
   const dispatch = useDispatch()
   const navigate = useNavigate()
+  const hasGoogleClientId = Boolean((import.meta.env.VITE_GOOGLE_CLIENT_ID ?? '').trim())
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -39,17 +35,65 @@ export function LoginPage() {
     })
   }
 
-const login = async (email:string, password:string) => {
-    const res = await api.post('api/auth/login', { email, password });
-    console.log(res)
+  const login = async (emailValue: string, passwordValue: string) => {
+    const res = await api.post('api/auth/login', { email: emailValue, password: passwordValue })
 
-    dispatch(setToken({ token: res.data.token }));
-    
+    if (!res.data?.token) {
+      throw new Error('Invalid login response')
+    }
+
+    dispatch(setToken({ token: res.data.token }))
+
     const user = await api.get('/api/user/me', {
-        headers: { Authorization: `Bearer ${res.data.token}` } 
-    });
-    dispatch(setCredentials({ user: user.data, token: res.data.token }));
-}
+      headers: { Authorization: `Bearer ${res.data.token}` },
+    })
+    dispatch(setCredentials({ user: user.data, token: res.data.token }))
+  }
+
+  const loginWithGoogleCredential = async (credential: string) => {
+    const res = await api.post('/api/auth/google-login', { idToken:credential })
+
+    if (!res.data?.token) {
+      throw new Error('Invalid Google login response')
+    }
+
+    dispatch(setToken({ token: res.data.token }))
+
+    if (res.data?.user) {
+      dispatch(setCredentials({ user: res.data.user, token: res.data.token }))
+      return
+    }
+
+    const user = await api.get('/api/user/me', {
+      headers: { Authorization: `Bearer ${res.data.token}` },
+    })
+    dispatch(setCredentials({ user: user.data, token: res.data.token }))
+  }
+
+  const handleGoogleSuccess = async (credentialResponse: { credential?: string | null }) => {
+    if (!credentialResponse.credential) {
+      showToast('Google login failed. Please try again.', 'error')
+      return
+    }
+
+    setIsLoading(true)
+
+    try {
+      await loginWithGoogleCredential(credentialResponse.credential)
+      showToast('Login successful. Redirecting...', 'success')
+      navigate('/profile', { replace: true })
+    } catch (err: unknown) {
+      if (err instanceof AxiosError) {
+        const message = err.response?.data?.message || err.response?.data || 'Google login failed. Please try again.'
+        showToast(String(message), 'error')
+      } else {
+        showToast('Google login failed. Please try again.', 'error')
+      }
+    } finally {
+      await waitForBackendButtonUnlock()
+      setIsLoading(false)
+    }
+  }
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -65,22 +109,15 @@ const login = async (email:string, password:string) => {
       await login(email, password)
       showToast('Login successful. Redirecting...', 'success')
       shouldNavigate = true
-    } 
-    catch (err : unknown) 
-    {
-      if(err instanceof AxiosError)
-      {
-        const message = err.response?.data?.message || err.response?.data || "There was a problem, please try again later."
-        showToast(String(message), 'error')
+    } catch (err: unknown) {
+      if (err instanceof AxiosError && err.response?.status !== 200) {
+        const data = err.response?.data
+        const errorMessage = String(data?.message)
+        showToast(errorMessage, 'error')
+      } else {
+        showToast('Could not log in. Please try again.', 'error')
       }
-      else
-      {
-        showToast('Could not log in. Please verify your credentials and try again.', 'error')
-      }
-
-    } 
-    finally 
-    {
+    } finally {
       await waitForBackendButtonUnlock()
       setIsLoading(false)
     }
@@ -91,94 +128,122 @@ const login = async (email:string, password:string) => {
   }
 
   return (
-    <section className="page auth-page">
+    <section className="page auth-page-v2">
       <FeedbackToast toast={toast} clearToast={() => setToast(null)} />
-      <header className="panel auth-headline">
-        <p className="eyebrow">Expedition access</p>
-        <h1>Return to your travel control room.</h1>
-        <p>
-          Log in to keep your routes, chat rooms, and member planning in sync.
-        </p>
-      </header>
 
-      <nav className="auth-switch" aria-label="Authentication pages">
-        <Link className="auth-switch-link is-active" to="/login">
-          Login
-        </Link>
-        <Link className="auth-switch-link" to="/register">
-          Register
-        </Link>
-      </nav>
+      <div className="auth-split">
+        <div className="auth-form-side">
+          <header className="auth-form-header">
+            <h1>Welcome back</h1>
+            <p className="lead">Sign in to your expedition workspace.</p>
+          </header>
 
-      <div className="auth-flow">
-        <form className="panel auth-form-rail" onSubmit={handleSubmit}>
-          <h2>Sign in with email</h2>
+          <nav className="auth-toggle-bar" aria-label="Authentication pages">
+            <Link className="auth-toggle-link is-active" to="/login">Login</Link>
+            <Link className="auth-toggle-link" to="/register">Register</Link>
+          </nav>
 
-          <button type="button" className="btn google-btn" disabled={isLoading}>
-            <GoogleIcon />
-            Continue with Google
-          </button>
-
-          <div className="divider">
-            <span>or continue with email</span>
-          </div>
-
-          <label className="field-label" htmlFor="login-email">
-            Email
-          </label>
-          <input
-            id="login-email"
-            className="input"
-            type="email"
-            placeholder="you@example.com"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            disabled={isLoading}
-            required
-          />
-
-          <label className="field-label" htmlFor="login-password">
-            Password
-          </label>
-          <input
-            id="login-password"
-            className="input"
-            type="password"
-            placeholder="********"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            disabled={isLoading}
-            required
-          />
-
-          <button
-            className="btn btn-primary"
-            type="submit"
-            disabled={isLoading}
-            aria-busy={isLoading}
-          >
-            {isLoading ? (
-              <span className="btn-loading-content">
-                <span className="inline-spinner" aria-hidden="true" />
-                Logging in...
-              </span>
+          <form onSubmit={handleSubmit} className="auth-form-fields">
+            {hasGoogleClientId ? (
+              <div style={{ position: 'relative', overflow: 'hidden' }}>
+                <button
+                  type="button"
+                  className="btn google-btn"
+                  disabled={isLoading}
+                  style={{ width: '100%' }}
+                >
+                  <GoogleIcon />
+                  Continue with Google
+                </button>
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    height: '100%',
+                    opacity: 0.001,
+                    zIndex: 10,
+                  }}
+                >
+                  <div style={{ transform: 'scale(10)', transformOrigin: 'top left' }}>
+                    <GoogleLogin
+                      onSuccess={handleGoogleSuccess}
+                      onError={() => showToast('Google login was canceled or failed.', 'error')}
+                    />
+                  </div>
+                </div>
+              </div>
             ) : (
-              'Enter workspace'
+              <button
+                type="button"
+                className="btn google-btn"
+                disabled
+              >
+                <GoogleIcon />
+                Continue with Google
+              </button>
             )}
-          </button>
-        </form>
 
-        <aside className="panel auth-side-rail">
-          <h2>Why log back in?</h2>
-          <ul className="auth-point-list">
-            {loginHighlights.map((point) => (
-              <li key={point}>{point}</li>
-            ))}
-          </ul>
-          <p className="lead">New to TripGenius?</p>
-          <Link to="/register" className="btn btn-ghost">
-            Create your account
-          </Link>
+            <div className="divider"><span>or continue with email</span></div>
+
+            <label className="field-label" htmlFor="login-email">Email</label>
+            <input
+              id="login-email"
+              className="input"
+              type="email"
+              placeholder="you@example.com"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              disabled={isLoading}
+              required
+            />
+
+            <label className="field-label" htmlFor="login-password">Password</label>
+            <input
+              id="login-password"
+              className="input"
+              type="password"
+              placeholder="********"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              disabled={isLoading}
+              required
+            />
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '-0.2rem' }}>
+              <Link to="/reset-password" style={{ fontSize: '0.8rem', color: 'var(--text-380)', textDecoration: 'none' }}>Forgot password?</Link>
+            </div>
+
+            <button
+              className="btn btn-primary"
+              type="submit"
+              disabled={isLoading}
+              aria-busy={isLoading}
+            >
+              {isLoading ? (
+                <span className="btn-loading-content">
+                  <span className="inline-spinner" aria-hidden="true" />
+                  Logging in...
+                </span>
+              ) : (
+                'Enter workspace'
+              )}
+            </button>
+
+            <p className="auth-footer-note">
+              New to TripGenius?{' '}
+              <Link to="/register" className="text-link">Create your account</Link>
+            </p>
+          </form>
+        </div>
+
+        <aside className="auth-illustration-side" aria-hidden="true">
+          <img
+            src="/newstickers/sticker4.png"
+            alt=""
+            className="auth-sticker"
+          />
         </aside>
       </div>
     </section>

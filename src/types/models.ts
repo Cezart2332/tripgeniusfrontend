@@ -7,6 +7,7 @@ export type TripStatus =
   | 'active'
   | 'completed'
 
+  
 
 export interface User {
     id: number,
@@ -15,17 +16,31 @@ export interface User {
     profileUrl: string,
     description: string,
     tags: string[],
-    groupSize: number
+    groupSize: number,
+    notifications: Notification[],
+    trips: Trip[]
 }
 
+export interface Notification {
+  id:number,
+  content:string,
+  isRead?: boolean,
+  read?: boolean,
+  IsRead?: boolean,
+  Read?: boolean,
+  date?: string,
+  createdAt?: string,
+  CreatedAt?: string
+}
 export interface TripMember {
   id: string
   username: string
   role: MemberRole
   avatarUrl: string
+  status: string
 }
 
-export interface TripTimelineStop {
+export interface CreateTimelineStop {
   day: number
   date: string
   startingPoint: string
@@ -33,6 +48,10 @@ export interface TripTimelineStop {
   fromCoords: [number, number]
   toCoords: [number, number]
   note: string
+}
+
+export interface TimelineStop extends CreateTimelineStop {
+  id: number
 }
 
 export interface Trip {
@@ -47,17 +66,19 @@ export interface Trip {
   currentMembers: number
   maxParticipants: number
   tags: string[]
-  timelines: TripTimelineStop[]
+  timelines: TimelineStop[]
   members: TripMember[]
   isUserMember: boolean
 }
 
+
 export interface ChatMessage {
   id: string
-  author: string
-  role: MemberRole
   content: string
-  at: string
+  sentAt: string
+  imageUrl: string
+  username:string
+  profileUrl:string
 }
 
 export interface AiSuggestion {
