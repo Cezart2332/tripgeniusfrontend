@@ -170,6 +170,8 @@ export function AppLayout() {
   const outlet = useOutlet()
 
   const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+  const isAndroid = /Android/i.test(navigator.userAgent);
+  const isMobileDevice = isIos || isAndroid;
   const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone;
   const token = useSelector((state: AuthStoreState) => state.auth.token)
 
@@ -338,13 +340,13 @@ export function AppLayout() {
       setDeferredPrompt(e)
       
       const dismissed = localStorage.getItem('pwa_prompt_dismissed');
-      if (!dismissed && !isStandalone) {
+      if (!dismissed && !isStandalone && isMobileDevice) {
         setShowInstallPopup(true)
       }
     }
     window.addEventListener('beforeinstallprompt', handler)
     return () => window.removeEventListener('beforeinstallprompt', handler)
-  }, [isStandalone]);
+  }, [isStandalone, isMobileDevice]);
 
   const dismissPopup = () => {
     localStorage.setItem('pwa_prompt_dismissed', 'true');
@@ -360,8 +362,9 @@ export function AppLayout() {
     }
   }
   return (
-    <div className="app-shell">
-      <div className="ambient-orbs" aria-hidden="true">
+    <>
+      <div className="app-shell">
+        <div className="ambient-orbs" aria-hidden="true">
         <span className="orb orb-one" />
         <span className="orb orb-two" />
         <span className="orb orb-three" />
@@ -722,6 +725,7 @@ export function AppLayout() {
           </NavLink>
         )}
       </nav>
+      </div>
       {showInstallPopup && (
         <div className="pwa-popup-overlay">
           <motion.div 
@@ -777,7 +781,7 @@ export function AppLayout() {
           </motion.div>
         </div>
       )}
-    </div>
+    </>
   )
 }
 
