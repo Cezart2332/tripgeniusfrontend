@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
-import { FiSend, FiMapPin, FiExternalLink } from 'react-icons/fi'
+import { FiSend, FiMapPin, FiExternalLink, FiMessageCircle } from 'react-icons/fi'
 import { useSelector, useDispatch } from 'react-redux'
 import { Link } from 'react-router-dom'
 import { setToken } from '../data/authSlice'
@@ -144,7 +144,7 @@ export function AiAdvisorPage() {
       setMessages((prev) => [...prev, { id, text: "", sender: 'assistant', isComplete: false }])
       aiMessageIdRef.current = id;
       setActiveAiMessageId(id)
-      setIsTyping(false); // AI started responding
+      setIsTyping(false); // Hide the dots bubble once the real bubble appears
     })
 
     connection.on("ReceiveAiChunk", (chunk: string) => {
@@ -255,7 +255,7 @@ export function AiAdvisorPage() {
 
   return (
     <section className="page ai-page-v2 container">
-      <header className="ai-header-v2" style={{ padding: '2rem 0' }}>
+      <header className="ai-header-v2">
         <p className="eyebrow">Expert Expedition Intelligence</p>
         <h1>Plan by conversation.</h1>
         <p style={{ maxWidth: '600px', opacity: 0.7 }}>
@@ -266,101 +266,118 @@ export function AiAdvisorPage() {
       <div className="ai-workspace-v2">
         <aside className="ai-sidebar-v2">
           <div className="profile-section-v2">
-          </div>
-
-          <div className="profile-section-v2">
             <h3>Configuration</h3>
-            <label className="toggle">
+            <p className="sidebar-desc-v2">Refine how the AI interprets your profile data.</p>
+            <label className="toggle-v2">
               <input
                 type="checkbox"
                 checked={preferProfile}
                 onChange={(event) => setPreferProfile(event.target.checked)}
               />
-              Personalized Matching
+              <span className="toggle-label-v2">Personalized Matching</span>
+              <span className="toggle-switch-v2"></span>
             </label>
           </div>
 
-          <div style={{ marginTop: 'auto', textAlign: 'center' }}>
-            <img src="/newstickers/sticker6.png" alt="" style={{ width: '160px', opacity: 0.8 }} />
-            <p className="empty-note" style={{ marginTop: '0.5rem' }}>AI is ready to assist.</p>
+          <div className="sidebar-footer-v2">
+            <img src="/newstickers/sticker6.png" alt="" className="sidebar-sticker-v2" />
+            <p className="empty-note">AI Intelligence is active and ready.</p>
           </div>
         </aside>
 
         <section className="ai-chat-v2">
-          <div className="ai-thread-v2" ref={threadRef}>
-            {messages.map((message) => (
-              <article key={message.id} className={`ai-bubble-v2 ${message.sender}`}>
-                <header className="bubble-header">
-                  {message.sender === 'user' ? 'You' : 'TripGenius AI'}
-                </header>
-                {message.sender === 'assistant' ? (() => {
-                  const parsed = parseAiMessage(message.text)
-                  return (
-                    <>
-                      <Typewriter text={parsed.text} isStreaming={!message.isComplete && activeAiMessageId === message.id} />
-                      {parsed.trips && parsed.trips.length > 0 && (
-                        <div className="ai-trips-grid">
-                          {parsed.trips.map((trip) => (
-                            <Link key={trip.id} to={`/trip/${trip.id}`} className="ai-trip-card">
-                              <div className="panel">
-                                <div>
-                                  <div className="recommendation-badge">
-                                    <FiMapPin size={12} /> AI Match
-                                  </div>
-                                  <h4>{trip.title}</h4>
-                                </div>
-                                <div className="explore-btn">
-                                  <span>Explore Expedition</span>
-                                  <FiExternalLink size={14} />
-                                </div>
-                              </div>
-                            </Link>
-                          ))}
-                        </div>
-                      )}
-                    </>
-                  )
-                })() : (
-                  <div className="message-content">
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{message.text}</ReactMarkdown>
-                  </div>
-                )}
-              </article>
-            ))}
-            {isTyping && (
-              <article className="ai-bubble-v2 assistant typing-indicator-bubble">
-                <header className="bubble-header">
-                  TripGenius AI
-                </header>
-                <div className="ai-typing">
-                  <span className="dot"></span>
-                  <span className="dot"></span>
-                  <span className="dot"></span>
+          <div className="ai-thread-v2" ref={threadRef} data-lenis-prevent>
+            {messages.length === 0 && !isTyping ? (
+              <div className="ai-empty-state-v2">
+                <div className="empty-state-icon-v2">
+                  <FiMessageCircle />
                 </div>
-              </article>
+                <h2>Start an expedition.</h2>
+                <p>Ask about hidden gems, group itineraries, or budget-friendly routes. I'll analyze your style and suggest ranked options.</p>
+                <div className="empty-state-suggestions-v2">
+                  <button onClick={() => setPrompt("Recommend a trip based on my profile")} className="suggestion-chip-v2">Trips based on preferences</button>
+                  <button onClick={() => setPrompt("Forget my preferences and suggest a random trip")} className="suggestion-chip-v2">Random Trip</button>
+                  <button onClick={() => setPrompt("Suggest a trip on a beach")} className="suggestion-chip-v2">Beach Trip</button>
+                </div>
+              </div>
+            ) : (
+              <>
+                {messages.map((message) => (
+                  <article key={message.id} className={`ai-bubble-v2 ${message.sender}`}>
+                    <header className="bubble-header">
+                      {message.sender === 'user' ? 'Explorer' : 'TripGenius AI'}
+                    </header>
+                    {message.sender === 'assistant' ? (() => {
+                      const parsed = parseAiMessage(message.text)
+                      return (
+                        <>
+                          <Typewriter text={parsed.text} isStreaming={!message.isComplete && activeAiMessageId === message.id} />
+                          {parsed.trips && parsed.trips.length > 0 && (
+                            <div className="ai-trips-grid">
+                              {parsed.trips.map((trip) => (
+                                <Link key={trip.id} to={`/trip/${trip.id}`} className="ai-trip-card">
+                                  <div className="panel">
+                                    <div>
+                                      <div className="recommendation-badge">
+                                        <FiMapPin size={12} /> AI Match
+                                      </div>
+                                      <h4>{trip.title}</h4>
+                                    </div>
+                                    <div className="explore-btn">
+                                      <span>Explore</span>
+                                      <FiExternalLink size={14} />
+                                    </div>
+                                  </div>
+                                </Link>
+                              ))}
+                            </div>
+                          )}
+                        </>
+                      )
+                    })() : (
+                      <div className="message-content">
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>{message.text}</ReactMarkdown>
+                      </div>
+                    )}
+                  </article>
+                ))}
+                {isTyping && (
+                  <article className="ai-bubble-v2 assistant typing-indicator-bubble">
+                    <header className="bubble-header">
+                      TripGenius AI
+                    </header>
+                    <div className="ai-typing">
+                      <span className="dot"></span>
+                      <span className="dot"></span>
+                      <span className="dot"></span>
+                    </div>
+                  </article>
+                )}
+              </>
             )}
           </div>
 
-          <form className="ai-composer-v2" onSubmit={handleSubmit}>
-            <div className="ai-composer-input-v2">
-              <input
-                className="input"
-                value={prompt}
-                onChange={(event) => setPrompt(event.target.value)}
-                placeholder={isTyping ? "AI is thinking..." : "Ask for the kind of trip you want..."}
-                style={{ borderRadius: '12px' }}
-                disabled={isTyping}
-              />
-              <button
-                className="btn btn-primary"
-                type="submit"
-                style={{ borderRadius: '12px', opacity: isTyping ? 0.5 : 1, cursor: isTyping ? 'not-allowed' : 'pointer' }}
-                disabled={isTyping}
-              >
-                <FiSend />
-              </button>
-            </div>
-          </form>
+          <div className="ai-composer-shell-v2">
+            <form className="ai-composer-v2" onSubmit={handleSubmit}>
+              <div className="ai-composer-input-wrapper-v2">
+                <input
+                  className="ai-composer-input-v2"
+                  value={prompt}
+                  onChange={(event) => setPrompt(event.target.value)}
+                  placeholder={isTyping ? "AI is formulating your strategy..." : "Ask for anything..."}
+                  disabled={isTyping}
+                />
+                <button
+                  className="ai-composer-submit-v2"
+                  type="submit"
+                  disabled={isTyping || !!activeAiMessageId || !prompt.trim()}
+                  aria-label="Send message"
+                >
+                  <FiSend />
+                </button>
+              </div>
+            </form>
+          </div>
         </section>
       </div>
     </section>

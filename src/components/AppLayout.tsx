@@ -4,7 +4,6 @@ import { AnimatePresence, motion } from 'framer-motion'
 import {
   FiBell,
   FiCompass,
-  FiCpu,
   FiHome,
   FiLogIn,
   FiLogOut,
@@ -35,10 +34,25 @@ interface AuthStoreState {
   }
 }
 
+const AiIcon = (props: any) => (
+  <img 
+    src="/ai-icon.svg" 
+    alt="" 
+    {...props}
+    style={{ 
+      width: '1.2rem', 
+      height: '1.2rem', 
+      objectFit: 'contain',
+      display: 'block',
+      ...props.style
+    }} 
+  />
+);
+
 const primaryNavItems: NavItem[] = [
   { to: '/', label: 'Home', Icon: FiHome, end: true },
   { to: '/discover', label: 'Discover', Icon: FiCompass },
-  { to: '/ai', label: 'AI Advisor', Icon: FiCpu },
+  { to: '/ai', label: 'AI Advisor', Icon: AiIcon as any },
 ]
 
 const getNotificationContent = (notification: AppNotification): string => {
@@ -671,7 +685,7 @@ export function AppLayout() {
           <span>Discover</span>
         </NavLink>
         <NavLink to="/ai" className={({ isActive }) => isActive ? 'bottom-nav-link is-active' : 'bottom-nav-link'}>
-          <FiCpu aria-hidden="true" />
+          <AiIcon aria-hidden="true" />
           <span>Advisor</span>
         </NavLink>
         {user ? (
