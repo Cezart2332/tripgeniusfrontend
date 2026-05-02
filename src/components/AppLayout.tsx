@@ -168,6 +168,7 @@ export function AppLayout() {
   const [showInstallPopup, setShowInstallPopup] = useState(false)
   const notificationMenuRef = useRef<HTMLDivElement | null>(null)
   const isSyncingUserRef = useRef(false)
+  const hasAttemptedInit = useRef(false)
   const outlet = useOutlet()
 
   const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
@@ -195,6 +196,14 @@ export function AppLayout() {
       setTimeout(() => setIsAppInitializing(false), 400)
     }
   }, [dispatch])
+
+  // Safety: Ensure splash screen eventually disappears even if sync hangs
+  useEffect(() => {
+    if (isAppInitializing) {
+      const timer = setTimeout(() => setIsAppInitializing(false), 5000)
+      return () => clearTimeout(timer)
+    }
+  }, [isAppInitializing])
 
   const isNotificationRead = (notification: AppNotification): boolean => {
     return Boolean(
@@ -314,7 +323,15 @@ export function AppLayout() {
   }, [isNotificationOpen])
 
   useEffect(() => {
+    if (hasAttemptedInit.current) return
+    hasAttemptedInit.current = true
+
     if (!user) {
+      void syncUserFromProfileFetch()
+    } else {
+      // If user is already hydrated from storage, hide splash quickly 
+      // but still sync in background to verify session.
+      setIsAppInitializing(false)
       void syncUserFromProfileFetch()
     }
   }, [user, syncUserFromProfileFetch])
