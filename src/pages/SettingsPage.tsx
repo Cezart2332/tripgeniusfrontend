@@ -2,7 +2,17 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { useEffect, useRef, useState } from 'react'
 import type { FormEvent, KeyboardEvent } from 'react'
 import { Link, useSearchParams, useNavigate } from 'react-router-dom'
-import { FiAlertTriangle, FiMail, FiShield, FiMessageSquare } from 'react-icons/fi'
+import { 
+  FiAlertTriangle, 
+  FiMail, 
+  FiShield, 
+  FiMessageSquare, 
+  FiChevronRight, 
+  FiChevronLeft,
+  FiUser,
+  FiHelpCircle,
+  FiTrash2
+} from 'react-icons/fi'
 import type { User } from '../types/models'
 import api from '../data/api'
 import { useDispatch, useSelector } from 'react-redux'
@@ -22,11 +32,11 @@ interface AuthStoreState {
 
 type SettingsTab = 'account' | 'security' | 'support' | 'danger'
 
-const settingsTabs: Array<{ key: SettingsTab; label: string }> = [
-  { key: 'account', label: 'Account' },
-  { key: 'security', label: 'Security' },
-  { key: 'support', label: 'Support' },
-  { key: 'danger', label: 'Danger zone' },
+const settingsTabs: Array<{ key: SettingsTab; label: string; Icon: any }> = [
+  { key: 'account', label: 'Account', Icon: FiUser },
+  { key: 'security', label: 'Security', Icon: FiShield },
+  { key: 'support', label: 'Support', Icon: FiHelpCircle },
+  { key: 'danger', label: 'Danger zone', Icon: FiTrash2 },
 ]
 
 const revealTransition = {
@@ -41,10 +51,15 @@ export function SettingsPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const tabListRef = useRef<HTMLElement | null>(null)
   const requestedTab = searchParams.get('tab')
-  const activeTab: SettingsTab =
+  
+  // On mobile, if no tab is explicitly requested, we show the menu list
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 850)
+  
+  const activeTab: SettingsTab | 'menu' =
     requestedTab && settingsTabs.some((tab) => tab.key === requestedTab)
       ? (requestedTab as SettingsTab)
-      : 'account'
+      : (isMobile ? 'menu' : 'account')
+
   const [email, setEmail] = useState(user?.email ?? '')
   const [currentPassword, setCurrentPassword] = useState('')
   const [nextPassword, setNextPassword] = useState('')
@@ -56,6 +71,12 @@ export function SettingsPage() {
   const [isReportingBug, setIsReportingBug] = useState(false)
   const isBackendActionLocked = isUpdatingEmail || isUpdatingPassword || isDeletingAccount || isReportingBug
   const shouldRedirectToLogin = !user
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 850)
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
 
   const showToast = (message: string, tone: FeedbackToastTone) => {
     setToast({
@@ -102,9 +123,13 @@ export function SettingsPage() {
     )
   }
 
-  const selectTab = (nextTab: SettingsTab) => {
+  const selectTab = (nextTab: SettingsTab | 'menu') => {
     const nextParams = new URLSearchParams(searchParams)
-    nextParams.set('tab', nextTab)
+    if (nextTab === 'menu') {
+      nextParams.delete('tab')
+    } else {
+      nextParams.set('tab', nextTab)
+    }
     setSearchParams(nextParams, { replace: true })
   }
 
@@ -301,37 +326,100 @@ export function SettingsPage() {
       <FeedbackToast toast={toast} clearToast={() => setToast(null)} />
       
       <header className="profile-header-v2">
-        <div>
-          <p className="eyebrow">Settings center</p>
-          <h1>Platform Workspace</h1>
-        </div>
-        <nav
-          ref={tabListRef}
-          className="profile-tab-bar-v2"
-          aria-label="Settings sections"
-          role="tablist"
-        >
-          {settingsTabs.map((tab, index) => (
-            <button
-              key={tab.key}
-              type="button"
-              id={`settings-tab-${tab.key}`}
-              className={activeTab === tab.key ? 'profile-tab-btn-v2 is-active' : 'profile-tab-btn-v2'}
-              role="tab"
-              aria-selected={activeTab === tab.key}
-              aria-controls={`settings-panel-${tab.key}`}
-              tabIndex={activeTab === tab.key ? 0 : -1}
-              disabled={isBackendActionLocked}
-              onClick={() => selectTab(tab.key)}
-              onKeyDown={(event) => handleTabKeyDown(event, index)}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          {isMobile && activeTab !== 'menu' && (
+            <button 
+              className="icon-link" 
+              onClick={() => selectTab('menu')}
+              aria-label="Back to settings menu"
+              style={{ width: '40px', height: '40px', background: 'rgba(255,255,255,0.05)' }}
             >
-              {tab.label}
+              <FiChevronLeft size={20} />
             </button>
-          ))}
-        </nav>
+          )}
+          <div>
+            <p className="eyebrow">Settings center</p>
+            <h1>
+              {isMobile && activeTab !== 'menu' 
+                ? settingsTabs.find(t => t.key === activeTab)?.label 
+                : 'Platform Workspace'}
+            </h1>
+          </div>
+        </div>
+
+        {!isMobile && (
+          <nav
+            ref={tabListRef}
+            className="profile-tab-bar-v2"
+            aria-label="Settings sections"
+            role="tablist"
+          >
+            {settingsTabs.map((tab, index) => (
+              <button
+                key={tab.key}
+                type="button"
+                id={`settings-tab-${tab.key}`}
+                className={activeTab === tab.key ? 'profile-tab-btn-v2 is-active' : 'profile-tab-btn-v2'}
+                role="tab"
+                aria-selected={activeTab === tab.key}
+                aria-controls={`settings-panel-${tab.key}`}
+                tabIndex={activeTab === tab.key ? 0 : -1}
+                disabled={isBackendActionLocked}
+                onClick={() => selectTab(tab.key)}
+                onKeyDown={(event) => handleTabKeyDown(event, index)}
+              >
+                <span className="tab-icon-mobile"><tab.Icon /></span>
+                <span className="tab-label-desktop">{tab.label}</span>
+              </button>
+            ))}
+          </nav>
+        )}
       </header>
 
       <AnimatePresence mode="wait" initial={false}>
+        {isMobile && activeTab === 'menu' ? (
+          <motion.div
+            key="menu"
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -10 }}
+            transition={revealTransition}
+            className="settings-mobile-menu"
+            style={{ display: 'grid', gap: '0.75rem' }}
+          >
+            {settingsTabs.map((tab) => (
+              <button
+                key={tab.key}
+                className="settings-card-v2"
+                onClick={() => selectTab(tab.key)}
+                style={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'space-between',
+                  padding: '1.25rem 1.5rem',
+                  textAlign: 'left',
+                  width: '100%',
+                  background: 'rgba(9, 14, 10, 0.4)',
+                  cursor: 'pointer'
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                  <div className="notification-icon-v2" style={{ width: '36px', height: '36px', fontSize: '1rem' }}>
+                    <tab.Icon />
+                  </div>
+                  <span style={{ fontWeight: 600, fontSize: '1.05rem' }}>{tab.label}</span>
+                </div>
+                <FiChevronRight style={{ opacity: 0.4 }} />
+              </button>
+            ))}
+            
+            <div style={{ textAlign: 'center', marginTop: '2rem', opacity: 0.4 }}>
+              <img src="/newstickers/sticker4.png" alt="" style={{ width: '100px' }} />
+              <p style={{ fontSize: '0.8rem', marginTop: '1rem' }}>TripGenius v1.2.4</p>
+            </div>
+          </motion.div>
+        ) : null}
+
         {activeTab === 'account' ? (
           <motion.div
             key="account"
@@ -376,9 +464,11 @@ export function SettingsPage() {
               </div>
             </div>
             
-            <div style={{ textAlign: 'center', opacity: 0.6 }}>
-               <img src="/newstickers/sticker4.png" alt="" style={{ width: '120px' }} />
-            </div>
+            {!isMobile && (
+              <div style={{ textAlign: 'center', opacity: 0.6 }}>
+                <img src="/newstickers/sticker4.png" alt="" style={{ width: '120px' }} />
+              </div>
+            )}
           </motion.div>
         ) : null}
 
@@ -510,6 +600,7 @@ export function SettingsPage() {
                       onClick={deleteAccount}
                       disabled={isBackendActionLocked}
                       aria-busy={isDeletingAccount}
+                      style={{ width: isMobile ? '100%' : 'auto' }}
                     >
                       {isDeletingAccount ? 'Burning...' : 'Erase Account Forever'}
                     </button>

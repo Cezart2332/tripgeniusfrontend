@@ -728,10 +728,16 @@ export function AppLayout() {
           </NavLink>
         )}
         {user ? (
-          <NavLink to="/profile" className={({ isActive }) => isActive ? 'bottom-nav-link is-active' : 'bottom-nav-link'}>
-            <FiUser aria-hidden="true" />
-            <span>Profile</span>
-          </NavLink>
+          <>
+            <NavLink to="/profile" className={({ isActive }) => isActive ? 'bottom-nav-link is-active' : 'bottom-nav-link'}>
+              <FiUser aria-hidden="true" />
+              <span>Profile</span>
+            </NavLink>
+            <NavLink to="/settings" className={({ isActive }) => isActive ? 'bottom-nav-link is-active' : 'bottom-nav-link'}>
+              <FiSettings aria-hidden="true" />
+              <span>Settings</span>
+            </NavLink>
+          </>
         ) : (
           <NavLink to="/login" className={({ isActive }) => isActive ? 'bottom-nav-link is-active' : 'bottom-nav-link'}>
             <FiLogIn aria-hidden="true" />
