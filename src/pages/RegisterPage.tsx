@@ -114,7 +114,7 @@ export function RegisterPage() {
   }
 
   return (
-    <section className="page auth-page-v2">
+    <section className="page auth-page-v2 container">
       <FeedbackToast toast={toast} clearToast={() => setToast(null)} />
 
       <div className="auth-split">

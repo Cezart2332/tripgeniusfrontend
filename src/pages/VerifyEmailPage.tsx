@@ -40,7 +40,7 @@ export function VerifyEmailPage() {
               message: 'Email verified successfully!',
               tone: 'success',
             })
-            navigate('/profile', { replace: true })
+            navigate('/app/profile', { replace: true })
           }, 1500)
         }
       } catch (error) {

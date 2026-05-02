@@ -239,7 +239,7 @@ export function EditTimelinePage() {
       if (res.status === 200) {
         setTimelineDraft(res.data)
         if (tripId) {
-          navigate(`/trip/${tripId}?view=map`)
+          navigate(`/app/trip/${tripId}?view=map`)
           return
         }
       }
@@ -253,7 +253,7 @@ export function EditTimelinePage() {
 
   const handleCancel = () => {
     if (tripId) {
-      navigate(`/trip/${tripId}?view=map`)
+      navigate(`/app/trip/${tripId}?view=map`)
       return
     }
 

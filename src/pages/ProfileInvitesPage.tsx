@@ -116,7 +116,7 @@ export function ProfileInvitesPage() {
           Handle collaboration invitations and keep your group-entry workflow organized from one
           place.
         </p>
-        <Link className="btn btn-ghost invites-back-link" to="/profile?tab=notifications">
+        <Link className="btn btn-ghost invites-back-link" to="/app/profile?tab=notifications">
           <FiArrowLeft aria-hidden="true" />
           Back to notifications
         </Link>
@@ -179,7 +179,7 @@ export function ProfileInvitesPage() {
               ) : (
                 <p className="invite-muted-state">No pending invites with status Invited.</p>
               )}
-              <Link className="btn btn-primary" to="/discover">
+              <Link className="btn btn-primary" to="/app">
                 Explore trip rooms
               </Link>
             </div>

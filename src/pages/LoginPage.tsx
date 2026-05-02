@@ -81,7 +81,7 @@ export function LoginPage() {
     try {
       await loginWithGoogleCredential(credentialResponse.credential)
       showToast('Login successful. Redirecting...', 'success')
-      navigate('/profile', { replace: true })
+      navigate('/app/profile', { replace: true })
     } catch (err: unknown) {
       if (err instanceof AxiosError) {
         const message = err.response?.data?.message || err.response?.data || 'Google login failed. Please try again.'
@@ -123,12 +123,12 @@ export function LoginPage() {
     }
 
     if (shouldNavigate) {
-      navigate('/profile', { replace: true })
+      navigate('/app/profile', { replace: true })
     }
   }
 
   return (
-    <section className="page auth-page-v2">
+    <section className="page auth-page-v2 container">
       <FeedbackToast toast={toast} clearToast={() => setToast(null)} />
 
       <div className="auth-split">

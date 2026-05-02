@@ -176,7 +176,7 @@ export function AddTimelinePage() {
       if (res.status === 200) {
         setTimelineDraft(res.data)
         if (tripId) {
-          navigate(`/trip/${tripId}?view=map`)
+          navigate(`/app/trip/${tripId}?view=map`)
           return
         }
       }
@@ -191,7 +191,7 @@ export function AddTimelinePage() {
   }
 
   const handleCancel = () => {
-    navigate(`/trip/${tripId}?view=map`)
+    navigate(`/app/trip/${tripId}?view=map`)
   }
 
   return (
@@ -209,7 +209,7 @@ export function AddTimelinePage() {
             <h1>Create a new timeline stop</h1>
             <p>Define the route, date, and details for the next day in your trip.</p>
           </div>
-          <Link className="btn btn-ghost add-timeline-back-link" to={`/trip/${tripId}?view=map`}>
+          <Link className="btn btn-ghost add-timeline-back-link" to={`/app/trip/${tripId}?view=map`}>
             <FiArrowLeft aria-hidden="true" />
             Back to trip
           </Link>

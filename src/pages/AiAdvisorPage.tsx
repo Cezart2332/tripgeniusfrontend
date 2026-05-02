@@ -329,7 +329,7 @@ export function AiAdvisorPage() {
                           {parsed.trips && parsed.trips.length > 0 && (
                             <div className="ai-trips-grid">
                               {parsed.trips.map((trip) => (
-                                <Link key={trip.id} to={`/trip/${trip.id}`} className="ai-trip-card">
+                                <Link key={trip.id} to={`/app/trip/${trip.id}`} className="ai-trip-card">
                                   <div className="panel">
                                     <div>
                                       <div className="recommendation-badge">

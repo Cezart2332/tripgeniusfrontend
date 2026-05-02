@@ -27,23 +27,26 @@ function App() {
   }, [])
   return (
     <Routes>
-      <Route element={<AppLayout />}>
-        <Route path="/" element={<LandingPage />} />
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
-        <Route path="/verify-email" element={<VerifyEmailPage />} />
-        <Route path="/reset-password" element={<ResetPasswordPage />} />
-        <Route path="/profile" element={<ProfilePage />} />
-        <Route path="/profile/invites" element={<ProfileInvitesPage />} />
-        <Route path="/discover" element={<DiscoveryPage />} />
-        <Route path="/create-trip" element={<CreateTripPage />} />
-        <Route path="/add-timeline/:tripId" element={<AddTimelinePage />} />
-        <Route path="/edit-timeline/:tripId/:id" element={<EditTimelinePage />} />
-        <Route path="/trip" element={<Navigate replace to="/discover" />} />
-        <Route path="/trip/:tripId" element={<TripPage />} />
-        <Route path="/ai" element={<AiAdvisorPage />} />
-        <Route path="/settings" element={<SettingsPage />} />
+      <Route path="/" element={<LandingPage />} />
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/register" element={<RegisterPage />} />
+      <Route path="/verify-email" element={<VerifyEmailPage />} />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
+
+      <Route path="/app" element={<AppLayout />}>
+        <Route index element={<DiscoveryPage />} />
+        <Route path="discover" element={<Navigate replace to="/app" />} />
+        <Route path="profile" element={<ProfilePage />} />
+        <Route path="profile/invites" element={<ProfileInvitesPage />} />
+        <Route path="create-trip" element={<CreateTripPage />} />
+        <Route path="add-timeline/:tripId" element={<AddTimelinePage />} />
+        <Route path="edit-timeline/:tripId/:id" element={<EditTimelinePage />} />
+        <Route path="trip" element={<Navigate replace to="/app/discover" />} />
+        <Route path="trip/:tripId" element={<TripPage />} />
+        <Route path="ai" element={<AiAdvisorPage />} />
+        <Route path="settings" element={<SettingsPage />} />
       </Route>
+
       <Route path="*" element={<Navigate replace to="/" />} />
     </Routes>
   )

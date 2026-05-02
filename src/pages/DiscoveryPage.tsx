@@ -146,7 +146,7 @@ export function DiscoveryPage() {
           </p>
         </div>
         <div className="discovery-header-actions">
-          <Link className="btn btn-primary" to="/create-trip">
+          <Link className="btn btn-primary" to="/app/create-trip">
             <FiPlusCircle aria-hidden="true" />
             Create trip
           </Link>
@@ -290,7 +290,7 @@ export function DiscoveryPage() {
                   ))}
                 </div>
               </div>
-              <Link className="btn btn-primary btn-sm discovery-trip-cta" to={`/trip/${trip.id}`}>
+              <Link className="btn btn-primary btn-sm discovery-trip-cta" to={`/app/trip/${trip.id}`}>
                 View
               </Link>
             </motion.article>

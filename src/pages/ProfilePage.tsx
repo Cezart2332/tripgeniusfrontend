@@ -860,7 +860,7 @@ export function ProfilePage() {
                   <h4>Upcoming</h4>
                   {futureTrips?.length === 0 && <p className="empty-note">No upcoming trips planned.</p>}
                   {futureTrips?.map((trip) => (
-                    <Link key={trip.id} className="history-row-v2" to={`/trip/${trip.id}`}>
+                    <Link key={trip.id} className="history-row-v2" to={`/app/trip/${trip.id}`}>
                       <img src={trip.imageUrl} alt="" className="history-thumb-v2" />
                       <div className="history-info-v2">
                         <h4>{trip.title}</h4>
@@ -875,7 +875,7 @@ export function ProfilePage() {
                   <h4>Completed</h4>
                   {pastTrips?.length === 0 && <p className="empty-note">Your history is currently a blank map.</p>}
                   {pastTrips?.map((trip) => (
-                    <Link key={trip.id} className="history-row-v2" to={`/trip/${trip.id}`}>
+                    <Link key={trip.id} className="history-row-v2" to={`/app/trip/${trip.id}`}>
                       <img src={trip.imageUrl} alt="" className="history-thumb-v2" />
                       <div className="history-info-v2">
                         <h4>{trip.title}</h4>
@@ -907,7 +907,7 @@ export function ProfilePage() {
                   <h3>Match Intelligence</h3>
                   <p>Trips that resonate with your travel DNA.</p>
                 </div>
-                <Link className="btn btn-ghost" to="/discover">
+                <Link className="btn btn-ghost" to="/app/discover">
                   <FiCompass /> Full Discovery
                 </Link>
               </div>
@@ -920,7 +920,7 @@ export function ProfilePage() {
                   </div>
                 )}
                 {discoveryTrips.slice(0, 6).map((trip) => (
-                  <Link key={trip.id} to={`/trip/${trip.id}`} className="match-card-v2">
+                  <Link key={trip.id} to={`/app/trip/${trip.id}`} className="match-card-v2">
                     <div className="match-badge-v2">{trip.matchScore}% Match</div>
                     <img src={trip.coverImage || '/newstickers/sticker1.png'} alt="" className="match-thumb-v2" />
 

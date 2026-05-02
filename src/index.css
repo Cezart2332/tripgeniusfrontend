@@ -136,6 +136,11 @@ h3 {
   }
 }
 
+.container {
+  width: min(1180px, 100% - 2.5rem);
+  margin-inline: auto;
+}
+
 /* ── Splash Screen ── */
 .app-splash-screen {
   position: fixed;
@@ -399,6 +404,7 @@ h3 {
 .lead {
   line-height: 1.6;
   color: var(--text-220);
+  max-width: 65ch;
 }
 
 .btn {

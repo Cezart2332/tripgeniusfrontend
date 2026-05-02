@@ -12,6 +12,7 @@ import {
   FiUserPlus,
   FiX,
   FiDownload,
+  FiCpu,
 } from 'react-icons/fi'
 import type { IconType } from 'react-icons'
 import { useDispatch, useSelector } from 'react-redux'
@@ -34,25 +35,11 @@ interface AuthStoreState {
   }
 }
 
-const AiIcon = (props: any) => (
-  <img
-    src="/ai-icon.svg"
-    alt=""
-    {...props}
-    style={{
-      width: '1.2rem',
-      height: '1.2rem',
-      objectFit: 'contain',
-      display: 'block',
-      ...props.style
-    }}
-  />
-);
+
 
 const primaryNavItems: NavItem[] = [
-  { to: '/', label: 'Home', Icon: FiHome, end: true },
-  { to: '/discover', label: 'Discover', Icon: FiCompass },
-  { to: '/ai', label: 'AI Advisor', Icon: AiIcon as any },
+  { to: '/app', label: 'Home', Icon: FiHome, end: true },
+  { to: '/app/ai', label: 'AI Assistant', Icon: FiCpu },
 ]
 
 const getNotificationContent = (notification: AppNotification): string => {
@@ -389,7 +376,7 @@ export function AppLayout() {
     <>
       {/* Mobile-only compact header — logo + notification bell */}
       <header className="mobile-topbar" aria-label="Mobile header">
-        <Link to="/" className="mobile-brand">
+        <Link to="/app" className="mobile-brand">
           <img src="/fulllogo.svg" alt="TripGenius" className="mobile-brand-logo" />
         </Link>
         <div className="mobile-topbar-actions">
@@ -602,7 +589,7 @@ export function AppLayout() {
                           <p className="eyebrow">Notifications</p>
                           <Link
                             className="header-notification-see-more"
-                            to="/profile?tab=notifications"
+                            to="/app/profile?tab=notifications"
                             onClick={() => {
                               setIsNotificationOpen(false)
                             }}
@@ -696,7 +683,7 @@ export function AppLayout() {
                 )}
 
                 <NavLink
-                  to="/profile"
+                  to="/app/profile"
                   className={({ isActive }) =>
                     isActive ? 'icon-link is-active' : 'icon-link'
                   }
@@ -709,7 +696,7 @@ export function AppLayout() {
                   />
                 </NavLink>
                 <NavLink
-                  to="/settings"
+                  to="/app/settings"
                   className={({ isActive }) =>
                     isActive ? 'icon-link is-active' : 'icon-link'
                   }
@@ -737,23 +724,19 @@ export function AppLayout() {
 
 
         <nav className="bottom-nav" aria-label="Mobile navigation">
-          <NavLink to="/" end className={({ isActive }) => isActive ? 'bottom-nav-link is-active' : 'bottom-nav-link'}>
+          <NavLink to="/app" end className={({ isActive }) => isActive ? 'bottom-nav-link is-active' : 'bottom-nav-link'}>
             <FiHome aria-hidden="true" />
             <span>Home</span>
           </NavLink>
-          <NavLink to="/discover" className={({ isActive }) => isActive ? 'bottom-nav-link is-active' : 'bottom-nav-link'}>
-            <FiCompass aria-hidden="true" />
-            <span>Discover</span>
-          </NavLink>
           {user && (
-            <NavLink to="/ai" className={({ isActive }) => isActive ? 'bottom-nav-link is-active' : 'bottom-nav-link'}>
-              <AiIcon aria-hidden="true" />
-              <span>Advisor</span>
+            <NavLink to="/app/ai" className={({ isActive }) => isActive ? 'bottom-nav-link is-active' : 'bottom-nav-link'}>
+              <FiCpu aria-hidden="true" />
+              <span>AI Assistant</span>
             </NavLink>
           )}
           {user ? (
             <>
-              <NavLink to="/profile" className={({ isActive }) => isActive ? 'bottom-nav-link is-active' : 'bottom-nav-link'}>
+              <NavLink to="/app/profile" className={({ isActive }) => isActive ? 'bottom-nav-link is-active' : 'bottom-nav-link'}>
                 <img
                   src={getAvatarUrl(user.username, user.profileUrl)}
                   alt=""
@@ -761,7 +744,7 @@ export function AppLayout() {
                 />
                 <span>Profile</span>
               </NavLink>
-              <NavLink to="/settings" className={({ isActive }) => isActive ? 'bottom-nav-link is-active' : 'bottom-nav-link'}>
+              <NavLink to="/app/settings" className={({ isActive }) => isActive ? 'bottom-nav-link is-active' : 'bottom-nav-link'}>
                 <FiSettings aria-hidden="true" />
                 <span>Settings</span>
               </NavLink>

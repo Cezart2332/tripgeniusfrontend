@@ -362,7 +362,7 @@ export function CreateTripPage() {
 
       await api.post('/api/trip/create-trip', formData)
       setToast({ id: Date.now(), message: 'Expedition synchronized!', tone: 'success' })
-      setTimeout(() => navigate('/discover'), 2000)
+      setTimeout(() => navigate('/app/discover'), 2000)
     } catch (err: any) {
       setError(err.response?.data?.message || 'Synchronization failed.')
     } finally {

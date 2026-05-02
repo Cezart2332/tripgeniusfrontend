@@ -242,7 +242,7 @@ export function TripPage() {
           <img src="/newstickers/sticker5.png" alt="" className="discovery-empty-sticker" />
           <h1>Trip not found</h1>
           <p>This expedition room has been archived or the coordinates are invalid.</p>
-          <Link className="btn btn-primary" to="/discover">
+          <Link className="btn btn-primary" to="/app/discover">
             Back to discovery
           </Link>
         </div>
@@ -268,7 +268,7 @@ export function TripPage() {
            <img src="/newstickers/sticker6.png" alt="" className="discovery-empty-sticker" />
           <h1>Communication error</h1>
           <p>We lost contact with the server. Check your signal and try again.</p>
-          <Link className="btn btn-primary" to="/discover">
+          <Link className="btn btn-primary" to="/app/discover">
             Back to discovery
           </Link>
         </div>
@@ -874,7 +874,7 @@ function TripPageContent({ trip }: TripPageContentProps) {
                   </div>
                   {canManageTimelines && (
                     <div className="invite-actions-v2">
-                       <button className="btn btn-ghost btn-sm" onClick={() => navigate(`/edit-timeline/${trip.id}/${stop.id}`)}>Edit</button>
+                       <button className="btn btn-ghost btn-sm" onClick={() => navigate(`/app/edit-timeline/${trip.id}/${stop.id}`)}>Edit</button>
                        <button
                          className="btn btn-ghost btn-sm"
                          style={{ color: '#ff6b6b' }}
@@ -890,7 +890,7 @@ function TripPageContent({ trip }: TripPageContentProps) {
             </div>
           ))}
           {canManageTimelines && (
-            <button className="btn btn-primary" onClick={() => navigate(`/add-timeline/${trip.id}`)}>
+            <button className="btn btn-primary" onClick={() => navigate(`/app/add-timeline/${trip.id}`)}>
                <FiPlusCircle /> Add Day
             </button>
           )}

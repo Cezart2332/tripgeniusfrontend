@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { MouseEvent } from 'react'
 import {
   FiArrowRight,
@@ -81,6 +81,12 @@ export function LandingPage() {
   const user = useSelector((state: AuthStoreState) => state.auth.user)
   const [toast, setToast] = useState<FeedbackToastState | null>(null)
 
+  useEffect(() => {
+    if (window.matchMedia('(display-mode: standalone)').matches) {
+      navigate('/app', { replace: true })
+    }
+  }, [navigate])
+
   const showToast = (message: string, tone: FeedbackToastTone) => {
     setToast({
       id: Date.now(),
@@ -104,11 +110,11 @@ export function LandingPage() {
     }
 
     event.preventDefault()
-    navigate('/profile')
+    navigate('/app/profile')
   }
 
   return (
-    <section className="page landing-page-v2">
+    <section className="page landing-page-v2 container">
       <FeedbackToast toast={toast} clearToast={() => setToast(null)} />
 
       {/* ── HERO ── */}
@@ -137,7 +143,7 @@ export function LandingPage() {
               Get started
               <FiArrowRight aria-hidden="true" />
             </Link>
-            <Link className="btn btn-ghost" to="/discover">
+            <Link className="btn btn-ghost" to="/app/discover">
               Explore trips
             </Link>
           </div>
@@ -220,7 +226,7 @@ export function LandingPage() {
             <Link className="btn btn-primary" to="/register" onClick={handleCreateAccountClick}>
               Create account
             </Link>
-            <Link className="btn btn-ghost" to="/discover">
+            <Link className="btn btn-ghost" to="/app/discover">
               Browse trips
             </Link>
           </div>
