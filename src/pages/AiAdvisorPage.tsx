@@ -11,9 +11,12 @@ import api from '../data/api'
 
 interface AuthStoreState {
   auth: {
+    user: User | null
     token: string | null
   }
 }
+import { getAvatarUrl } from '../utils/userUtils'
+import type { User } from '../types/models'
 
 interface TripCard {
   title: string
@@ -94,6 +97,7 @@ export function AiAdvisorPage() {
   const dispatch = useDispatch()
   const navigate = useNavigate()
   const token = useSelector((state: AuthStoreState) => state.auth.token)
+  const user = useSelector((state: AuthStoreState) => state.auth.user)
   const [prompt, setPrompt] = useState('')
   const baseURL = import.meta.env.VITE_BASE_URL;
   const [preferProfile, setPreferProfile] = useState(true)
@@ -309,8 +313,13 @@ export function AiAdvisorPage() {
               <>
                 {messages.map((message) => (
                   <article key={message.id} className={`ai-bubble-v2 ${message.sender}`}>
-                    <header className="bubble-header">
-                      {message.sender === 'user' ? 'Explorer' : 'TripGenius AI'}
+                    <header className="bubble-header" style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                      <img 
+                        src={message.sender === 'user' ? getAvatarUrl(user?.username, user?.profileUrl) : '/newstickers/sticker1.png'} 
+                        alt="" 
+                        style={{ width: '20px', height: '20px', borderRadius: '50%', objectFit: 'cover' }} 
+                      />
+                      <span>{message.sender === 'user' ? (user?.username || 'Explorer') : 'TripGenius AI'}</span>
                     </header>
                     {message.sender === 'assistant' ? (() => {
                       const parsed = parseAiMessage(message.text)

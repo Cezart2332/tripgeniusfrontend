@@ -25,6 +25,7 @@ import {
   toLocalStartOfDay,
 } from '../utils/dateDisplay'
 import { useDebouncedCallback } from 'use-debounce'
+import { getAvatarUrl } from '../utils/userUtils'
 
 const MILLISECONDS_PER_DAY = 1000 * 60 * 60 * 24
 
@@ -922,7 +923,7 @@ function TripPageContent({ trip }: TripPageContentProps) {
       <div className="discovery-grid">
         {acceptedMembers.map((m) => (
           <div key={m.id} className="history-row-v2" style={{ background: 'rgba(9, 14, 10, 0.4)', gridTemplateColumns: '60px 1fr auto' }}>
-            <img src={m.avatarUrl || '/newstickers/sticker1.png'} alt="" className="avatar" style={{ width: '50px', height: '50px', borderRadius: '14px' }} />
+            <img src={getAvatarUrl(m.username, m.avatarUrl)} alt="" className="avatar" style={{ width: '50px', height: '50px', borderRadius: '14px', objectFit: 'cover' }} />
             <div>
               <h4 style={{ color: '#f3fff1' }}>{m.username}</h4>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -967,7 +968,7 @@ function TripPageContent({ trip }: TripPageContentProps) {
 
               return (
                 <div key={m.id} className="history-row-v2" style={{ background: 'rgba(9, 14, 10, 0.4)', gridTemplateColumns: '60px 1fr auto' }}>
-                  <img src={m.avatarUrl || '/newstickers/sticker1.png'} alt="" className="avatar" style={{ width: '50px', height: '50px', borderRadius: '14px' }} />
+                  <img src={getAvatarUrl(m.username, m.avatarUrl)} alt="" className="avatar" style={{ width: '50px', height: '50px', borderRadius: '14px', objectFit: 'cover' }} />
                       <div>
                         <h4 style={{ color: '#f3fff1' }}>{m.username}</h4>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -1016,7 +1017,14 @@ function TripPageContent({ trip }: TripPageContentProps) {
                 key={msg.id}
                 className={msg.username === authenticatedUser?.username ? 'ai-bubble-v2 user' : 'ai-bubble-v2 assistant'}
               >
-                 <p style={{ fontSize: '0.75rem', opacity: 0.6, marginBottom: '0.3rem' }}>{msg.username}</p>
+                 <header className="bubble-header" style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                    <img 
+                      src={getAvatarUrl(msg.username, msg.profileUrl)} 
+                      alt="" 
+                      style={{ width: '20px', height: '20px', borderRadius: '50%', objectFit: 'cover' }} 
+                    />
+                    <span>{msg.username}</span>
+                 </header>
                  <p>{msg.content}</p>
                  <span style={{ fontSize: '0.65rem', opacity: 0.4, float: 'right', marginTop: '0.3rem' }}>
                    {new Date(msg.sentAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}

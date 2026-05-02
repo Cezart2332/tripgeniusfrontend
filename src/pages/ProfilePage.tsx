@@ -19,6 +19,7 @@ import {
   isFinishedTripStatus,
   isUpcomingTripStatus,
 } from '../utils/tripStatus'
+import { getAvatarUrl } from '../utils/userUtils'
 
 interface AuthStoreState {
   auth: {
@@ -58,8 +59,6 @@ const revealTransition = {
   ease: [0.22, 1, 0.36, 1] as const,
 }
 
-const DEFAULT_AVATAR_URL =
-  'https://images.unsplash.com/photo-1521119989659-a83eee488004?auto=format&fit=crop&w=300&q=80'
 const DEFAULT_PROFILE_DESCRIPTION = ''
 
 
@@ -192,7 +191,7 @@ export function ProfilePage() {
     requestedTab && profileTabs.some((tab) => tab.key === requestedTab)
       ? (requestedTab as ProfileTab)
       : 'identity'
-  const [avatarUrl, setAvatarUrl] = useState(user?.profileUrl ?? DEFAULT_AVATAR_URL)
+  const [avatarUrl, setAvatarUrl] = useState(getAvatarUrl(user?.username, user?.profileUrl))
   const [, setAvatarFileName] = useState('No image uploaded yet')
   const [description, setDescription] = useState(
     user?.description ?? DEFAULT_PROFILE_DESCRIPTION,
@@ -257,7 +256,7 @@ export function ProfilePage() {
       return
     }
 
-    setAvatarUrl(user.profileUrl || DEFAULT_AVATAR_URL)
+    setAvatarUrl(getAvatarUrl(user.username, user.profileUrl))
     setDescription(user.description || DEFAULT_PROFILE_DESCRIPTION)
     setTripTypes([...(user.tags ?? [])])
     setMaxGroupSize(user.groupSize ?? '')

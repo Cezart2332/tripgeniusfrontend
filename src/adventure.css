@@ -3974,7 +3974,7 @@ thead {
 
 /* Bubbles */
 .ai-bubble-v2 {
-  max-width: 80%;
+  max-width: 100%;
   padding: 1.25rem 1.5rem;
   border-radius: 24px;
   line-height: 1.6;
@@ -4171,7 +4171,7 @@ thead {
     padding: 1rem;
   }
   .ai-bubble-v2 {
-    max-width: 90%;
+    max-width: 100%;
   }
   .ai-header-v2 h1 {
     font-size: 2.5rem;

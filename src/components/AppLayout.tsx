@@ -17,6 +17,7 @@ import {
 import type { IconType } from 'react-icons'
 import { useDispatch, useSelector } from 'react-redux'
 import { Link, NavLink, useLocation, useNavigate, useOutlet } from 'react-router-dom'
+import { getAvatarUrl } from '../utils/userUtils'
 import { logout as logoutAction, setUser } from '../data/authSlice'
 import api from '../data/api'
 import type { Notification as AppNotification, User } from '../types/models'
@@ -702,7 +703,11 @@ export function AppLayout() {
               }
               aria-label="Profile"
             >
-              <FiUser aria-hidden="true" />
+              <img 
+                src={getAvatarUrl(user.username, user.profileUrl)} 
+                alt="" 
+                style={{ width: '24px', height: '24px', borderRadius: '50%', objectFit: 'cover' }} 
+              />
             </NavLink>
             <NavLink
               to="/settings"
@@ -750,7 +755,11 @@ export function AppLayout() {
         {user ? (
           <>
             <NavLink to="/profile" className={({ isActive }) => isActive ? 'bottom-nav-link is-active' : 'bottom-nav-link'}>
-              <FiUser aria-hidden="true" />
+              <img 
+                src={getAvatarUrl(user.username, user.profileUrl)} 
+                alt="" 
+                style={{ width: '22px', height: '22px', borderRadius: '50%', objectFit: 'cover' }} 
+              />
               <span>Profile</span>
             </NavLink>
             <NavLink to="/settings" className={({ isActive }) => isActive ? 'bottom-nav-link is-active' : 'bottom-nav-link'}>
