@@ -9,7 +9,6 @@ import {
   FiLogOut,
   FiMenu,
   FiSettings,
-  FiUser,
   FiUserPlus,
   FiX,
   FiDownload,
@@ -36,17 +35,17 @@ interface AuthStoreState {
 }
 
 const AiIcon = (props: any) => (
-  <img 
-    src="/ai-icon.svg" 
-    alt="" 
+  <img
+    src="/ai-icon.svg"
+    alt=""
     {...props}
-    style={{ 
-      width: '1.2rem', 
-      height: '1.2rem', 
+    style={{
+      width: '1.2rem',
+      height: '1.2rem',
       objectFit: 'contain',
       display: 'block',
       ...props.style
-    }} 
+    }}
   />
 );
 
@@ -363,7 +362,7 @@ export function AppLayout() {
     const handler = (e: any) => {
       e.preventDefault()
       setDeferredPrompt(e)
-      
+
       const dismissed = localStorage.getItem('pwa_prompt_dismissed');
       if (!dismissed && !isStandalone && isMobileDevice) {
         setShowInstallPopup(true)
@@ -493,291 +492,291 @@ export function AppLayout() {
 
       <div className="app-shell">
         <div className="ambient-orbs" aria-hidden="true">
-        <span className="orb orb-one" />
-        <span className="orb orb-two" />
-        <span className="orb orb-three" />
-      </div>
-
-      <motion.header
-        className="topbar"
-        animate={{ y: hideHeader ? -125 : 0, opacity: 1 }}
-        initial={{ y: -100, opacity: 0 }}
-        transition={{ duration: 2, ease: [0.2, 0.8, 0.2, 1] }}
-      >
-        <div className="brand-block">
-          <img className="brand-logo" src="/fulllogo.svg" alt="TripGenius" />
+          <span className="orb orb-one" />
+          <span className="orb orb-two" />
+          <span className="orb orb-three" />
         </div>
 
-        <button
-          type="button"
-          className="mobile-menu-toggle"
-          aria-label="Toggle menu"
-          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+        <motion.header
+          className="topbar"
+          animate={{ y: hideHeader ? -125 : 0, opacity: 1 }}
+          initial={{ y: -100, opacity: 0 }}
+          transition={{ duration: 2, ease: [0.2, 0.8, 0.2, 1] }}
         >
-          {isMobileMenuOpen ? <FiX /> : <FiMenu />}
-        </button>
+          <div className="brand-block">
+            <img className="brand-logo" src="/fulllogo.svg" alt="TripGenius" />
+          </div>
 
-        <nav className={`top-nav ${isMobileMenuOpen ? 'is-open' : ''}`} aria-label="Main navigation">
-          {primaryNavItems.filter(item => item.to !== '/ai' || !!user).map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              end={item.end}
-              className={({ isActive }) =>
-                isActive ? 'nav-link is-active' : 'nav-link'
-              }
-            >
-              <item.Icon className="nav-icon" aria-hidden="true" />
-              {item.label}
-            </NavLink>
-          ))}
-        </nav>
+          <button
+            type="button"
+            className="mobile-menu-toggle"
+            aria-label="Toggle menu"
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          >
+            {isMobileMenuOpen ? <FiX /> : <FiMenu />}
+          </button>
 
-        <div className={`header-actions ${isMobileMenuOpen ? 'is-open' : ''}`}>
-          {!user ? (
-            <>
-              {deferredPrompt && (
-                <button 
-                  type="button" 
-                  className="btn btn-ghost" 
-                  onClick={handleInstallClick}
-                  style={{ gap: '0.4rem', border: '1px dashed var(--green-500)', color: 'var(--green-500)' }}
-                >
-                  <FiDownload aria-hidden="true" />
-                  Install App
-                </button>
-              )}
-              <Link className="btn btn-ghost header-auth" to="/login">
-                <FiLogIn aria-hidden="true" />
-                Login
-              </Link>
-              <Link className="btn btn-primary header-auth" to="/register">
-                <FiUserPlus aria-hidden="true" />
-                Register
-              </Link>
-            </>
-          ) : null}
+          <nav className={`top-nav ${isMobileMenuOpen ? 'is-open' : ''}`} aria-label="Main navigation">
+            {primaryNavItems.filter(item => item.to !== '/ai' || !!user).map((item) => (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                end={item.end}
+                className={({ isActive }) =>
+                  isActive ? 'nav-link is-active' : 'nav-link'
+                }
+              >
+                <item.Icon className="nav-icon" aria-hidden="true" />
+                {item.label}
+              </NavLink>
+            ))}
+          </nav>
 
-          {user ? (
-            <>
-              <div className="nav-notification-shell" ref={notificationMenuRef}>
-                <button
-                  type="button"
-                  className={isNotificationOpen ? 'icon-link icon-button is-active' : 'icon-link icon-button'}
-                  aria-label="Notifications"
-                  aria-haspopup="menu"
-                  aria-expanded={isNotificationOpen}
-                  aria-controls="header-notification-menu"
-                  aria-busy={isSyncingUser}
-                  disabled={isSyncingUser}
-                  onClick={() => {
-                    if (isSyncingUser) {
-                      return
-                    }
-                    setIsNotificationOpen((previous) => !previous)
-                    void syncUserFromProfileFetch()
-                  }}
-                >
-                  {isSyncingUser ? (
-                    <span className="inline-spinner" aria-hidden="true" />
-                  ) : (
-                    <FiBell aria-hidden="true" />
-                  )}
-                  {unreadNotifications.length > 0 ? (
-                    <span className="notification-badge" aria-hidden="true" />
-                  ) : null}
-                </button>
+          <div className={`header-actions ${isMobileMenuOpen ? 'is-open' : ''}`}>
+            {!user ? (
+              <>
+                {deferredPrompt && (
+                  <button
+                    type="button"
+                    className="btn btn-ghost"
+                    onClick={handleInstallClick}
+                    style={{ gap: '0.4rem', border: '1px dashed var(--green-500)', color: 'var(--green-500)' }}
+                  >
+                    <FiDownload aria-hidden="true" />
+                    Install App
+                  </button>
+                )}
+                <Link className="btn btn-ghost header-auth" to="/login">
+                  <FiLogIn aria-hidden="true" />
+                  Login
+                </Link>
+                <Link className="btn btn-primary header-auth" to="/register">
+                  <FiUserPlus aria-hidden="true" />
+                  Register
+                </Link>
+              </>
+            ) : null}
 
-                <AnimatePresence>
-                  {isNotificationOpen ? (
-                    <motion.section
-                      className="header-notification-dropdown"
-                      id="header-notification-menu"
-                      role="menu"
-                      initial={{ opacity: 0, y: -10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -8 }}
-                      transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
-                    >
-                      <div className="header-notification-head">
-                        <p className="eyebrow">Notifications</p>
-                        <Link
-                          className="header-notification-see-more"
-                          to="/profile?tab=notifications"
-                          onClick={() => {
-                            setIsNotificationOpen(false)
-                          }}
-                        >
-                          See more
-                        </Link>
-                      </div>
-                      
-                      {unreadNotifications.length > 0 ? (
-                        unreadNotifications.map((notification) => (
-                          <div
-                            key={notification.id}
-                            style={{
-                              padding: '0.75rem 1rem',
-                              borderBottom: '1px solid rgba(243, 255, 241, 0.1)',
-                              display: 'flex',
-                              flexDirection: 'column',
-                              gap: '0.25rem',
-                              cursor: 'pointer',
-                              transition: 'background-color 0.2s',
-                            }}
-                            onMouseEnter={(e) => {
-                              e.currentTarget.style.backgroundColor = 'rgba(243, 255, 241, 0.05)'
-                            }}
-                            onMouseLeave={(e) => {
-                              e.currentTarget.style.backgroundColor = 'transparent'
+            {user ? (
+              <>
+                <div className="nav-notification-shell" ref={notificationMenuRef}>
+                  <button
+                    type="button"
+                    className={isNotificationOpen ? 'icon-link icon-button is-active' : 'icon-link icon-button'}
+                    aria-label="Notifications"
+                    aria-haspopup="menu"
+                    aria-expanded={isNotificationOpen}
+                    aria-controls="header-notification-menu"
+                    aria-busy={isSyncingUser}
+                    disabled={isSyncingUser}
+                    onClick={() => {
+                      if (isSyncingUser) {
+                        return
+                      }
+                      setIsNotificationOpen((previous) => !previous)
+                      void syncUserFromProfileFetch()
+                    }}
+                  >
+                    {isSyncingUser ? (
+                      <span className="inline-spinner" aria-hidden="true" />
+                    ) : (
+                      <FiBell aria-hidden="true" />
+                    )}
+                    {unreadNotifications.length > 0 ? (
+                      <span className="notification-badge" aria-hidden="true" />
+                    ) : null}
+                  </button>
+
+                  <AnimatePresence>
+                    {isNotificationOpen ? (
+                      <motion.section
+                        className="header-notification-dropdown"
+                        id="header-notification-menu"
+                        role="menu"
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -8 }}
+                        transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
+                      >
+                        <div className="header-notification-head">
+                          <p className="eyebrow">Notifications</p>
+                          <Link
+                            className="header-notification-see-more"
+                            to="/profile?tab=notifications"
+                            onClick={() => {
+                              setIsNotificationOpen(false)
                             }}
                           >
-                            <p
+                            See more
+                          </Link>
+                        </div>
+
+                        {unreadNotifications.length > 0 ? (
+                          unreadNotifications.map((notification) => (
+                            <div
+                              key={notification.id}
                               style={{
-                                margin: 0,
-                                color: '#f3fff1',
-                                fontSize: '0.875rem',
-                                fontWeight: 500,
-                                lineHeight: 1.4,
+                                padding: '0.75rem 1rem',
+                                borderBottom: '1px solid rgba(243, 255, 241, 0.1)',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: '0.25rem',
+                                cursor: 'pointer',
+                                transition: 'background-color 0.2s',
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.backgroundColor = 'rgba(243, 255, 241, 0.05)'
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.backgroundColor = 'transparent'
                               }}
                             >
-                              {getNotificationContent(notification)}
-                            </p>
-                            <p
-                              style={{
-                                margin: 0,
-                                color: 'rgba(243, 255, 241, 0.6)',
-                                fontSize: '0.75rem',
-                                lineHeight: 1.2,
-                              }}
-                            >
-                              {formatNotificationTimestamp(notification)}
-                            </p>
-                          </div>
-                        ))
-                      ) : (
-                        <p className="header-notification-empty">No unread notifications.</p>
-                      )}
+                              <p
+                                style={{
+                                  margin: 0,
+                                  color: '#f3fff1',
+                                  fontSize: '0.875rem',
+                                  fontWeight: 500,
+                                  lineHeight: 1.4,
+                                }}
+                              >
+                                {getNotificationContent(notification)}
+                              </p>
+                              <p
+                                style={{
+                                  margin: 0,
+                                  color: 'rgba(243, 255, 241, 0.6)',
+                                  fontSize: '0.75rem',
+                                  lineHeight: 1.2,
+                                }}
+                              >
+                                {formatNotificationTimestamp(notification)}
+                              </p>
+                            </div>
+                          ))
+                        ) : (
+                          <p className="header-notification-empty">No unread notifications.</p>
+                        )}
 
-                    </motion.section>
-                  ) : null}
-                </AnimatePresence>
-              </div>
+                      </motion.section>
+                    ) : null}
+                  </AnimatePresence>
+                </div>
 
-              <button
-                type="button"
-                className="btn btn-ghost header-auth"
-                onClick={handleLogout}
-                disabled={isLoggingOut}
-                aria-busy={isLoggingOut}
-              >
-                {isLoggingOut ? (
-                  <span className="btn-loading-content">
-                    <span className="inline-spinner" aria-hidden="true" />
-                    Logging out...
-                  </span>
-                ) : (
-                  <>
-                    <FiLogOut aria-hidden="true" />
-                    Logout
-                  </>
-                )}
-              </button>
-              
-              {deferredPrompt && (
-                <button 
-                  type="button" 
-                  className="icon-link icon-button" 
-                  onClick={handleInstallClick}
-                  aria-label="Install App"
-                  style={{ border: '1px dashed var(--green-500)', color: 'var(--green-500)' }}
+                <button
+                  type="button"
+                  className="btn btn-ghost header-auth"
+                  onClick={handleLogout}
+                  disabled={isLoggingOut}
+                  aria-busy={isLoggingOut}
                 >
-                  <FiDownload aria-hidden="true" />
+                  {isLoggingOut ? (
+                    <span className="btn-loading-content">
+                      <span className="inline-spinner" aria-hidden="true" />
+                      Logging out...
+                    </span>
+                  ) : (
+                    <>
+                      <FiLogOut aria-hidden="true" />
+                      Logout
+                    </>
+                  )}
                 </button>
-              )}
 
-            <NavLink
-              to="/profile"
-              className={({ isActive }) =>
-                isActive ? 'icon-link is-active' : 'icon-link'
-              }
-              aria-label="Profile"
-            >
-              <img 
-                src={getAvatarUrl(user.username, user.profileUrl)} 
-                alt="" 
-                style={{ width: '24px', height: '24px', borderRadius: '50%', objectFit: 'cover' }} 
-              />
-            </NavLink>
-            <NavLink
-              to="/settings"
-              className={({ isActive }) =>
-                isActive ? 'icon-link is-active' : 'icon-link'
-              }
-              aria-label="Settings"
-            >
-              <FiSettings aria-hidden="true" />
-            </NavLink>
-          </>
-        
-          ) : null}
+                {deferredPrompt && (
+                  <button
+                    type="button"
+                    className="icon-link icon-button"
+                    onClick={handleInstallClick}
+                    aria-label="Install App"
+                    style={{ border: '1px dashed var(--green-500)', color: 'var(--green-500)' }}
+                  >
+                    <FiDownload aria-hidden="true" />
+                  </button>
+                )}
 
-        </div>
-      </motion.header>
+                <NavLink
+                  to="/profile"
+                  className={({ isActive }) =>
+                    isActive ? 'icon-link is-active' : 'icon-link'
+                  }
+                  aria-label="Profile"
+                >
+                  <img
+                    src={getAvatarUrl(user.username, user.profileUrl)}
+                    alt=""
+                    style={{ width: '24px', height: '24px', borderRadius: '50%', objectFit: 'cover' }}
+                  />
+                </NavLink>
+                <NavLink
+                  to="/settings"
+                  className={({ isActive }) =>
+                    isActive ? 'icon-link is-active' : 'icon-link'
+                  }
+                  aria-label="Settings"
+                >
+                  <FiSettings aria-hidden="true" />
+                </NavLink>
+              </>
+
+            ) : null}
+
+          </div>
+        </motion.header>
 
 
-      <motion.main
-        key={location.pathname}
-        className="main-content"
-        initial={{ opacity: 0, y: 14 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-      >
-        {outlet}
-      </motion.main>
+        <motion.main
+          key={location.pathname}
+          className="main-content"
+          initial={{ opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+        >
+          {outlet}
+        </motion.main>
 
 
-      <nav className="bottom-nav" aria-label="Mobile navigation">
-        <NavLink to="/" end className={({ isActive }) => isActive ? 'bottom-nav-link is-active' : 'bottom-nav-link'}>
-          <FiHome aria-hidden="true" />
-          <span>Home</span>
-        </NavLink>
-        <NavLink to="/discover" className={({ isActive }) => isActive ? 'bottom-nav-link is-active' : 'bottom-nav-link'}>
-          <FiCompass aria-hidden="true" />
-          <span>Discover</span>
-        </NavLink>
-        {user && (
-          <NavLink to="/ai" className={({ isActive }) => isActive ? 'bottom-nav-link is-active' : 'bottom-nav-link'}>
-            <AiIcon aria-hidden="true" />
-            <span>Advisor</span>
+        <nav className="bottom-nav" aria-label="Mobile navigation">
+          <NavLink to="/" end className={({ isActive }) => isActive ? 'bottom-nav-link is-active' : 'bottom-nav-link'}>
+            <FiHome aria-hidden="true" />
+            <span>Home</span>
           </NavLink>
-        )}
-        {user ? (
-          <>
-            <NavLink to="/profile" className={({ isActive }) => isActive ? 'bottom-nav-link is-active' : 'bottom-nav-link'}>
-              <img 
-                src={getAvatarUrl(user.username, user.profileUrl)} 
-                alt="" 
-                style={{ width: '22px', height: '22px', borderRadius: '50%', objectFit: 'cover' }} 
-              />
-              <span>Profile</span>
-            </NavLink>
-            <NavLink to="/settings" className={({ isActive }) => isActive ? 'bottom-nav-link is-active' : 'bottom-nav-link'}>
-              <FiSettings aria-hidden="true" />
-              <span>Settings</span>
-            </NavLink>
-          </>
-        ) : (
-          <NavLink to="/login" className={({ isActive }) => isActive ? 'bottom-nav-link is-active' : 'bottom-nav-link'}>
-            <FiLogIn aria-hidden="true" />
-            <span>Login</span>
+          <NavLink to="/discover" className={({ isActive }) => isActive ? 'bottom-nav-link is-active' : 'bottom-nav-link'}>
+            <FiCompass aria-hidden="true" />
+            <span>Discover</span>
           </NavLink>
-        )}
-      </nav>
+          {user && (
+            <NavLink to="/ai" className={({ isActive }) => isActive ? 'bottom-nav-link is-active' : 'bottom-nav-link'}>
+              <AiIcon aria-hidden="true" />
+              <span>Advisor</span>
+            </NavLink>
+          )}
+          {user ? (
+            <>
+              <NavLink to="/profile" className={({ isActive }) => isActive ? 'bottom-nav-link is-active' : 'bottom-nav-link'}>
+                <img
+                  src={getAvatarUrl(user.username, user.profileUrl)}
+                  alt=""
+                  style={{ width: '22px', height: '22px', borderRadius: '50%', objectFit: 'cover' }}
+                />
+                <span>Profile</span>
+              </NavLink>
+              <NavLink to="/settings" className={({ isActive }) => isActive ? 'bottom-nav-link is-active' : 'bottom-nav-link'}>
+                <FiSettings aria-hidden="true" />
+                <span>Settings</span>
+              </NavLink>
+            </>
+          ) : (
+            <NavLink to="/login" className={({ isActive }) => isActive ? 'bottom-nav-link is-active' : 'bottom-nav-link'}>
+              <FiLogIn aria-hidden="true" />
+              <span>Login</span>
+            </NavLink>
+          )}
+        </nav>
       </div>
       {showInstallPopup && (
         <div className="pwa-popup-overlay">
-          <motion.div 
+          <motion.div
             className="pwa-popup-card"
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -785,16 +784,16 @@ export function AppLayout() {
             <button className="pwa-close-btn" onClick={dismissPopup} aria-label="Close">
               <FiX />
             </button>
-            
+
             <div className="pwa-icon-circle">
-               <img src="/pwa-192x192.png" alt="App Icon" />
+              <img src="/pwa-192x192.png" alt="App Icon" />
             </div>
 
             {isIos ? (
               <>
                 <h2>Add to Home Screen</h2>
                 <p>Install TripGenius on your iPhone for a native experience.</p>
-                
+
                 <div className="ios-guide-carousel" data-lenis-prevent>
                   <div className="ios-guide-step">
                     <img src="/iospwaguide/1.jpeg" alt="Step 1" />
@@ -809,7 +808,7 @@ export function AppLayout() {
                     <p>3. Confirm by tapping <strong>"Add"</strong> in the top right.</p>
                   </div>
                 </div>
-                
+
                 <p className="swipe-hint">Swipe to see next step →</p>
               </>
             ) : (
@@ -817,7 +816,7 @@ export function AppLayout() {
                 <h2>Install TripGenius</h2>
                 <p>This app can be installed into your phone for faster access and offline support.</p>
                 <button className="btn btn-primary btn-lg" style={{ width: '100%', marginTop: '1.5rem' }} onClick={handleInstallClick}>
-                   Install App
+                  Install App
                 </button>
               </>
             )}
@@ -833,23 +832,23 @@ export function AppLayout() {
 
       <AnimatePresence>
         {isAppInitializing && (
-          <motion.div 
+          <motion.div
             className="app-splash-screen"
             initial={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.5, ease: 'easeInOut' }}
           >
             <div className="splash-content">
-              <motion.img 
-                src="/fulllogo.svg" 
-                alt="TripGenius" 
+              <motion.img
+                src="/fulllogo.svg"
+                alt="TripGenius"
                 className="splash-logo"
                 initial={{ scale: 0.9, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 transition={{ duration: 0.8, ease: "easeOut" }}
               />
               <div className="splash-loader">
-                <motion.div 
+                <motion.div
                   className="splash-loader-bar"
                   initial={{ width: "0%" }}
                   animate={{ width: "100%" }}
