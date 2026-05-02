@@ -4190,7 +4190,8 @@ thead {
 
 @media (max-width: 1120px) {
   .trip-workspace-v2 {
-    grid-template-columns: 1fr;
+    display: flex;
+    flex-direction: column-reverse;
   }
 }
 
@@ -4221,6 +4222,7 @@ thead {
 
 .trip-hero-meta-v2 {
   display: flex;
+  flex-wrap: wrap;
   gap: 1rem;
   margin-bottom: 1rem;
 }

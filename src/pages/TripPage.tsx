@@ -1,7 +1,17 @@
 import { AnimatePresence, motion } from 'framer-motion'
 import { useEffect, useMemo, useState, useRef } from 'react'
 import type { ChangeEvent, FormEvent, KeyboardEvent } from 'react'
-import { FiUserPlus, FiX, FiUploadCloud } from 'react-icons/fi'
+import { 
+  FiUserPlus, 
+  FiX, 
+  FiUploadCloud, 
+  FiInfo, 
+  FiMap, 
+  FiUsers, 
+  FiMessageSquare, 
+  FiSettings,
+  FiPlusCircle
+} from 'react-icons/fi'
 import { useSelector } from 'react-redux'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { TripRouteMap } from '../components/TripRouteMap'
@@ -23,6 +33,7 @@ type TripWorkspaceTab = 'overview' | 'map' | 'members' | 'chat' | 'settings'
 interface TripTabItem {
   key: TripWorkspaceTab
   label: string
+  Icon: any
 }
 
 interface AuthStoreState {
@@ -37,21 +48,21 @@ type TripFetchState = 'loading' | 'ready' | 'not-found' | 'error'
 type TripParticipationState = 'accepted' | 'invited' | 'requested' | 'visitor'
 
 const memberTabs: TripTabItem[] = [
-  { key: 'overview', label: 'Overview' },
-  { key: 'map', label: 'Timeline' },
-  { key: 'members', label: 'Expedition' },
-  { key: 'chat', label: 'Signal Room' },
+  { key: 'overview', label: 'Overview', Icon: FiInfo },
+  { key: 'map', label: 'Timeline', Icon: FiMap },
+  { key: 'members', label: 'Expedition', Icon: FiUsers },
+  { key: 'chat', label: 'Signal Room', Icon: FiMessageSquare },
 ]
 
 const ownerTabs: TripTabItem[] = [
   ...memberTabs,
-  { key: 'settings', label: 'Workspace Settings' },
+  { key: 'settings', label: 'Workspace Settings', Icon: FiSettings },
 ]
 
 const visitorTabs: TripTabItem[] = [
-  { key: 'overview', label: 'Overview' },
-  { key: 'map', label: 'Public Map' },
-  { key: 'members', label: 'Public Expedition' },
+  { key: 'overview', label: 'Overview', Icon: FiInfo },
+  { key: 'map', label: 'Public Map', Icon: FiMap },
+  { key: 'members', label: 'Public Expedition', Icon: FiUsers },
 ]
 
 const defaultSelectedDay = (startDate: string, timelineLength: number): number => {
@@ -1111,8 +1122,14 @@ function TripPageContent({ trip }: TripPageContentProps) {
 
       <nav className="profile-tab-bar-v2" style={{ marginBottom: '3rem' }}>
         {tabs.map((tab, idx) => (
-          <button key={tab.key} className={activeTab === tab.key ? 'profile-tab-btn-v2 is-active' : 'profile-tab-btn-v2'} onClick={() => selectTab(tab.key)} onKeyDown={e => handleTabKeyDown(e, idx)}>
-            {tab.label}
+          <button 
+            key={tab.key} 
+            className={activeTab === tab.key ? 'profile-tab-btn-v2 is-active' : 'profile-tab-btn-v2'} 
+            onClick={() => selectTab(tab.key)} 
+            onKeyDown={e => handleTabKeyDown(e, idx)}
+          >
+            <span className="tab-icon-mobile"><tab.Icon /></span>
+            <span className="tab-label-desktop">{tab.label}</span>
           </button>
         ))}
       </nav>

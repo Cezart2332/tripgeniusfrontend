@@ -159,6 +159,7 @@ export function AppLayout() {
   const dispatch = useDispatch()
   const user = useSelector((state: AuthStoreState) => state.auth.user)
   const [hideHeader, setHideHeader] = useState(false)
+  const [isAppInitializing, setIsAppInitializing] = useState(true)
   const [isLoggingOut, setIsLoggingOut] = useState(false)
   const [isSyncingUser, setIsSyncingUser] = useState(false)
   const [isNotificationOpen, setIsNotificationOpen] = useState(false)
@@ -190,6 +191,8 @@ export function AppLayout() {
     } finally {
       isSyncingUserRef.current = false
       setIsSyncingUser(false)
+      // Allow a small delay for a smoother splash transition
+      setTimeout(() => setIsAppInitializing(false), 400)
     }
   }, [dispatch])
 
@@ -801,6 +804,37 @@ export function AppLayout() {
           </motion.div>
         </div>
       )}
+
+      <AnimatePresence>
+        {isAppInitializing && (
+          <motion.div 
+            className="app-splash-screen"
+            initial={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.5, ease: 'easeInOut' }}
+          >
+            <div className="splash-content">
+              <motion.img 
+                src="/fulllogo.svg" 
+                alt="TripGenius" 
+                className="splash-logo"
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ duration: 0.8, ease: "easeOut" }}
+              />
+              <div className="splash-loader">
+                <motion.div 
+                  className="splash-loader-bar"
+                  initial={{ width: "0%" }}
+                  animate={{ width: "100%" }}
+                  transition={{ duration: 2, ease: "easeInOut" }}
+                />
+              </div>
+              <p className="splash-tagline">Initializing expedition...</p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </>
   )
 }
