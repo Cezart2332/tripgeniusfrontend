@@ -217,7 +217,7 @@ api.interceptors.response.use(
                 try {
                     await axios.post(`${baseURL}/api/auth/logout`, {}, { withCredentials: true });
                 } catch {
-                    // Ignore logout cleanup failures.
+
                 }
 
                 return Promise.reject(err);

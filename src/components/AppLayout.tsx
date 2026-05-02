@@ -3,7 +3,6 @@ import Lenis from '@studio-freight/lenis'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
   FiBell,
-  FiCompass,
   FiHome,
   FiLogIn,
   FiLogOut,
