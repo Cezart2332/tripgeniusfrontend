@@ -263,7 +263,7 @@ export function AiAdvisorPage() {
   };
 
   return (
-    <section className="page ai-page-v2 container">
+    <section className="page ai-page-v2">
       <header className="ai-header-v2">
         <p className="eyebrow">Expert Expedition Intelligence</p>
         <h1>Plan by conversation.</h1>

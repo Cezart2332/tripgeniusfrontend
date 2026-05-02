@@ -1004,7 +1004,13 @@ function TripPageContent({ trip }: TripPageContentProps) {
   )
 
   const renderChat = () => (
-    <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={revealTransition} className="ai-chat-v2" style={{ height: '70vh' }}>
+    <motion.div 
+      initial={{ opacity: 0, y: 16 }} 
+      animate={{ opacity: 1, y: 0 }} 
+      exit={{ opacity: 0, y: -12 }} 
+      transition={revealTransition} 
+      className="ai-chat-v2 trip-chat-v2"
+    >
        <div className="ai-thread-v2">
           {chatMessages.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '4rem 0' }}>

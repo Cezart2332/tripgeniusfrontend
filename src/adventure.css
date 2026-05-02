@@ -4067,7 +4067,6 @@ thead {
 }
 
 .ai-composer-submit-v2:disabled {
-  background: rgba(154, 198, 148, 0.1);
   color: rgba(255, 255, 255, 0.2);
   cursor: not-allowed;
   transform: none;
@@ -4154,32 +4153,49 @@ thead {
 }
 
 @media (max-width: 860px) {
+  .ai-page-v2 {
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+  .ai-header-v2 {
+    display: none;
+  }
+  .ai-sidebar-v2 {
+    display: none;
+  }
   .ai-workspace-v2 {
     grid-template-columns: 1fr;
-    height: auto;
+    height: calc(100dvh - 120px);
+    margin: 0;
+    gap: 0;
     min-height: 0;
   }
   .ai-chat-v2 {
-    height: 70dvh;
-    min-height: 500px;
-    border-radius: 24px;
+    height: 100% !important;
+    min-height: 0 !important;
+    border-radius: 0;
+    border: none;
+    box-shadow: none;
+    background: var(--bg-980);
   }
   .ai-thread-v2 {
-    padding: 1.5rem;
+    padding: 1rem;
+    padding-bottom: 2rem;
   }
   .ai-composer-shell-v2 {
-    padding: 1rem;
+    padding: 0.75rem;
+    background: rgba(14, 28, 20, 0.8);
+    backdrop-filter: blur(10px);
+    border-top: 1px solid rgba(154, 198, 148, 0.1);
   }
   .ai-bubble-v2 {
     max-width: 100%;
   }
-  .ai-header-v2 h1 {
-    font-size: 2.5rem;
-  }
 }
 
-
-/* ── Trip Workspace V2 ── */
+/* -- Trip Workspace V2 -- */
 
 .trip-workspace-v2 {
   display: grid;
@@ -4192,6 +4208,17 @@ thead {
   .trip-workspace-v2 {
     display: flex;
     flex-direction: column-reverse;
+  }
+}
+
+.trip-chat-v2 {
+  height: 70vh;
+  min-height: 600px;
+}
+
+@media (max-width: 860px) {
+  .trip-chat-v2 {
+    height: calc(100dvh - 180px) !important;
   }
 }
 
