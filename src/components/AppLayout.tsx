@@ -390,84 +390,100 @@ export function AppLayout() {
             </button>
           )}
           {user ? (
-            <div className="nav-notification-shell" ref={notificationMenuRef}>
+            <>
+              <div className="nav-notification-shell" ref={notificationMenuRef}>
+                <button
+                  type="button"
+                  className={isNotificationOpen ? 'mobile-icon-btn is-active' : 'mobile-icon-btn'}
+                  aria-label="Notifications"
+                  aria-haspopup="menu"
+                  aria-expanded={isNotificationOpen}
+                  disabled={isSyncingUser}
+                  onClick={() => {
+                    if (isSyncingUser) return
+                    setIsNotificationOpen((prev) => !prev)
+                    void syncUserFromProfileFetch()
+                  }}
+                >
+                  {isSyncingUser ? (
+                    <span className="inline-spinner" aria-hidden="true" />
+                  ) : (
+                    <FiBell />
+                  )}
+                  {unreadNotifications.length > 0 && (
+                    <span className="notification-badge" aria-label={`${unreadNotifications.length} unread`}>
+                      {unreadNotifications.length}
+                    </span>
+                  )}
+                </button>
+
+                <AnimatePresence>
+                  {isNotificationOpen ? (
+                    <motion.section
+                      className="header-notification-dropdown"
+                      initial={{ opacity: 0, y: -8, scale: 0.96 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: -4, scale: 0.96 }}
+                      transition={{ duration: 0.15, ease: 'easeOut' }}
+                      role="menu"
+                      aria-label="Notifications menu"
+                    >
+                      <div className="header-notification-header">
+                        <h4>Notifications</h4>
+                        {unreadNotifications.length > 0 && (
+                          <button type="button" className="btn btn-ghost btn-sm" onClick={markAllAsRead}>
+                            Clear all
+                          </button>
+                        )}
+                      </div>
+                      {unreadNotifications.length > 0 ? (
+                        unreadNotifications.map((notification) => (
+                          <div key={notification.id} className="header-notification-item" role="menuitem">
+                            <p
+                              style={{
+                                margin: '0 0 0.25rem 0',
+                                color: '#f3fff1',
+                                fontSize: '0.85rem',
+                                fontWeight: 500,
+                                lineHeight: 1.4,
+                              }}
+                            >
+                              {getNotificationContent(notification)}
+                            </p>
+                            <p
+                              style={{
+                                margin: 0,
+                                color: 'rgba(243, 255, 241, 0.6)',
+                                fontSize: '0.75rem',
+                                lineHeight: 1.2,
+                              }}
+                            >
+                              {formatNotificationTimestamp(notification)}
+                            </p>
+                          </div>
+                        ))
+                      ) : (
+                        <p className="header-notification-empty">No unread notifications.</p>
+                      )}
+                    </motion.section>
+                  ) : null}
+                </AnimatePresence>
+              </div>
+
               <button
                 type="button"
-                className={isNotificationOpen ? 'mobile-icon-btn is-active' : 'mobile-icon-btn'}
-                aria-label="Notifications"
-                aria-haspopup="menu"
-                aria-expanded={isNotificationOpen}
-                disabled={isSyncingUser}
-                onClick={() => {
-                  if (isSyncingUser) return
-                  setIsNotificationOpen((prev) => !prev)
-                  void syncUserFromProfileFetch()
-                }}
+                className="mobile-icon-btn"
+                onClick={handleLogout}
+                disabled={isLoggingOut}
+                aria-label="Logout"
               >
-                {isSyncingUser ? (
+                {isLoggingOut ? (
                   <span className="inline-spinner" aria-hidden="true" />
                 ) : (
-                  <FiBell />
-                )}
-                {unreadNotifications.length > 0 && (
-                  <span className="notification-badge" aria-label={`${unreadNotifications.length} unread`}>
-                    {unreadNotifications.length}
-                  </span>
+                  <FiLogOut />
                 )}
               </button>
-
-              <AnimatePresence>
-                {isNotificationOpen ? (
-                  <motion.section
-                    className="header-notification-dropdown"
-                    initial={{ opacity: 0, y: -8, scale: 0.96 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: -4, scale: 0.96 }}
-                    transition={{ duration: 0.15, ease: 'easeOut' }}
-                    role="menu"
-                    aria-label="Notifications menu"
-                  >
-                    <div className="header-notification-header">
-                      <h4>Notifications</h4>
-                      {unreadNotifications.length > 0 && (
-                        <button type="button" className="btn btn-ghost btn-sm" onClick={markAllAsRead}>
-                          Clear all
-                        </button>
-                      )}
-                    </div>
-                    {unreadNotifications.length > 0 ? (
-                      unreadNotifications.map((notification) => (
-                        <div key={notification.id} className="header-notification-item" role="menuitem">
-                          <p
-                            style={{
-                              margin: '0 0 0.25rem 0',
-                              color: '#f3fff1',
-                              fontSize: '0.85rem',
-                              fontWeight: 500,
-                              lineHeight: 1.4,
-                            }}
-                          >
-                            {getNotificationContent(notification)}
-                          </p>
-                          <p
-                            style={{
-                              margin: 0,
-                              color: 'rgba(243, 255, 241, 0.6)',
-                              fontSize: '0.75rem',
-                              lineHeight: 1.2,
-                            }}
-                          >
-                            {formatNotificationTimestamp(notification)}
-                          </p>
-                        </div>
-                      ))
-                    ) : (
-                      <p className="header-notification-empty">No unread notifications.</p>
-                    )}
-                  </motion.section>
-                ) : null}
-              </AnimatePresence>
-            </div>
+            </>
           ) : (
             <Link className="mobile-icon-btn" to="/login" aria-label="Login">
               <FiLogIn />
@@ -730,7 +746,7 @@ export function AppLayout() {
           {user && (
             <NavLink to="/app/ai" className={({ isActive }) => isActive ? 'bottom-nav-link is-active' : 'bottom-nav-link'}>
               <FiCpu aria-hidden="true" />
-              <span>AI Assistant</span>
+              <span>AI</span>
             </NavLink>
           )}
           {user ? (

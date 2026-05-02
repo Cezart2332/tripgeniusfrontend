@@ -132,7 +132,7 @@ h3 {
   .app-shell {
     width: 100%;
     margin: 0;
-    padding: 0.75rem 0.85rem calc(80px + env(safe-area-inset-bottom)) 0.85rem;
+    padding: calc(60px + env(safe-area-inset-top)) 0.85rem calc(80px + env(safe-area-inset-bottom)) 0.85rem;
   }
 }
 
@@ -2159,8 +2159,10 @@ h3 {
 @media (max-width: 850px) {
   .mobile-topbar {
     display: flex;
-    position: sticky;
+    position: fixed;
     top: 0;
+    left: 0;
+    right: 0;
     z-index: 50;
     width: 100%;
     align-items: center;
