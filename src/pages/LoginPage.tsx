@@ -8,6 +8,7 @@ import { AxiosError } from 'axios'
 import { FeedbackToast } from '../components/FeedbackToast'
 import type { FeedbackToastState, FeedbackToastTone } from '../components/FeedbackToast'
 import waitForBackendButtonUnlock from '../utils/interactionDelay'
+import { subscribeForNotifications } from '../utils/notifications'
 
 const GoogleIcon = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
@@ -51,7 +52,7 @@ export function LoginPage() {
   }
 
   const loginWithGoogleCredential = async (credential: string) => {
-    const res = await api.post('/api/auth/google-login', { idToken:credential })
+    const res = await api.post('/api/auth/google-login', { idToken: credential })
 
     if (!res.data?.token) {
       throw new Error('Invalid Google login response')
@@ -80,6 +81,7 @@ export function LoginPage() {
 
     try {
       await loginWithGoogleCredential(credentialResponse.credential)
+      await subscribeForNotifications()
       showToast('Login successful. Redirecting...', 'success')
       navigate('/app/profile', { replace: true })
     } catch (err: unknown) {
@@ -107,6 +109,7 @@ export function LoginPage() {
 
     try {
       await login(email, password)
+      await subscribeForNotifications()
       showToast('Login successful. Redirecting...', 'success')
       shouldNavigate = true
     } catch (err: unknown) {
