@@ -208,6 +208,8 @@ export function ProfilePage() {
   const [isClearingNotifications, setIsClearingNotifications] = useState(false)
   const [isRespondingInviteId, setIsRespondingInviteId] = useState<string | null>(null)
   const [inviteResponseAction, setInviteResponseAction] = useState<'Accepted' | 'Declined' | null>(null)
+  const [allTrips, setAllTrips] = useState<Trip[]>([])
+  const [isFetchingAllTrips, setIsFetchingAllTrips] = useState(false)
   const objectUrlRef = useRef<string | null>(null)
   const tabListRef = useRef<HTMLElement | null>(null)
 
@@ -297,6 +299,24 @@ export function ProfilePage() {
     }
   }, [shouldRedirectToLogin, navigate])
 
+  useEffect(() => {
+    if (!user) return
+
+    const fetchAll = async () => {
+      setIsFetchingAllTrips(true)
+      try {
+        const res = await api.get('api/trip/get-all-trips')
+        setAllTrips(res.data || [])
+      } catch (err) {
+        console.error('Failed to fetch discovery trips:', err)
+      } finally {
+        setIsFetchingAllTrips(false)
+      }
+    }
+
+    fetchAll()
+  }, [user])
+
   const pastTrips = useMemo(
     () => (user?.trips ?? []).filter((trip: Trip) => isFinishedTripStatus(trip.status)),
     [user?.trips],
@@ -310,10 +330,20 @@ export function ProfilePage() {
   )
 
   const discoveryTrips = useMemo<PersonalizedTripCard[]>(() => {
-    return (user?.trips ?? [])
+    // We filter ALL trips from the platform, excluding those the user is already in
+    const userTripIds = new Set((user?.trips ?? []).map(t => String(t.id)))
+
+    return allTrips
+      .filter(trip => !userTripIds.has(String(trip.id)))
       .map((trip: Trip) => {
         const tagsSafe = trip.tags ?? []
         const matchingTags = tagsSafe.filter((tag: string) => tripTypes.includes(tag))
+
+        // Calculate Interest Match (0-100)
+        let interestScore = 0
+        if (tripTypes.length > 0) {
+          interestScore = (matchingTags.length / tripTypes.length) * 100
+        }
 
         const tripMax = trip.maxParticipants ?? Number.MAX_SAFE_INTEGER
         const groupAlignment =
@@ -322,27 +352,27 @@ export function ProfilePage() {
             : tripMax <= effectiveMaxGroupSize
               ? 10
               : -7
-        const statusBoost = isUpcomingTripStatus(trip.status) ? 6 : 2
-
+        
+        // Final score: 80% Interests + 20% Group size/status alignment
         const matchScore = clamp(
-          44 + matchingTags.length * 16 + groupAlignment + statusBoost,
-          26,
-          98,
+          Math.round(interestScore * 0.8 + 20 + groupAlignment),
+          0,
+          100
         )
 
         const matchReasons = [
           matchingTags.length > 0
             ? `Shared trip styles: ${matchingTags.slice(0, 2).join(', ')}`
-            : 'Great for trying a new travel vibe',
+            : 'Explore a new travel vibe',
           effectiveMaxGroupSize === null
-            ? 'No preferred group size set'
+            ? 'Set a preferred group size for better results'
             : trip.maxParticipants <= effectiveMaxGroupSize
               ? 'Fits your preferred group size'
-              : 'Larger group than your default setting',
+              : 'Larger group than your usual preference',
         ]
 
         return {
-          id: trip.id,
+          id: String(trip.id),
           title: trip.title,
           coverImage: trip.imageUrl,
           description: trip.description,
@@ -357,8 +387,9 @@ export function ProfilePage() {
           matchReasons,
         }
       })
+      .filter(card => card.matchScore >= 50) // ONLY high matches
       .sort((first, second) => second.matchScore - first.matchScore)
-  }, [user?.trips, tripTypes, effectiveMaxGroupSize])
+  }, [allTrips, user?.trips, tripTypes, effectiveMaxGroupSize])
 
   const visibleNotifications = useMemo(
     () =>

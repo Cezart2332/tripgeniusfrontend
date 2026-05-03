@@ -4,8 +4,8 @@ import { FiPlusCircle, FiSliders, FiZap } from 'react-icons/fi'
 import { Link, useLocation } from 'react-router-dom'
 import { useDebouncedCallback } from 'use-debounce'
 import { tripTypeOptions } from '../data/tripTypeOptions'
-import type { Trip,User } from '../types/models'
-import {useSelector } from 'react-redux'
+import type { Trip, User } from '../types/models'
+import { useSelector } from 'react-redux'
 import api from '../data/api'
 import { formatDisplayDate } from '../utils/dateDisplay'
 import { getTripStatusLabel } from '../utils/tripStatus'
@@ -61,7 +61,7 @@ export function DiscoveryPage() {
   // Warm up the all-trips cache for offline use
   useEffect(() => {
     if (user && navigator.onLine) {
-      api.get('api/trip/get-all-trips').catch(() => {})
+      api.get('api/trip/get-all-trips').catch(() => { })
     }
   }, [user])
 
@@ -102,8 +102,8 @@ export function DiscoveryPage() {
             const allTrips: Trip[] = allRes.data
 
             const filtered = allTrips.filter(t => {
-              const matchesSearch = !debouncedSearch || 
-                t.title.toLowerCase().includes(debouncedSearch.toLowerCase()) || 
+              const matchesSearch = !debouncedSearch ||
+                t.title.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
                 t.description.toLowerCase().includes(debouncedSearch.toLowerCase())
               const matchesTag = selectedType === 'all' || t.tags.includes(selectedType)
               const matchesBudget = t.price <= maxBudget
@@ -130,8 +130,7 @@ export function DiscoveryPage() {
   }, [autoApplyPreferences, selectedType, debouncedSearch, maxBudget, user])
 
 
-  if(user == null) 
-  {
+  if (user == null) {
     return (
       <section className="page discovery-page">
         <motion.div
@@ -291,39 +290,39 @@ export function DiscoveryPage() {
               </article>
             ))
             : trips.map((trip, index) => (
-            <motion.article
-              className="discovery-trip-row"
-              key={trip.id}
-              initial={{ opacity: 0, y: 16 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, amount: 0.15 }}
-              transition={{ ...revealTransition, delay: index * 0.04 }}
-            >
-              <img src={trip.imageUrl} alt={trip.title} className="discovery-trip-thumb" />
-              <div className="discovery-trip-info">
-                <span className="discovery-trip-status">{getTripStatusLabel(trip.status)}</span>
-                <h3>{trip.title}</h3>
-                <p className="discovery-trip-desc">{trip.description}</p>
-                <div className="discovery-trip-meta-row">
-                  <span>{trip.timelines?.length ?? 0} days</span>
-                  <span>·</span>
-                  <span>starts {formatDisplayDate(trip.startingDate)}</span>
-                  <span>·</span>
-                  <span>{trip.currentMembers}/{trip.maxParticipants} members</span>
-                  <span>·</span>
-                  <span>{trip.price} EUR</span>
+              <motion.article
+                className="discovery-trip-row"
+                key={trip.id}
+                initial={{ opacity: 0, y: 16 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, amount: 0.15 }}
+                transition={{ ...revealTransition, delay: index * 0.04 }}
+              >
+                <img src={trip.imageUrl} alt={trip.title} className="discovery-trip-thumb" />
+                <div className="discovery-trip-info">
+                  <span className="discovery-trip-status">{getTripStatusLabel(trip.status)}</span>
+                  <h3>{trip.title}</h3>
+                  <p className="discovery-trip-desc">{trip.description}</p>
+                  <div className="discovery-trip-meta-row">
+                    <span>{trip.timelines?.length ?? 0} days</span>
+                    <span>·</span>
+                    <span>starts {formatDisplayDate(trip.startingDate)}</span>
+                    <span>·</span>
+                    <span>{trip.currentMembers}/{trip.maxParticipants} members</span>
+                    <span>·</span>
+                    <span>{trip.price} EUR</span>
+                  </div>
+                  <div className="discovery-trip-tags">
+                    {trip.tags.map((tag) => (
+                      <span key={tag} className="chip chip-static chip-sm">{tag}</span>
+                    ))}
+                  </div>
                 </div>
-                <div className="discovery-trip-tags">
-                  {trip.tags.map((tag) => (
-                    <span key={tag} className="chip chip-static chip-sm">{tag}</span>
-                  ))}
-                </div>
-              </div>
-              <Link className="btn btn-primary btn-sm discovery-trip-cta" to={`/app/trip/${trip.id}`}>
-                View
-              </Link>
-            </motion.article>
-          ))}
+                <Link className="btn btn-primary btn-sm discovery-trip-cta" to={`/app/trip/${trip.id}`}>
+                  View
+                </Link>
+              </motion.article>
+            ))}
 
           {!showDiscoverySkeleton && trips.length === 0 ? (
             <div className="discovery-no-results">
