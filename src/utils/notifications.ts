@@ -20,6 +20,7 @@ export async function subscribeForNotifications() {
     }
 
     if (!VAPID_PUBLIC_KEY) {
+
         console.error('VITE_VAPID_PUBLIC_KEY is not defined in environment variables.');
         return;
     }
@@ -43,6 +44,7 @@ export async function subscribeForNotifications() {
             userVisibleOnly: true,
             applicationServerKey: applicationServerKey
         });
+
         await api.post('/api/user/subscribe-to-notifications', { endpoint: subscription.endpoint, p256dh: arrayBufferToBase64(subscription.getKey("p256dh") as ArrayBuffer | null), auth: arrayBufferToBase64(subscription.getKey("auth") as ArrayBuffer | null) });
         console.log('Successfully subscribed to notifications.');
     } catch (error: any) {
