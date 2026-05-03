@@ -951,13 +951,19 @@ export function ProfilePage() {
               </div>
 
               <div className="matches-grid-v2">
-                {discoveryTrips.length === 0 && (
+                {isFetchingAllTrips ? (
+                  Array.from({ length: 3 }).map((_, idx) => (
+                    <div key={idx} className="match-card-v2 discovery-trip-skeleton" style={{ height: '300px' }}>
+                       <div className="discovery-skeleton-block" style={{ height: '100%', width: '100%' }} />
+                    </div>
+                  ))
+                ) : discoveryTrips.length === 0 ? (
                   <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '4rem 0' }}>
                     <img src="/newstickers/sticker5.png" alt="" style={{ width: '140px', opacity: 0.4, marginBottom: '1rem' }} />
                     <p className="empty-note">No matches found. Try adjusting your preferences in Identity.</p>
                   </div>
-                )}
-                {discoveryTrips.slice(0, 6).map((trip) => (
+                ) : (
+                  discoveryTrips.slice(0, 6).map((trip) => (
                   <Link key={trip.id} to={`/app/trip/${trip.id}`} className="match-card-v2">
                     <div className="match-badge-v2">{trip.matchScore}% Match</div>
                     <img src={trip.coverImage || '/newstickers/sticker1.png'} alt="" className="match-thumb-v2" />
@@ -984,7 +990,8 @@ export function ProfilePage() {
                       <button className="btn btn-primary btn-sm" style={{ marginTop: '1.5rem', width: '100%' }}>View Workspace</button>
                     </div>
                   </Link>
-                ))}
+                ))
+              )}
               </div>
             </div>
           </motion.div>
