@@ -6,13 +6,12 @@ import { CacheableResponsePlugin } from 'workbox-cacheable-response'
 import { ExpirationPlugin } from 'workbox-expiration'
 
 declare const self: ServiceWorkerGlobalScope & {
-  __WB_MANIFEST: Array<any>
+    __WB_MANIFEST: Array<any>
 }
 
 cleanupOutdatedCaches()
 precacheAndRoute(self.__WB_MANIFEST)
 
-// ─── Navigare — Network First cu fallback pe index.html din precache ──────────
 registerRoute(
     new NavigationRoute(
         new NetworkFirst({
@@ -22,20 +21,31 @@ registerRoute(
     )
 )
 
-// ─── API calls — Network First (date fresh, fallback pe cache) ────────────────
 registerRoute(
     ({ url }) => url.pathname.startsWith('/api'),
     new NetworkFirst({
         cacheName: 'api-cache',
         networkTimeoutSeconds: 5,
         plugins: [
-            new CacheableResponsePlugin({ statuses: [200] }),
+            new CacheableResponsePlugin({ statuses: [0, 200] }),
             new ExpirationPlugin({ maxEntries: 100, maxAgeSeconds: 60 * 60 * 24 }) // 24h
         ]
     })
 )
 
-// ─── Imagini — Cache First (avatare, poze trips) ──────────────────────────────
+// ─── Special case for Discovery trips (POST used for querying) ───────────────
+registerRoute(
+    ({ url }) => url.pathname.includes('/api/trip/get-trips'),
+    new NetworkFirst({
+        cacheName: 'api-trips-cache',
+        plugins: [
+            new CacheableResponsePlugin({ statuses: [0, 200] }),
+            new ExpirationPlugin({ maxEntries: 10, maxAgeSeconds: 60 * 60 * 24 })
+        ]
+    }),
+    'POST'
+)
+
 registerRoute(
     ({ request }) => request.destination === 'image',
     new CacheFirst({
@@ -51,6 +61,21 @@ registerRoute(
 registerRoute(
     ({ url }) => url.origin === 'https://fonts.googleapis.com' || url.origin === 'https://fonts.gstatic.com',
     new StaleWhileRevalidate({ cacheName: 'fonts-cache' })
+)
+
+// ─── Catch-all for other GET requests — Stale While Revalidate ────────────────
+registerRoute(
+    ({ request }) => request.method === 'GET',
+    new StaleWhileRevalidate({
+        cacheName: 'general-get-cache',
+        plugins: [
+            new CacheableResponsePlugin({ statuses: [200] }),
+            new ExpirationPlugin({ 
+                maxEntries: 100, 
+                maxAgeSeconds: 60 * 60 * 24 * 7 // 1 week
+            })
+        ]
+    })
 )
 
 // ─── Push notifications ───────────────────────────────────────────────────────

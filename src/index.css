@@ -42,6 +42,7 @@ html {
   background-color: var(--bg-980);
   overflow-y: auto;
   overflow-x: hidden;
+  touch-action: pan-x pan-y;
 }
 
 body {
@@ -2264,6 +2265,11 @@ h3 {
     padding-bottom: env(safe-area-inset-bottom);
     justify-content: space-around;
     align-items: center;
+  }
+
+  /* Hide bottom nav when keyboard is likely open (input focus) */
+  body:has(input:focus, textarea:focus) .bottom-nav {
+    display: none !important;
   }
 
   .bottom-nav-link {
