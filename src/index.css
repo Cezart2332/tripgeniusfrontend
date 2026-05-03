@@ -32,15 +32,16 @@
 html,
 body,
 #root {
-  min-height: 100%;
+  min-height: 100vh;
   min-height: 100dvh;
-  overflow-x: hidden;
+  height: auto !important;
 }
 
 html {
   scroll-behavior: smooth;
-  /* Ensure the entire viewport is covered including safe areas */
   background-color: var(--bg-980);
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 body {
@@ -55,7 +56,8 @@ body {
   background-attachment: fixed;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  overflow-x: hidden;
+  /* Consolidate scroll handling on html; body stays visible */
+  overflow: visible;
   /* iOS safe area padding so status bar area matches theme */
   padding-top: env(safe-area-inset-top);
   padding-left: env(safe-area-inset-left);
