@@ -214,12 +214,30 @@ export function TripPage() {
 
         setTrip(nextTrip)
         setFetchState('ready')
-      } catch (error: unknown) {
+      } catch (err: any) {
         if (!isMounted) {
           return
         }
 
-        if (error instanceof AxiosError && error.response?.status === 404) {
+        // Offline Fallback: Try to find this trip in the 'get-all-trips' cache
+        const isNetworkError = !err.response && err.code !== 'ERR_CANCELED'
+        if (!navigator.onLine || isNetworkError) {
+          try {
+            const allRes = await api.get('api/trip/get-all-trips')
+            const allTrips: Trip[] = allRes.data
+            const foundTrip = allTrips.find(t => String(t.id) === String(tripId))
+
+            if (foundTrip) {
+              setTrip(foundTrip)
+              setFetchState('ready')
+              return
+            }
+          } catch (offlineErr) {
+            console.error('Failed to find trip in offline cache:', offlineErr)
+          }
+        }
+
+        if (err instanceof AxiosError && err.response?.status === 404) {
           setTrip(null)
           setFetchState('not-found')
           return
