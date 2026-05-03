@@ -134,7 +134,7 @@ h3 {
   .app-shell {
     width: 100%;
     margin: 0;
-    padding: calc(60px + env(safe-area-inset-top)) 0.85rem calc(80px + env(safe-area-inset-bottom)) 0.85rem;
+    padding: calc(1rem + env(safe-area-inset-top)) 0.85rem calc(80px + env(safe-area-inset-bottom)) 0.85rem;
   }
 }
 

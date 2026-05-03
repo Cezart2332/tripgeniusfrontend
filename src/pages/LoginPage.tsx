@@ -9,6 +9,8 @@ import { FeedbackToast } from '../components/FeedbackToast'
 import type { FeedbackToastState, FeedbackToastTone } from '../components/FeedbackToast'
 import waitForBackendButtonUnlock from '../utils/interactionDelay'
 import { subscribeForNotifications } from '../utils/notifications'
+import { usePWAInstall } from '../hooks/usePWAInstall'
+import { PWAInstallPopup } from '../components/PWAInstallPopup'
 
 const GoogleIcon = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
@@ -27,6 +29,7 @@ export function LoginPage() {
   const [password, setPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [toast, setToast] = useState<FeedbackToastState | null>(null)
+  const { showInstallPopup, isIos, dismissPopup, handleInstallClick } = usePWAInstall()
 
   const showToast = (message: string, tone: FeedbackToastTone) => {
     setToast({
@@ -249,6 +252,13 @@ export function LoginPage() {
           />
         </aside>
       </div>
+
+      <PWAInstallPopup
+        show={showInstallPopup}
+        isIos={isIos}
+        onDismiss={dismissPopup}
+        onInstall={handleInstallClick}
+      />
     </section>
   )
 }

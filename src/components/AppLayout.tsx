@@ -13,6 +13,8 @@ import {
   FiDownload,
   FiCpu,
 } from 'react-icons/fi'
+import { usePWAInstall } from '../hooks/usePWAInstall'
+import { PWAInstallPopup } from '../components/PWAInstallPopup'
 import type { IconType } from 'react-icons'
 import { useDispatch, useSelector } from 'react-redux'
 import { Link, NavLink, useLocation, useNavigate, useOutlet } from 'react-router-dom'
@@ -150,17 +152,11 @@ export function AppLayout() {
   const [isSyncingUser, setIsSyncingUser] = useState(false)
   const [isNotificationOpen, setIsNotificationOpen] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
-  const [deferredPrompt, setDeferredPrompt] = useState<any>(null)
-  const [showInstallPopup, setShowInstallPopup] = useState(false)
+  const { showInstallPopup, isIos, dismissPopup, handleInstallClick, deferredPrompt } = usePWAInstall()
   const notificationMenuRef = useRef<HTMLDivElement | null>(null)
   const isSyncingUserRef = useRef(false)
   const hasAttemptedInit = useRef(false)
   const outlet = useOutlet()
-
-  const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
-  const isAndroid = /Android/i.test(navigator.userAgent);
-  const isMobileDevice = isIos || isAndroid;
-  const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone;
 
   const syncUserFromProfileFetch = useCallback(async () => {
     if (isSyncingUserRef.current) {
@@ -335,162 +331,8 @@ export function AppLayout() {
 
 
 
-  useEffect(() => {
-    const dismissed = localStorage.getItem('pwa_prompt_dismissed');
-    if (dismissed || isStandalone) return;
-
-    if (isIos) {
-      setShowInstallPopup(true);
-    }
-  }, [isIos, isStandalone]);
-
-  useEffect(() => {
-    const handler = (e: any) => {
-      e.preventDefault()
-      setDeferredPrompt(e)
-
-      const dismissed = localStorage.getItem('pwa_prompt_dismissed');
-      if (!dismissed && !isStandalone && isMobileDevice) {
-        setShowInstallPopup(true)
-      }
-    }
-    window.addEventListener('beforeinstallprompt', handler)
-    return () => window.removeEventListener('beforeinstallprompt', handler)
-  }, [isStandalone, isMobileDevice]);
-
-  const dismissPopup = () => {
-    localStorage.setItem('pwa_prompt_dismissed', 'true');
-    setShowInstallPopup(false);
-  }
-
-  const handleInstallClick = async () => {
-    if (!deferredPrompt) return
-    deferredPrompt.prompt()
-    const { outcome } = await deferredPrompt.userChoice
-    if (outcome === 'accepted') {
-      setDeferredPrompt(null)
-    }
-  }
   return (
     <>
-      {/* Mobile-only compact header — logo + notification bell */}
-      <header className="mobile-topbar" aria-label="Mobile header">
-        <Link to="/app" className="mobile-brand">
-          <img src="/fulllogo.svg" alt="TripGenius" className="mobile-brand-logo" />
-        </Link>
-        <div className="mobile-topbar-actions">
-          {deferredPrompt && (
-            <button
-              type="button"
-              className="mobile-icon-btn"
-              onClick={handleInstallClick}
-              aria-label="Install App"
-            >
-              <FiDownload />
-            </button>
-          )}
-          {user ? (
-            <>
-              <div className="nav-notification-shell" ref={notificationMenuRef}>
-                <button
-                  type="button"
-                  className={isNotificationOpen ? 'mobile-icon-btn is-active' : 'mobile-icon-btn'}
-                  aria-label="Notifications"
-                  aria-haspopup="menu"
-                  aria-expanded={isNotificationOpen}
-                  disabled={isSyncingUser}
-                  onClick={() => {
-                    if (isSyncingUser) return
-                    setIsNotificationOpen((prev) => !prev)
-                    void syncUserFromProfileFetch()
-                  }}
-                >
-                  {isSyncingUser ? (
-                    <span className="inline-spinner" aria-hidden="true" />
-                  ) : (
-                    <FiBell />
-                  )}
-                  {unreadNotifications.length > 0 && (
-                    <span className="notification-badge" aria-label={`${unreadNotifications.length} unread`}>
-                      {unreadNotifications.length}
-                    </span>
-                  )}
-                </button>
-
-                <AnimatePresence>
-                  {isNotificationOpen ? (
-                    <motion.section
-                      className="header-notification-dropdown"
-                      initial={{ opacity: 0, y: -8, scale: 0.96 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: -4, scale: 0.96 }}
-                      transition={{ duration: 0.15, ease: 'easeOut' }}
-                      role="menu"
-                      aria-label="Notifications menu"
-                    >
-                      <div className="header-notification-header">
-                        <h4>Notifications</h4>
-                        {unreadNotifications.length > 0 && (
-                          <button type="button" className="btn btn-ghost btn-sm" onClick={markAllAsRead}>
-                            Clear all
-                          </button>
-                        )}
-                      </div>
-                      {unreadNotifications.length > 0 ? (
-                        unreadNotifications.map((notification) => (
-                          <div key={notification.id} className="header-notification-item" role="menuitem">
-                            <p
-                              style={{
-                                margin: '0 0 0.25rem 0',
-                                color: '#f3fff1',
-                                fontSize: '0.85rem',
-                                fontWeight: 500,
-                                lineHeight: 1.4,
-                              }}
-                            >
-                              {getNotificationContent(notification)}
-                            </p>
-                            <p
-                              style={{
-                                margin: 0,
-                                color: 'rgba(243, 255, 241, 0.6)',
-                                fontSize: '0.75rem',
-                                lineHeight: 1.2,
-                              }}
-                            >
-                              {formatNotificationTimestamp(notification)}
-                            </p>
-                          </div>
-                        ))
-                      ) : (
-                        <p className="header-notification-empty">No unread notifications.</p>
-                      )}
-                    </motion.section>
-                  ) : null}
-                </AnimatePresence>
-              </div>
-
-              <button
-                type="button"
-                className="mobile-icon-btn"
-                onClick={handleLogout}
-                disabled={isLoggingOut}
-                aria-label="Logout"
-              >
-                {isLoggingOut ? (
-                  <span className="inline-spinner" aria-hidden="true" />
-                ) : (
-                  <FiLogOut />
-                )}
-              </button>
-            </>
-          ) : (
-            <Link className="mobile-icon-btn" to="/login" aria-label="Login">
-              <FiLogIn />
-            </Link>
-          )}
-        </div>
-      </header>
 
       <div className="app-shell">
         <div className="ambient-orbs" aria-hidden="true">
@@ -602,15 +444,27 @@ export function AppLayout() {
                       >
                         <div className="header-notification-head">
                           <p className="eyebrow">Notifications</p>
-                          <Link
-                            className="header-notification-see-more"
-                            to="/app/profile?tab=notifications"
-                            onClick={() => {
-                              setIsNotificationOpen(false)
-                            }}
-                          >
-                            See more
-                          </Link>
+                          <div style={{ display: 'flex', gap: '0.8rem', alignItems: 'center' }}>
+                            {unreadNotifications.length > 0 && (
+                              <button 
+                                type="button" 
+                                className="header-notification-see-more" 
+                                style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 0 }}
+                                onClick={markAllAsRead}
+                              >
+                                Mark all as read
+                              </button>
+                            )}
+                            <Link
+                              className="header-notification-see-more"
+                              to="/app/profile?tab=notifications"
+                              onClick={() => {
+                                setIsNotificationOpen(false)
+                              }}
+                            >
+                              See more
+                            </Link>
+                          </div>
                         </div>
 
                         {unreadNotifications.length > 0 ? (
@@ -772,61 +626,12 @@ export function AppLayout() {
           )}
         </nav>
       </div>
-      {showInstallPopup && (
-        <div className="pwa-popup-overlay">
-          <motion.div
-            className="pwa-popup-card"
-            initial={{ opacity: 0, scale: 0.9, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-          >
-            <button className="pwa-close-btn" onClick={dismissPopup} aria-label="Close">
-              <FiX />
-            </button>
-
-            <div className="pwa-icon-circle">
-              <img src="/pwa-192x192.png" alt="App Icon" />
-            </div>
-
-            {isIos ? (
-              <>
-                <h2>Add to Home Screen</h2>
-                <p>Install TripGenius on your iPhone for a native experience.</p>
-
-                <div className="ios-guide-carousel" data-lenis-prevent>
-                  <div className="ios-guide-step">
-                    <img src="/iospwaguide/1.jpeg" alt="Step 1" />
-                    <p>1. Tap the <strong>Share</strong> button in the browser bar.</p>
-                  </div>
-                  <div className="ios-guide-step">
-                    <img src="/iospwaguide/2.jpeg" alt="Step 2" />
-                    <p>2. Scroll down and find <strong>"Add to Home Screen"</strong>.</p>
-                  </div>
-                  <div className="ios-guide-step">
-                    <img src="/iospwaguide/3.jpeg" alt="Step 3" />
-                    <p>3. Confirm by tapping <strong>"Add"</strong> in the top right.</p>
-                  </div>
-                </div>
-
-                <p className="swipe-hint">Swipe to see next step →</p>
-              </>
-            ) : (
-              <>
-                <h2>Install TripGenius</h2>
-                <p>This app can be installed into your phone for faster access and offline support.</p>
-                <button className="btn btn-primary btn-lg" style={{ width: '100%', marginTop: '1.5rem' }} onClick={handleInstallClick}>
-                  Install App
-                </button>
-              </>
-            )}
-
-            {!isIos && (
-              <button className="btn btn-ghost" style={{ marginTop: '0.5rem', width: '100%' }} onClick={dismissPopup}>
-                Maybe later
-              </button>
-            )}
-          </motion.div>
-        </div>
-      )}
+      <PWAInstallPopup
+        show={showInstallPopup}
+        isIos={isIos}
+        onDismiss={dismissPopup}
+        onInstall={handleInstallClick}
+      />
 
       <AnimatePresence>
         {isAppInitializing && (

@@ -11,7 +11,8 @@ import {
   FiChevronLeft,
   FiUser,
   FiHelpCircle,
-  FiTrash2
+  FiTrash2,
+  FiLogOut
 } from 'react-icons/fi'
 import type { User } from '../types/models'
 import api from '../data/api'
@@ -69,7 +70,8 @@ export function SettingsPage() {
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false)
   const [isDeletingAccount, setIsDeletingAccount] = useState(false)
   const [isReportingBug, setIsReportingBug] = useState(false)
-  const isBackendActionLocked = isUpdatingEmail || isUpdatingPassword || isDeletingAccount || isReportingBug
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
+  const isBackendActionLocked = isUpdatingEmail || isUpdatingPassword || isDeletingAccount || isReportingBug || isLoggingOut
   const shouldRedirectToLogin = !user
 
   useEffect(() => {
@@ -320,6 +322,22 @@ export function SettingsPage() {
     }
   }
 
+  const handleLogout = async () => {
+    if (isLoggingOut) {
+      return
+    }
+
+    setIsLoggingOut(true)
+
+    try {
+      await api.post('/api/auth/logout')
+    } finally {
+      dispatch(logoutAction())
+      setIsLoggingOut(false)
+      navigate('/login', { replace: true })
+    }
+  }
+
 
   return (
     <section className="page settings-page-v2 container">
@@ -412,6 +430,34 @@ export function SettingsPage() {
                 <FiChevronRight style={{ opacity: 0.4 }} />
               </button>
             ))}
+
+            <button
+              className="settings-card-v2"
+              onClick={handleLogout}
+              disabled={isLoggingOut}
+              style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'space-between',
+                padding: '1.25rem 1.5rem',
+                textAlign: 'left',
+                width: '100%',
+                background: 'rgba(255, 107, 107, 0.1)',
+                cursor: 'pointer',
+                marginTop: '1rem',
+                borderColor: 'rgba(255, 107, 107, 0.2)'
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <div className="notification-icon-v2" style={{ width: '36px', height: '36px', fontSize: '1rem', background: 'rgba(255, 107, 107, 0.2)', color: '#ff6b6b' }}>
+                  <FiLogOut />
+                </div>
+                <span style={{ fontWeight: 600, fontSize: '1.05rem', color: '#ff6b6b' }}>
+                  {isLoggingOut ? 'Logging out...' : 'Sign out'}
+                </span>
+              </div>
+              <FiChevronRight style={{ opacity: 0.4, color: '#ff6b6b' }} />
+            </button>
             
             <div style={{ textAlign: 'center', marginTop: '2rem', opacity: 0.4 }}>
               <img src="/newstickers/sticker4.png" alt="" style={{ width: '100px' }} />

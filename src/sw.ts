@@ -1,5 +1,9 @@
 /// <reference lib="webworker" />
 import { cleanupOutdatedCaches, precacheAndRoute } from 'workbox-precaching'
+import { NavigationRoute, registerRoute } from 'workbox-routing'
+import { NetworkFirst, CacheFirst, StaleWhileRevalidate } from 'workbox-strategies'
+import { CacheableResponsePlugin } from 'workbox-cacheable-response'
+import { ExpirationPlugin } from 'workbox-expiration'
 
 declare const self: ServiceWorkerGlobalScope & {
   __WB_MANIFEST: Array<any>
@@ -8,21 +12,50 @@ declare const self: ServiceWorkerGlobalScope & {
 cleanupOutdatedCaches()
 precacheAndRoute(self.__WB_MANIFEST)
 
-// Navigate fallback
-self.addEventListener('fetch', (event: FetchEvent) => {
-    if (event.request.mode === 'navigate') {
-        event.respondWith(
-            fetch(event.request).catch(() =>
-                caches.match('/index.html').then(r => r!)
-            )
-        )
-    }
-})
+// ─── Navigare — Network First cu fallback pe index.html din precache ──────────
+registerRoute(
+    new NavigationRoute(
+        new NetworkFirst({
+            cacheName: 'navigation',
+            plugins: [new CacheableResponsePlugin({ statuses: [200] })]
+        })
+    )
+)
 
-// ← Push handler
+// ─── API calls — Network First (date fresh, fallback pe cache) ────────────────
+registerRoute(
+    ({ url }) => url.pathname.startsWith('/api'),
+    new NetworkFirst({
+        cacheName: 'api-cache',
+        networkTimeoutSeconds: 5,
+        plugins: [
+            new CacheableResponsePlugin({ statuses: [200] }),
+            new ExpirationPlugin({ maxEntries: 100, maxAgeSeconds: 60 * 60 * 24 }) // 24h
+        ]
+    })
+)
+
+// ─── Imagini — Cache First (avatare, poze trips) ──────────────────────────────
+registerRoute(
+    ({ request }) => request.destination === 'image',
+    new CacheFirst({
+        cacheName: 'images-cache',
+        plugins: [
+            new CacheableResponsePlugin({ statuses: [200] }),
+            new ExpirationPlugin({ maxEntries: 200, maxAgeSeconds: 60 * 60 * 24 * 30 }) // 30 zile
+        ]
+    })
+)
+
+// ─── Google Fonts — Stale While Revalidate ────────────────────────────────────
+registerRoute(
+    ({ url }) => url.origin === 'https://fonts.googleapis.com' || url.origin === 'https://fonts.gstatic.com',
+    new StaleWhileRevalidate({ cacheName: 'fonts-cache' })
+)
+
+// ─── Push notifications ───────────────────────────────────────────────────────
 self.addEventListener('push', (event: PushEvent) => {
     const data = event.data?.json() ?? {}
-
     event.waitUntil(
         self.registration.showNotification(data.title ?? 'TripGenius', {
             body: data.body,
