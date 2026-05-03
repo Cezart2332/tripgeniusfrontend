@@ -106,6 +106,22 @@ export function AiAdvisorPage() {
   const connectionRef = useRef<signalR.HubConnection | null>(null);
   const aiMessageIdRef = useRef<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([])
+  const [isOffline, setIsOffline] = useState(!navigator.onLine)
+
+  useEffect(() => {
+    const handleOnline = () => setIsOffline(false)
+    const handleOffline = () => setIsOffline(true)
+    window.addEventListener('online', handleOnline)
+    window.addEventListener('offline', handleOffline)
+    return () => {
+      window.removeEventListener('online', handleOnline)
+      window.removeEventListener('offline', handleOffline)
+    }
+  }, [])
+
+  if (isOffline) {
+    return <OfflineAiState />
+  }
 
   const threadRef = useRef<HTMLDivElement | null>(null)
 
@@ -132,6 +148,7 @@ export function AiAdvisorPage() {
       return
     }
     const refreshToken = async () => {
+      if (!navigator.onLine) return; // Don't try to refresh if offline
       try {
         const res = await api.post('/api/auth/refresh');
         dispatch(setToken({ token: res.data.token }))
@@ -393,6 +410,25 @@ export function AiAdvisorPage() {
             </form>
           </div>
         </section>
+      </div>
+    </section>
+  )
+}
+
+function OfflineAiState() {
+  return (
+    <section className="page ai-page-v2">
+      <div className="ai-workspace-v2" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '60vh', textAlign: 'center' }}>
+        <div className="ai-empty-state-v2">
+          <div className="empty-state-icon-v2" style={{ background: 'rgba(219, 74, 91, 0.1)', color: '#db4a5b' }}>
+            <FiMessageCircle />
+          </div>
+          <h2>AI is sleeping...</h2>
+          <p>Sorry, but the AI Assistant isn't available offline. Please reconnect to your signal to continue the conversation.</p>
+          <Link className="btn btn-primary" to="/app" style={{ marginTop: '1.5rem' }}>
+            Go to discovery
+          </Link>
+        </div>
       </div>
     </section>
   )

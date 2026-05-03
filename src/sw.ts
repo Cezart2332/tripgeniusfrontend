@@ -34,15 +34,23 @@ registerRoute(
 )
 
 // ─── Special case for Discovery trips (POST used for querying) ───────────────
+// Workbox strategies don't cache POST by default, so we handle it manually
 registerRoute(
     ({ url }) => url.pathname.includes('/api/trip/get-trips'),
-    new NetworkFirst({
-        cacheName: 'api-trips-cache',
-        plugins: [
-            new CacheableResponsePlugin({ statuses: [0, 200] }),
-            new ExpirationPlugin({ maxEntries: 10, maxAgeSeconds: 60 * 60 * 24 })
-        ]
-    }),
+    async ({ request }) => {
+        try {
+            const response = await fetch(request.clone());
+            const cache = await caches.open('api-trips-cache');
+            // We can only cache a POST response manually
+            await cache.put(request, response.clone());
+            return response;
+        } catch (error) {
+            // Offline fallback
+            const cachedResponse = await caches.match(request);
+            if (cachedResponse) return cachedResponse;
+            throw error;
+        }
+    },
     'POST'
 )
 
