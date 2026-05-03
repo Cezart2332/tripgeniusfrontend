@@ -21,6 +21,18 @@ registerRoute(
     )
 )
 
+// ─── Pre-cache all trips for offline filtering ────────────────────────────────
+registerRoute(
+    ({ url }) => url.pathname.includes('/api/trip/get-all-trips'),
+    new StaleWhileRevalidate({
+        cacheName: 'all-trips-cache',
+        plugins: [
+            new CacheableResponsePlugin({ statuses: [0, 200] }),
+            new ExpirationPlugin({ maxEntries: 5, maxAgeSeconds: 60 * 60 * 24 }) // 24h
+        ]
+    })
+)
+
 registerRoute(
     ({ url, request }) => url.pathname.startsWith('/api') && request.method === 'GET',
     new NetworkFirst({
@@ -33,18 +45,6 @@ registerRoute(
     })
 )
 
-
-// ─── Pre-cache all trips for offline filtering ────────────────────────────────
-registerRoute(
-    ({ url }) => url.pathname.includes('/api/trip/get-all-trips'),
-    new StaleWhileRevalidate({
-        cacheName: 'all-trips-cache',
-        plugins: [
-            new CacheableResponsePlugin({ statuses: [0, 200] }),
-            new ExpirationPlugin({ maxEntries: 5, maxAgeSeconds: 60 * 60 * 24 }) // 24h
-        ]
-    })
-)
 
 registerRoute(
     ({ request }) => request.destination === 'image',

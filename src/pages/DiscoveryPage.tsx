@@ -89,13 +89,14 @@ export function DiscoveryPage() {
         }
 
         setTrips(res.data)
-      } catch (err) {
+      } catch (err: any) {
         if (!isActive) {
           return
         }
 
-        // Offline Fallback: Use the pre-cached 'get-all-trips' and filter locally
-        if (!navigator.onLine) {
+        // Offline Fallback: Trigger if offline OR if the network request just failed
+        const isNetworkError = !err.response && err.code !== 'ERR_CANCELED'
+        if (!navigator.onLine || isNetworkError) {
           try {
             const allRes = await api.get('api/trip/get-all-trips')
             const allTrips: Trip[] = allRes.data
