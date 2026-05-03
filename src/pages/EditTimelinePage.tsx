@@ -4,6 +4,8 @@ import { FiArrowLeft, FiMapPin, FiCalendar } from 'react-icons/fi'
 import { useNavigate, useParams } from 'react-router-dom'
 import api from '../data/api'
 import type { TimelineStop } from '../types/models'
+import { FeedbackToast } from '../components/FeedbackToast'
+import type { FeedbackToastState } from '../components/FeedbackToast'
 
 interface LocationSelection {
   name: string
@@ -67,6 +69,7 @@ export function EditTimelinePage() {
   const [fromSuggestions, setFromSuggestions] = useState<LocationSuggestion[]>([])
   const [toSuggestions, setToSuggestions] = useState<LocationSuggestion[]>([])
   const [isSaving, setIsSaving] = useState(false)
+  const [toast, setToast] = useState<FeedbackToastState | null>(null)
 
   useEffect(() => {
     if (!tripId || !id) {
@@ -243,8 +246,13 @@ export function EditTimelinePage() {
           return
         }
       }
-    } catch (error) {
-      console.error(error)
+    } catch (err: any) {
+      if (err?.queued) {
+        setToast({ id: Date.now(), message: 'Timeline changes will be synced when online!', tone: 'success' })
+        setTimeout(() => navigate(`/app/trip/${tripId}?view=map`), 2000)
+      } else {
+        console.error(err)
+      }
     } finally {
       setIsSaving(false)
     }
@@ -289,6 +297,7 @@ export function EditTimelinePage() {
 
   return (
     <section className="page edit-timeline-page">
+      <FeedbackToast toast={toast} clearToast={() => setToast(null)} />
       <motion.header
         className="panel edit-timeline-head"
         initial={{ opacity: 0, y: 20 }}

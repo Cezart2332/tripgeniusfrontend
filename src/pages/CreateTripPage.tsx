@@ -364,7 +364,12 @@ export function CreateTripPage() {
       setToast({ id: Date.now(), message: 'Expedition synchronized!', tone: 'success' })
       setTimeout(() => navigate('/app/discover'), 2000)
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Synchronization failed.')
+      if (err?.queued) {
+        setToast({ id: Date.now(), message: 'Expedition creation will be synced when online!', tone: 'success' })
+        setTimeout(() => navigate('/app/discover'), 2000)
+      } else {
+        setError(err.response?.data?.message || 'Synchronization failed.')
+      }
     } finally {
       await waitForBackendButtonUnlock()
       setIsPublishingTrip(false)

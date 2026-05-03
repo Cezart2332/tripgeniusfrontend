@@ -195,9 +195,12 @@ export function SettingsPage() {
       await changeEmail(email)
       showToast('Email updated successfully.', 'success')
     }
-    catch(err : unknown)
+    catch(err : any)
     {
-      if(err instanceof AxiosError)
+      if (err?.queued) {
+        showToast('Email update will be synchronized when online.', 'success')
+      }
+      else if(err instanceof AxiosError)
       {
         console.log(err.response)
         const message = err.response?.data?.message || err.response?.data || "Email change failed"
@@ -235,9 +238,14 @@ export function SettingsPage() {
       setCurrentPassword('')
       setNextPassword('')
     }
-    catch(err : unknown)
+    catch(err : any)
     {
-      if(err instanceof AxiosError)
+      if (err?.queued) {
+        showToast('Password change will be synchronized when online.', 'success')
+        setCurrentPassword('')
+        setNextPassword('')
+      }
+      else if(err instanceof AxiosError)
       {
         const message = err.response?.data?.message || err.response?.data || "Password change failed"
         showToast(String(message), 'error')
@@ -267,9 +275,13 @@ export function SettingsPage() {
       showToast('Bug report received. Thank you for helping improve TripGenius.', 'info')
       setBugReport('')
     }
-    catch(err : unknown)
+    catch(err : any)
     {
-      if(err instanceof AxiosError)
+      if (err?.queued) {
+        showToast('Bug report will be sent when online.', 'success')
+        setBugReport('')
+      }
+      else if(err instanceof AxiosError)
       {
         const message = err.response?.data?.message || err.response?.data || "Bug report failed"
         showToast(String(message), 'error')
@@ -297,9 +309,12 @@ export function SettingsPage() {
       showToast('Account deleted. Redirecting to login...', 'success')
       shouldNavigate = true
     }
-    catch(err : unknown)
+    catch(err : any)
     {
-      if(err instanceof AxiosError)
+      if (err?.queued) {
+        showToast('Account deletion will be processed when online.', 'success')
+      }
+      else if(err instanceof AxiosError)
       {
         console.log(err.response)
         const message = err.response?.data?.message || err.response?.data || "Account deletion failed"

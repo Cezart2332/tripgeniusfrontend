@@ -58,6 +58,13 @@ export function DiscoveryPage() {
     }
   }, [handleSearch])
 
+  // Warm up the all-trips cache for offline use
+  useEffect(() => {
+    if (user && navigator.onLine) {
+      api.get('api/trip/get-all-trips').catch(() => {})
+    }
+  }, [user])
+
   useEffect(() => {
     if (!user) {
       setIsFetchingTrips(false)
@@ -82,9 +89,30 @@ export function DiscoveryPage() {
         }
 
         setTrips(res.data)
-      } catch {
+      } catch (err) {
         if (!isActive) {
           return
+        }
+
+        // Offline Fallback: Use the pre-cached 'get-all-trips' and filter locally
+        if (!navigator.onLine) {
+          try {
+            const allRes = await api.get('api/trip/get-all-trips')
+            const allTrips: Trip[] = allRes.data
+
+            const filtered = allTrips.filter(t => {
+              const matchesSearch = !debouncedSearch || 
+                t.title.toLowerCase().includes(debouncedSearch.toLowerCase()) || 
+                t.description.toLowerCase().includes(debouncedSearch.toLowerCase())
+              const matchesTag = selectedType === 'all' || t.tags.includes(selectedType)
+              const matchesBudget = t.price <= maxBudget
+              return matchesSearch && matchesTag && matchesBudget
+            })
+
+            setTrips(filtered)
+          } catch (offlineErr) {
+            console.error('Offline fallback failed:', offlineErr)
+          }
         }
       } finally {
         if (isActive) {

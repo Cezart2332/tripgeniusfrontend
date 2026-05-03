@@ -586,8 +586,12 @@ function TripPageContent({ trip }: TripPageContentProps) {
       }
 
       setTripDetailsFeedback({ tone: 'success', message: 'Trip details updated.' })
-    } catch {
-      setTripDetailsFeedback({ tone: 'error', message: 'Failed to update trip.' })
+    } catch (err: any) {
+      if (err?.queued) {
+        setTripDetailsFeedback({ tone: 'success', message: 'Trip updates will be synced when you are back online.' })
+      } else {
+        setTripDetailsFeedback({ tone: 'error', message: 'Failed to update trip.' })
+      }
     } finally {
       setIsSavingTripDetails(false)
     }
@@ -620,8 +624,12 @@ function TripPageContent({ trip }: TripPageContentProps) {
     try {
       await api.post('api/trip/membership-request', {userId: candidate.id, tripId: tripDetails.id, invitedBy: authenticatedUser?.id })
       setInviteFeedback({ tone: 'success', message: `Invite sent to ${candidate.username}.` })
-    } catch {
-      setInviteFeedback({ tone: 'error', message: 'Failed to send invite.' })
+    } catch (err: any) {
+      if (err?.queued) {
+        setInviteFeedback({ tone: 'success', message: `Invite for ${candidate.username} will be sent when online.` })
+      } else {
+        setInviteFeedback({ tone: 'error', message: 'Failed to send invite.' })
+      }
     } finally {
       setIsInvitingUserId(null)
     }
@@ -648,8 +656,12 @@ function TripPageContent({ trip }: TripPageContentProps) {
           setTripDetailsFeedback({ tone: 'info', message: `${member.username}'s request was declined.` })
         }
       }
-    } catch {
-      setTripDetailsFeedback({ tone: 'error', message: 'Failed to respond to request.' })
+    } catch (err: any) {
+      if (err?.queued) {
+        setTripDetailsFeedback({ tone: 'success', message: `Response to ${member.username} will be processed later.` })
+      } else {
+        setTripDetailsFeedback({ tone: 'error', message: 'Failed to respond to request.' })
+      }
     } finally {
       setIsProcessingRequestMemberId(null)
     }
@@ -677,8 +689,12 @@ function TripPageContent({ trip }: TripPageContentProps) {
           },
         ])
       }
-    } catch {
-      setTripDetailsFeedback({ tone: 'error', message: 'Failed to request access.' })
+    } catch (err: any) {
+      if (err?.queued) {
+        setTripDetailsFeedback({ tone: 'success', message: 'Join request will be sent when you are back online.' })
+      } else {
+        setTripDetailsFeedback({ tone: 'error', message: 'Failed to request access.' })
+      }
     } finally {
       setIsRequestingAccess(false)
     }
@@ -693,8 +709,12 @@ function TripPageContent({ trip }: TripPageContentProps) {
     try {
       await api.patch('api/trip/change-role', { id:userId,tripId:trip.id, role: newRole })
       setMembers(prev => prev.map(m => m.id === userId ? { ...m, role: newRole } : m))
-    } catch {
-      setTripDetailsFeedback({ tone: 'error', message: 'Failed to update role.' })
+    } catch (err: any) {
+      if (err?.queued) {
+        setTripDetailsFeedback({ tone: 'success', message: 'Role change will be synced.' })
+      } else {
+        setTripDetailsFeedback({ tone: 'error', message: 'Failed to update role.' })
+      }
     } finally {
       setIsUpdatingRoleMemberId(null)
     }
@@ -711,8 +731,12 @@ function TripPageContent({ trip }: TripPageContentProps) {
     try {
       await api.delete(`api/trip/remove-member/${tripDetails.id}/${userId}`)
       setMembers(prev => prev.filter(m => m.id !== userId))
-    } catch {
-      setTripDetailsFeedback({ tone: 'error', message: 'Failed to remove member.' })
+    } catch (err: any) {
+      if (err?.queued) {
+        setTripDetailsFeedback({ tone: 'success', message: 'Explorer removal will be synced.' })
+      } else {
+        setTripDetailsFeedback({ tone: 'error', message: 'Failed to remove member.' })
+      }
     } finally {
       setIsRemovingMemberId(null)
     }

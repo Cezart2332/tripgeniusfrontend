@@ -482,8 +482,11 @@ export function ProfilePage() {
         showToast('Profile and preferences updated successfully.', 'success')
       }
     }
-    catch (err: unknown) {
-      if (err instanceof AxiosError) {
+    catch (err: any) {
+      if (err?.queued) {
+        showToast('Profile and preferences will be updated successfully.', 'success')
+      }
+      else if (err instanceof AxiosError) {
         const message = err.response?.data?.message || err.response?.data || "There was a problem updating your profile, please try again later."
         showToast(String(message), 'error')
       }
@@ -614,9 +617,13 @@ export function ProfilePage() {
       const userRes = await api.get('api/user/me')
       dispatch(setUser({ user: userRes.data }))
 
-    } catch (error: unknown) {
-      const fallbackMessage = `Failed to ${action.toLowerCase()} invite.`
-      showToast(getErrorMessage(error, fallbackMessage), 'error')
+    } catch (err: any) {
+      if (err?.queued) {
+        showToast(`Invite response will be sent.`, 'success')
+      } else {
+        const fallbackMessage = `Failed to ${action.toLowerCase()} invite.`
+        showToast(getErrorMessage(err, fallbackMessage), 'error')
+      }
     } finally {
       setIsRespondingInviteId(null)
       setInviteResponseAction(null)
