@@ -141,6 +141,8 @@ h3 {
 .container {
   width: min(1180px, 100% - 2.5rem);
   margin-inline: auto;
+  /* Safe area horizontal padding */
+  padding-inline: env(safe-area-inset-left, 0px) env(safe-area-inset-right, 0px);
 }
 
 /* ── Splash Screen ── */
@@ -371,6 +373,15 @@ h3 {
 .page {
   display: grid;
   gap: 1.05rem;
+  /* Safe area vertical padding for standalone pages */
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Ensure sub-pages in app-shell don't double up on safe padding */
+.app-shell .page {
+  padding-top: 0;
+  padding-bottom: 0;
 }
 
 .panel {
@@ -553,7 +564,7 @@ h3 {
 
 .feedback-toast-shell {
   position: fixed;
-  top: 5rem;
+  top: calc(env(safe-area-inset-top, 0px) + 1.5rem);
   right: 1rem;
   width: min(360px, calc(100vw - 2rem));
   z-index: 70;
