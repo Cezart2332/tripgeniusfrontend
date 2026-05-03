@@ -22,7 +22,7 @@ registerRoute(
 )
 
 registerRoute(
-    ({ url }) => url.pathname.startsWith('/api'),
+    ({ url, request }) => url.pathname.startsWith('/api') && request.method === 'GET',
     new NetworkFirst({
         cacheName: 'api-cache',
         networkTimeoutSeconds: 5,
