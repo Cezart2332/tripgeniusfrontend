@@ -30,7 +30,28 @@ registerRoute(
         } catch (e) {
             // offline or error
         }
-        return createHandlerBoundToURL('/index.html')(params)
+        
+        // Try to match the precached index.html
+        const match = await caches.match('/index.html') || await caches.match('index.html')
+        if (match) return match
+
+        // Last resort fallback via createHandlerBoundToURL
+        try {
+            return await createHandlerBoundToURL('index.html')(params)
+        } catch (e) {
+            return Response.error()
+        }
+    })
+)
+
+// ─── Assets (CSS/JS) — Cache First ───────────────────────────────────────────
+registerRoute(
+    ({ request }) => request.destination === 'style' || request.destination === 'script',
+    new CacheFirst({
+        cacheName: 'assets-cache',
+        plugins: [
+            new CacheableResponsePlugin({ statuses: [200] }),
+        ]
     })
 )
 
