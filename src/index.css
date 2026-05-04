@@ -145,6 +145,63 @@ h3 {
   padding-inline: env(safe-area-inset-left, 0px) env(safe-area-inset-right, 0px);
 }
 
+/* ── Global Mobile Centering & Map Fixes ── */
+@media (max-width: 850px) {
+  h1, h2, h3, p, .eyebrow, .field-label {
+    text-align: center;
+  }
+  
+  .lead {
+    margin-inline: auto;
+  }
+
+  .btn, .icon-link, .chip, .choice-card {
+    justify-content: center;
+  }
+
+  .discovery-header-v2,
+  .discovery-toolbar-v2,
+  .builder-header-v2,
+  .hero-actions,
+  .header-actions,
+  .chip-row,
+  .highlights-list,
+  .profile-tab-bar-v2,
+  .trip-hero-overlay-v2,
+  .trip-hero-meta-v2,
+  .profile-section-v2,
+  .auth-form-side,
+  .discovery-empty-state,
+  .builder-section-v2,
+  .trip-main-content,
+  .trip-stat-v2,
+  .trip-hero-v2,
+  .day-card-v2,
+  .discovery-trip-row,
+  .discovery-trip-info,
+  .discovery-trip-meta-row {
+    justify-content: center !important;
+    text-align: center;
+    align-items: center;
+  }
+
+  .discovery-trip-row {
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .trip-stat-v2 {
+    flex-direction: column;
+  }
+
+  /* Ensure preview map is visible on mobile */
+  .trip-page-v2 .map-wrapper {
+    height: 550px !important;
+    min-height: 550px !important;
+    width: 100% !important;
+  }
+}
+
 /* ── Splash Screen ── */
 .app-splash-screen {
   position: fixed;
