@@ -1,5 +1,7 @@
-
+import { registerSW } from 'virtual:pwa-register'
 import { createRoot } from 'react-dom/client'
+
+registerSW({ immediate: true })
 import { GoogleOAuthProvider } from '@react-oauth/google'
 import { Provider } from 'react-redux'
 import { PersistGate } from 'redux-persist/integration/react'

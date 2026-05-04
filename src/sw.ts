@@ -1,5 +1,5 @@
 /// <reference lib="webworker" />
-import { cleanupOutdatedCaches, precacheAndRoute } from 'workbox-precaching'
+import { cleanupOutdatedCaches, precacheAndRoute, createHandlerBoundToURL } from 'workbox-precaching'
 import { NavigationRoute, registerRoute } from 'workbox-routing'
 import { NetworkFirst, CacheFirst, StaleWhileRevalidate } from 'workbox-strategies'
 import { CacheableResponsePlugin } from 'workbox-cacheable-response'
@@ -12,13 +12,26 @@ declare const self: ServiceWorkerGlobalScope & {
 cleanupOutdatedCaches()
 precacheAndRoute(self.__WB_MANIFEST)
 
+// Navigation Route — serve index.html for all navigation requests (SPA support)
+// We try NetworkFirst but fallback to the cached index.html immediately if offline
+const navigationHandler = new NetworkFirst({
+    cacheName: 'navigation',
+    networkTimeoutSeconds: 3,
+    plugins: [
+        new CacheableResponsePlugin({ statuses: [200] }),
+    ],
+})
+
 registerRoute(
-    new NavigationRoute(
-        new NetworkFirst({
-            cacheName: 'navigation',
-            plugins: [new CacheableResponsePlugin({ statuses: [200] })]
-        })
-    )
+    new NavigationRoute(async (params) => {
+        try {
+            const res = await navigationHandler.handle(params)
+            if (res) return res
+        } catch (e) {
+            // offline or error
+        }
+        return createHandlerBoundToURL('/index.html')(params)
+    })
 )
 
 // ─── Pre-cache all trips for offline filtering ────────────────────────────────

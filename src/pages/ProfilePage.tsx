@@ -650,7 +650,23 @@ export function ProfilePage() {
 
     } catch (err: any) {
       if (err?.queued) {
-        showToast(`Invite response will be sent.`, 'success')
+        // Optimistic Update: Remove from local list so user sees it "worked"
+        if (user) {
+          const updatedTrips = user.trips.map(trip => {
+            if (String(trip.id) === String(tripId)) {
+              const updatedMembers = trip.members?.map(m => {
+                if (String((m as any).id) === String(user.id)) {
+                  return { ...m, status: action === 'Accepted' ? 'accepted' : 'declined' }
+                }
+                return m
+              })
+              return { ...trip, members: updatedMembers }
+            }
+            return trip
+          })
+          dispatch(setUser({ user: { ...user, trips: updatedTrips } }))
+        }
+        showToast(`Invite response will be sent when online.`, 'success')
       } else {
         const fallbackMessage = `Failed to ${action.toLowerCase()} invite.`
         showToast(getErrorMessage(err, fallbackMessage), 'error')

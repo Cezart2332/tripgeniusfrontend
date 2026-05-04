@@ -18,6 +18,17 @@ function serializeData(data: unknown): unknown {
         })
         return { __formData: true, fields }
     }
+    
+    // Dacă Axios a serializat deja datele în string, încercăm să le punem înapoi în obiect
+    // pentru ca la re-trimitere Axios să poată seta corect Content-Type: application/json
+    if (typeof data === 'string') {
+        try {
+            return JSON.parse(data)
+        } catch {
+            return data
+        }
+    }
+    
     return data
 }
 function deserializeData(data: unknown): unknown {
@@ -58,10 +69,16 @@ async function openQueueDB(): Promise<IDBDatabase> {
 
 export async function isReallyOnline(): Promise<boolean> {
     try {
+        // Folosim un timeout scurt pentru a nu bloca UI-ul prea mult
+        const controller = new AbortController()
+        const timeoutId = setTimeout(() => controller.abort(), 3000)
+        
         await fetch(`${import.meta.env.VITE_BASE_URL}/api/auth/health`, {
             method: 'GET',
             cache: 'no-store',
+            signal: controller.signal
         })
+        clearTimeout(timeoutId)
         return true
     } catch {
         return false
@@ -93,34 +110,36 @@ export async function flushQueue() {
             req.onsuccess = () => resolve(req.result)
         })
 
+        if (all.length === 0) return
 
         const sorted = all.sort((a, b) => a.timestamp - b.timestamp)
 
-
-        const deduped = sorted.reduce((acc, item) => {
-            const key = `${item.method}:${item.url}`
-            acc.set(key, item)
-            return acc
-        }, new Map<string, QueuedRequest>())
-
-        const toSend = [...deduped.values()]
-        const toDelete = sorted.filter(item => !toSend.includes(item))
-        for (const item of toDelete) {
-            await dequeueRequest(item.id)
-        }
-
-        for (const item of toSend) {
+        for (const item of sorted) {
             try {
-                await api.request({
+        await api.request({
                     url: item.url,
                     method: item.method,
                     data: deserializeData(item.data),
+                    // Marcăm cererea ca fiind din queue pentru a nu o re-adăuga în caz de eroare de rețea
+                    ...({ _fromQueue: true } as any)
                 })
+                // Ștergem din queue DOAR dacă cererea a ajuns la server și a fost procesată (succes sau eroare 4xx/5xx)
                 await dequeueRequest(item.id)
-            } catch {
-                break
+            } catch (error: any) {
+                const isNetworkError = !error.response && error.code !== 'ERR_CANCELED'
+                
+                if (isNetworkError) {
+                    // Dacă e eroare de rețea, oprim procesarea cozii (încă suntem offline)
+                    break
+                } else {
+                    // Dacă e eroare de la server (ex: 400 Bad Request, 500 Server Error), 
+                    // scoatem cererea din queue pentru a nu bloca restul cozii la infinit.
+                    await dequeueRequest(item.id)
+                }
             }
         }
+    } catch (e) {
+        console.error('Error flushing offline queue:', e)
     } finally {
         isFlushing = false
     }
@@ -157,7 +176,11 @@ const processQueue = (error: unknown, token: string | null = null) => {
 };
 
 api.interceptors.response.use(
-    (response) => response,
+    (response) => {
+        // Dacă o cerere reușește, înseamnă că suntem online, deci încercăm să golim coada.
+        flushQueue()
+        return response
+    },
     async (error) => {
         // Request anulat = offline queue, nu e eroare reală
         if (axios.isCancel(error)) {
@@ -171,7 +194,8 @@ api.interceptors.response.use(
         const isNetworkError = !error.response && error.code !== 'ERR_CANCELED'
         const method = (originalRequest.method ?? 'get').toLowerCase()
 
-        if (isNetworkError && MUTATION_METHODS.includes(method)) {
+        // Nu re-adăugăm în queue dacă cererea provine deja din flushQueue
+        if (isNetworkError && MUTATION_METHODS.includes(method) && !originalRequest._fromQueue) {
             await enqueueRequest({
                 id: crypto.randomUUID(),
                 url: originalRequest.url!,

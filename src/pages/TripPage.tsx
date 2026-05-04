@@ -666,16 +666,16 @@ function TripPageContent({ trip }: TripPageContentProps) {
       })
 
       if (res.status >= 200 && res.status < 300) {
-        if (action === 'Accepted') {
-          setMembers(prev => prev.map(m => m.id === member.id ? { ...m, status: 'accepted' } : m))
-          setTripDetailsFeedback({ tone: 'success', message: `${member.username} added to expedition.` })
-        } else {
-          setMembers(prev => prev.filter(m => m.id !== member.id))
-          setTripDetailsFeedback({ tone: 'info', message: `${member.username}'s request was declined.` })
-        }
+        setTripDetailsFeedback({ tone: 'success', message: `${member.username} added to expedition.` })
       }
     } catch (err: any) {
       if (err?.queued) {
+        // Optimistic Update for accepting/declining
+        if (action === 'Accepted') {
+          setMembers(prev => prev.map(m => m.id === member.id ? { ...m, status: 'accepted' } : m))
+        } else {
+          setMembers(prev => prev.filter(m => m.id !== member.id))
+        }
         setTripDetailsFeedback({ tone: 'success', message: `Response to ${member.username} will be processed later.` })
       } else {
         setTripDetailsFeedback({ tone: 'error', message: 'Failed to respond to request.' })
@@ -696,6 +696,10 @@ function TripPageContent({ trip }: TripPageContentProps) {
       const res = await api.post('api/trip/membership-request', {userId: authenticatedUser.id, tripId: tripDetails.id, invitedBy: authenticatedUser?.id })
       if (res.status >= 200 && res.status < 300) {
         setTripDetailsFeedback({ tone: 'success', message: 'Join request sent. Waiting for approval.' })
+      }
+    } catch (err: any) {
+      if (err?.queued) {
+        // Optimistic update for join request
         setMembers((prev) => [
           ...prev,
           {
@@ -706,9 +710,6 @@ function TripPageContent({ trip }: TripPageContentProps) {
             status: 'requested',
           },
         ])
-      }
-    } catch (err: any) {
-      if (err?.queued) {
         setTripDetailsFeedback({ tone: 'success', message: 'Join request will be sent when you are back online.' })
       } else {
         setTripDetailsFeedback({ tone: 'error', message: 'Failed to request access.' })
@@ -729,6 +730,7 @@ function TripPageContent({ trip }: TripPageContentProps) {
       setMembers(prev => prev.map(m => m.id === userId ? { ...m, role: newRole } : m))
     } catch (err: any) {
       if (err?.queued) {
+        setMembers(prev => prev.map(m => m.id === userId ? { ...m, role: newRole } : m))
         setTripDetailsFeedback({ tone: 'success', message: 'Role change will be synced.' })
       } else {
         setTripDetailsFeedback({ tone: 'error', message: 'Failed to update role.' })
@@ -751,6 +753,7 @@ function TripPageContent({ trip }: TripPageContentProps) {
       setMembers(prev => prev.filter(m => m.id !== userId))
     } catch (err: any) {
       if (err?.queued) {
+        setMembers(prev => prev.filter(m => m.id !== userId))
         setTripDetailsFeedback({ tone: 'success', message: 'Explorer removal will be synced.' })
       } else {
         setTripDetailsFeedback({ tone: 'error', message: 'Failed to remove member.' })
