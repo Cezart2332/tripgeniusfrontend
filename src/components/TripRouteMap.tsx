@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import mapboxgl from 'mapbox-gl'
+import maplibregl from 'maplibre-gl'
 import type { TimelineStop } from '../types/models'
 
 interface TripRouteMapProps {
@@ -15,7 +15,7 @@ interface RouteData {
   distanceMeters: number | null
 }
 
-interface DirectionsResponse {
+interface OSRMResponse {
   routes?: Array<{
     distance?: number
     duration?: number
@@ -23,6 +23,25 @@ interface DirectionsResponse {
       coordinates?: number[][]
     }
   }>
+}
+
+const OSM_STYLE: any = {
+  version: 8,
+  sources: {
+    osm: {
+      type: 'raster',
+      tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
+      tileSize: 256,
+      attribution: '© OpenStreetMap contributors',
+    },
+  },
+  layers: [
+    {
+      id: 'osm',
+      type: 'raster',
+      source: 'osm',
+    },
+  ],
 }
 
 const createRouteData = (
@@ -41,14 +60,14 @@ const createRouteData = (
   ],
 })
 
-const toMapboxCoordinate = (coordinate: [number, number]): [number, number] => [
+const toMapLibreCoordinate = (coordinate: [number, number]): [number, number] => [
   coordinate[1],
   coordinate[0],
 ]
 
 const buildFallbackCoordinates = (stop: TimelineStop): RouteCoordinates => [
-  toMapboxCoordinate(stop.fromCoords),
-  toMapboxCoordinate(stop.toCoords),
+  toMapLibreCoordinate(stop.fromCoords),
+  toMapLibreCoordinate(stop.toCoords),
 ]
 
 const normalizeRouteCoordinates = (coordinates: number[][]): RouteCoordinates =>
@@ -58,25 +77,19 @@ const normalizeRouteCoordinates = (coordinates: number[][]): RouteCoordinates =>
 
 const fetchDirectionsRoute = async (
   stop: TimelineStop,
-  token: string,
 ): Promise<RouteData> => {
   const coordinateString = `${stop.fromCoords[1]},${stop.fromCoords[0]};${stop.toCoords[1]},${stop.toCoords[0]}`
-  const query = new URLSearchParams({
-    alternatives: 'false',
-    overview: 'full',
-    geometries: 'geojson',
-    access_token: token,
-  })
-
+  
+  // Using public OSRM demo server (free/no key)
   const response = await fetch(
-    `https://api.mapbox.com/directions/v5/mapbox/driving/${coordinateString}?${query.toString()}`,
+    `https://router.project-osrm.org/route/v1/driving/${coordinateString}?overview=full&geometries=geojson`,
   )
 
   if (!response.ok) {
     throw new Error('Failed to load directions route')
   }
 
-  const payload = (await response.json()) as DirectionsResponse
+  const payload = (await response.json()) as OSRMResponse
   const firstRoute = payload.routes?.[0]
   const coordinates = firstRoute?.geometry?.coordinates
 
@@ -85,10 +98,6 @@ const fetchDirectionsRoute = async (
   }
 
   const normalizedCoordinates = normalizeRouteCoordinates(coordinates)
-
-  if (normalizedCoordinates.length < 2) {
-    throw new Error('Directions route coordinates were invalid')
-  }
 
   return {
     coordinates: normalizedCoordinates,
@@ -130,7 +139,7 @@ const createPointData = (
       properties: { name: `From ${stop.startingPoint}` },
       geometry: {
         type: 'Point',
-        coordinates: toMapboxCoordinate(stop.fromCoords),
+        coordinates: toMapLibreCoordinate(stop.fromCoords),
       },
     },
     {
@@ -138,7 +147,7 @@ const createPointData = (
       properties: { name: `To ${stop.endPoint}` },
       geometry: {
         type: 'Point',
-        coordinates: toMapboxCoordinate(stop.toCoords),
+        coordinates: toMapLibreCoordinate(stop.toCoords),
       },
     },
   ],
@@ -146,9 +155,8 @@ const createPointData = (
 
 export function TripRouteMap({ timeline, selectedDay }: TripRouteMapProps) {
   const containerRef = useRef<HTMLDivElement | null>(null)
-  const mapRef = useRef<mapboxgl.Map | null>(null)
+  const mapRef = useRef<maplibregl.Map | null>(null)
   const routeCacheRef = useRef<Record<string, RouteData>>({})
-  const token = import.meta.env.VITE_MAPBOX_PUBLIC_TOKEN
   const [routeState, setRouteState] = useState({
     isLoading: true,
     hasHydrated: false,
@@ -165,22 +173,30 @@ export function TripRouteMap({ timeline, selectedDay }: TripRouteMapProps) {
   const initialStop = timeline[0] ?? null
 
   useEffect(() => {
-    if (!containerRef.current || mapRef.current || !token || !initialStop) {
+    if (!containerRef.current || mapRef.current || !initialStop) {
       return
     }
 
-    mapboxgl.accessToken = token
-
-    const map = new mapboxgl.Map({
+    const map = new maplibregl.Map({
       container: containerRef.current,
-      style: 'mapbox://styles/mapbox/streets-v12',
-      center: toMapboxCoordinate(initialStop.fromCoords),
+      style: OSM_STYLE,
+      center: toMapLibreCoordinate(initialStop.fromCoords),
       zoom: 5,
       pitch: 35,
       bearing: 0,
     })
 
-    map.addControl(new mapboxgl.NavigationControl(), 'top-right')
+    map.addControl(new maplibregl.NavigationControl(), 'top-right')
+    
+    // Browser Geolocation Control (requested by user)
+    map.addControl(
+      new maplibregl.GeolocateControl({
+        positionOptions: { enableHighAccuracy: true },
+        trackUserLocation: true,
+        showUserHeading: true,
+      } as any),
+      'bottom-right'
+    )
 
     mapRef.current = map
 
@@ -188,19 +204,19 @@ export function TripRouteMap({ timeline, selectedDay }: TripRouteMapProps) {
       map.remove()
       mapRef.current = null
     }
-  }, [initialStop, token])
+  }, [initialStop])
 
   useEffect(() => {
     const map = mapRef.current
-    if (!map || !selectedStop || !token) {
+    if (!map || !selectedStop) {
       return
     }
 
     let cancelled = false
 
     const upsertRouteLayers = (routeData: RouteData) => {
-      const lineSource = map.getSource('route-line') as mapboxgl.GeoJSONSource | undefined
-      const pointSource = map.getSource('route-points') as mapboxgl.GeoJSONSource | undefined
+      const lineSource = map.getSource('route-line') as maplibregl.GeoJSONSource | undefined
+      const pointSource = map.getSource('route-points') as maplibregl.GeoJSONSource | undefined
 
       if (lineSource) {
         lineSource.setData(createRouteData(routeData.coordinates))
@@ -260,7 +276,7 @@ export function TripRouteMap({ timeline, selectedDay }: TripRouteMapProps) {
         return
       }
 
-      const bounds = new mapboxgl.LngLatBounds(firstCoordinate, firstCoordinate)
+      const bounds = new maplibregl.LngLatBounds(firstCoordinate, firstCoordinate)
 
       routeData.coordinates.forEach((coordinate) => {
         bounds.extend(coordinate)
@@ -298,10 +314,11 @@ export function TripRouteMap({ timeline, selectedDay }: TripRouteMapProps) {
       }
 
       try {
-        const routeData = await fetchDirectionsRoute(selectedStop, token)
+        const routeData = await fetchDirectionsRoute(selectedStop)
         routeCacheRef.current[routeKey] = routeData
         applyRouteToMap(routeData, false)
-      } catch {
+      } catch (err) {
+        console.error('OSRM fetch failed:', err)
         const fallbackRoute: RouteData = {
           coordinates: buildFallbackCoordinates(selectedStop),
           durationSeconds: null,
@@ -322,19 +339,10 @@ export function TripRouteMap({ timeline, selectedDay }: TripRouteMapProps) {
     return () => {
       cancelled = true
     }
-  }, [selectedStop, token])
+  }, [selectedStop])
 
   if (!selectedStop) {
     return <div className="map-fallback">No timeline stops are available for this trip yet.</div>
-  }
-
-  if (!token) {
-    return (
-      <div className="map-fallback">
-        Mapbox token missing. Add VITE_MAPBOX_PUBLIC_TOKEN in .env to render
-        interactive trip routes.
-      </div>
-    )
   }
 
   const showInitialMapSkeleton = !routeState.hasHydrated

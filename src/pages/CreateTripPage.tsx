@@ -66,15 +66,11 @@ interface AuthStoreState {
   }
 }
 
-interface MapboxFeature {
-  id: string
-  text: string
-  place_name: string
-  center: [number, number]
-}
-
-interface MapboxGeocodingResponse {
-  features?: MapboxFeature[]
+interface NominatimResult {
+  place_id: number
+  display_name: string
+  lat: string
+  lon: string
 }
 
 interface ModalSurfaceProps {
@@ -90,7 +86,6 @@ interface LocationAutocompleteFieldProps {
   label: string
   placeholder: string
   value: string
-  mapboxToken: string
   onValueChange: (value: string) => void
   onLocationSelect: (selection: LocationSelection) => void
 }
@@ -239,33 +234,59 @@ function ModalSurface({ isOpen, title, subtitle, onClose, children }: ModalSurfa
   )
 }
 
-function LocationAutocompleteField({ id, label, placeholder, value, mapboxToken, onValueChange, onLocationSelect }: LocationAutocompleteFieldProps) {
+const nominatimCache: Record<string, LocationSuggestion[]> = {}
+
+function LocationAutocompleteField({ id, label, placeholder, value, onValueChange, onLocationSelect }: LocationAutocompleteFieldProps) {
   const [isFocused, setIsFocused] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [suggestions, setSuggestions] = useState<LocationSuggestion[]>([])
 
   useEffect(() => {
-    if (!mapboxToken || value.trim().length < 2) {
+    const trimmed = value.trim()
+    if (trimmed.length < 3) {
       setSuggestions([])
       return
     }
+
+    if (nominatimCache[trimmed]) {
+      setSuggestions(nominatimCache[trimmed])
+      return
+    }
+
     const controller = new AbortController()
     const timer = setTimeout(async () => {
       setIsLoading(true)
       try {
-        const res = await fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(value)}.json?autocomplete=true&limit=6&access_token=${mapboxToken}`, { signal: controller.signal })
-        const data = await res.json() as MapboxGeocodingResponse
-        setSuggestions(data.features?.map(f => ({
-          id: f.id,
-          name: f.text,
-          placeName: f.place_name,
-          lng: f.center[0],
-          lat: f.center[1]
-        })) || [])
-      } finally { setIsLoading(false) }
-    }, 300)
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(trimmed)}&format=json&addressdetails=1&limit=6`,
+          {
+            signal: controller.signal,
+            headers: {
+              'User-Agent': 'TripGenius/1.0',
+              'Accept-Language': 'ro'
+            }
+          }
+        )
+        const data = await res.json() as NominatimResult[]
+        const results: LocationSuggestion[] = data.map(f => ({
+          id: String(f.place_id),
+          name: f.display_name.split(',')[0],
+          placeName: f.display_name,
+          lng: parseFloat(f.lon),
+          lat: parseFloat(f.lat)
+        }))
+        
+        nominatimCache[trimmed] = results
+        setSuggestions(results)
+      } catch (err) {
+        console.error('Nominatim search failed:', err)
+      } finally {
+        setIsLoading(false)
+      }
+    }, 600)
+    
     return () => { clearTimeout(timer); controller.abort() }
-  }, [value, mapboxToken])
+  }, [value])
 
   return (
     <div className="form-group" style={{ position: 'relative' }}>
@@ -276,7 +297,7 @@ function LocationAutocompleteField({ id, label, placeholder, value, mapboxToken,
       </div>
       {isFocused && (suggestions.length > 0 || isLoading) && (
         <div className="location-dropdown" style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 10, background: 'var(--bg-900)', border: '1px solid rgba(154,198,148,0.1)', borderRadius: '12px', marginTop: '0.5rem', overflow: 'hidden', boxShadow: '0 10px 25px rgba(0,0,0,0.4)' }}>
-           {isLoading && <p style={{ padding: '1rem', fontSize: '0.8rem', opacity: 0.5 }}>Syncing satellites...</p>}
+           {isLoading && <p style={{ padding: '1rem', fontSize: '0.8rem', opacity: 0.5 }}>Querying OpenStreetMap...</p>}
            {suggestions.map(s => (
              <button key={s.id} type="button" className="location-option" style={{ width: '100%', textAlign: 'left', padding: '1rem', border: 'none', background: 'transparent', cursor: 'pointer' }} onMouseDown={() => onLocationSelect(s)}>
                 <div style={{ fontWeight: 600, color: '#f3fff1' }}>{s.name}</div>
@@ -292,7 +313,6 @@ function LocationAutocompleteField({ id, label, placeholder, value, mapboxToken,
 export function CreateTripPage() {
   const navigate = useNavigate()
   const user = useSelector((state: AuthStoreState) => state.auth.user)
-  const mapboxToken = (import.meta.env.VITE_MAPBOX_PUBLIC_TOKEN as string)?.trim() ?? ''
 
   const [formState, setFormState] = useState<CreateTripFormState>(createInitialFormState)
   const [activeStep, setActiveStep] = useState<BuilderStep>('details')
@@ -579,8 +599,8 @@ export function CreateTripPage() {
                              )}
                           </div>
                           <div className="builder-grid-v2">
-                             <LocationAutocompleteField id={`from-${i}`} label="Starting Point" placeholder="Search locality..." mapboxToken={mapboxToken} value={stop.from} onValueChange={v => setFormState(p => ({ ...p, timeline: p.timeline.map((s, idx) => idx === i ? { ...s, from: v } : s) }))} onLocationSelect={s => setFormState(p => ({ ...p, timeline: p.timeline.map((st, idx) => idx === i ? { ...st, from: s.placeName, fromLat: String(s.lat), fromLng: String(s.lng) } : st) }))} />
-                             <LocationAutocompleteField id={`to-${i}`} label="End Point" placeholder="Search locality..." mapboxToken={mapboxToken} value={stop.to} onValueChange={v => setFormState(p => ({ ...p, timeline: p.timeline.map((s, idx) => idx === i ? { ...s, to: v } : s) }))} onLocationSelect={s => setFormState(p => ({ ...p, timeline: p.timeline.map((st, idx) => idx === i ? { ...st, to: s.placeName, toLat: String(s.lat), toLng: String(s.lng) } : st) }))} />
+                             <LocationAutocompleteField id={`from-${i}`} label="Starting Point" placeholder="Search locality..." value={stop.from} onValueChange={v => setFormState(p => ({ ...p, timeline: p.timeline.map((s, idx) => idx === i ? { ...s, from: v } : s) }))} onLocationSelect={s => setFormState(p => ({ ...p, timeline: p.timeline.map((st, idx) => idx === i ? { ...st, from: s.placeName, fromLat: String(s.lat), fromLng: String(s.lng) } : st) }))} />
+                             <LocationAutocompleteField id={`to-${i}`} label="End Point" placeholder="Search locality..." value={stop.to} onValueChange={v => setFormState(p => ({ ...p, timeline: p.timeline.map((s, idx) => idx === i ? { ...s, to: v } : s) }))} onLocationSelect={s => setFormState(p => ({ ...p, timeline: p.timeline.map((st, idx) => idx === i ? { ...st, to: s.placeName, toLat: String(s.lat), toLng: String(s.lng) } : st) }))} />
                           </div>
                           <div className="form-group" style={{ marginTop: '1.5rem' }}>
                              <label className="field-label">Navigation Note</label>

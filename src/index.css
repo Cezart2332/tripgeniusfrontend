@@ -1717,7 +1717,7 @@ h3 {
   background: rgba(9, 18, 13, 0.64);
 }
 
-.map-container :is(.mapboxgl-ctrl-group, .mapboxgl-ctrl-attrib) {
+.map-container :is(.maplibregl-ctrl-group, .maplibregl-ctrl-attrib) {
   background: rgba(8, 16, 12, 0.78) !important;
   color: var(--text-220) !important;
   border: 1px solid var(--line-soft);

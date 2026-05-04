@@ -112,6 +112,32 @@ registerRoute(
     })
 )
 
+// ─── OpenStreetMap Tiles — Cache First ────────────────────────────────────────
+registerRoute(
+    ({ url }) => url.origin === 'https://tile.openstreetmap.org',
+    new CacheFirst({
+        cacheName: 'osm-tiles-cache',
+        plugins: [
+            new CacheableResponsePlugin({ statuses: [200] }),
+            new ExpirationPlugin({ 
+                maxEntries: 500, 
+                maxAgeSeconds: 60 * 60 * 24 * 30 // 30 days
+            })
+        ]
+    })
+)
+
+// ─── MapLibre GL Assets — Cache First ────────────────────────────────────────
+registerRoute(
+    ({ url }) => url.pathname.includes('maplibre-gl'),
+    new CacheFirst({
+        cacheName: 'maplibre-assets-cache',
+        plugins: [
+            new CacheableResponsePlugin({ statuses: [200] })
+        ]
+    })
+)
+
 // ─── Push notifications ───────────────────────────────────────────────────────
 self.addEventListener('push', (event: PushEvent) => {
     const data = event.data?.json() ?? {}
