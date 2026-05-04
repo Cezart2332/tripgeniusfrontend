@@ -428,9 +428,15 @@ function TripPageContent({ trip }: TripPageContentProps) {
       for (const stop of timelines) {
         try {
           const coordinateString = `${stop.fromCoords[1]},${stop.fromCoords[0]};${stop.toCoords[1]},${stop.toCoords[0]}`
-          const url = `https://router.project-osrm.org/route/v1/driving/${coordinateString}?overview=full&geometries=geojson`
-          // Service worker will catch and cache these NetworkFirst requests
-          await fetch(url)
+          
+          // 1. Preview Route
+          const previewUrl = `https://router.project-osrm.org/route/v1/driving/${coordinateString}?overview=full&geometries=geojson`
+          await fetch(previewUrl)
+
+          // 2. Navigation Route (with steps)
+          const navUrl = `https://router.project-osrm.org/route/v1/driving/${coordinateString}?overview=full&geometries=geojson&steps=true`
+          await fetch(navUrl)
+          
         } catch (e) {
           // Ignore pre-fetch errors
         }

@@ -271,6 +271,11 @@ export function NavigationPage() {
               <div style={{ fontSize: '1.4rem', fontWeight: 800 }}>{navData.steps[0].instruction}</div>
               <div style={{ fontSize: '1rem', opacity: 0.8 }}>Peste {Math.round(navData.steps[0].distance)} m</div>
             </div>
+            {!navigator.onLine && (
+              <div style={{ background: '#db4a5b', color: '#fff', padding: '0.3rem 0.6rem', borderRadius: '8px', fontSize: '0.7rem', fontWeight: 900, textTransform: 'uppercase' }}>
+                Offline
+              </div>
+            )}
           </div>
           
           <div style={{ marginTop: '0.75rem', display: 'flex', gap: '0.75rem' }}>
