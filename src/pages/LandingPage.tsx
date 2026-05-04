@@ -128,7 +128,7 @@ export function LandingPage() {
           <p className="eyebrow">TripGenius</p>
           <h1>
             Plan trips like an<br />
-            <span className="text-accent">expedition crew.</span>
+            <span className="text-accent">travel crew.</span>
           </h1>
           <p className="lead">
             Centralize route planning, member coordination, and travel ops —

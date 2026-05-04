@@ -170,7 +170,7 @@ export function DiscoveryPage() {
         <div>
           <h1>Discover trips</h1>
           <p className="lead">
-            Filter by style, budget, and preferences to find the right expedition.
+            Filter by style, budget, and preferences to find the right trip.
           </p>
         </div>
         <div className="discovery-header-actions">
@@ -215,7 +215,7 @@ export function DiscoveryPage() {
             }}
           />
           <FiZap aria-hidden="true" />
-          <span>Preference boost</span>
+          <span>Personalized for you</span>
         </label>
       </div>
 

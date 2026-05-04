@@ -97,7 +97,7 @@ export function VerifyEmailPage() {
                       className="inline-spinner"
                       style={{ fontSize: '2.5rem', color: 'var(--green-580)' }}
                     />
-                    <p>Syncing with expedition servers...</p>
+                    <p>Loading your travel data...</p>
                   </>
                 )}
                 {status === 'success' && (

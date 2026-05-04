@@ -101,7 +101,7 @@ interface CalendarState {
 type BuilderStep = 'details' | 'timeline' | 'overview'
 
 const builderSteps: Array<{ key: BuilderStep; label: string; description: string }> = [
-  { key: 'details', label: 'Identity', description: 'Define the core of your expedition' },
+  { key: 'details', label: 'Identity', description: 'Define the core of your trip' },
   { key: 'timeline', label: 'Route', description: 'Chart the coordinates and stops' },
   { key: 'overview', label: 'Review', description: 'Final inspection before launch' },
 ]
@@ -381,11 +381,11 @@ export function CreateTripPage() {
       })
 
       await api.post('/api/trip/create-trip', formData)
-      setToast({ id: Date.now(), message: 'Expedition synchronized!', tone: 'success' })
+      setToast({ id: Date.now(), message: 'Trip saved!', tone: 'success' })
       setTimeout(() => navigate('/app/discover'), 2000)
     } catch (err: any) {
       if (err?.queued) {
-        setToast({ id: Date.now(), message: 'Expedition creation will be synced when online!', tone: 'success' })
+        setToast({ id: Date.now(), message: 'Trip creation will be saved when online!', tone: 'success' })
         setTimeout(() => navigate('/app/discover'), 2000)
       } else {
         setError(err.response?.data?.message || 'Synchronization failed.')
@@ -401,7 +401,7 @@ export function CreateTripPage() {
       <section className="page container">
         <div className="discovery-empty-state">
           <h1>Identity verification failed</h1>
-          <p>Please log in to register new expeditions.</p>
+          <p>Please log in to start new trips.</p>
           <Link className="btn btn-primary" to="/login">Go to login</Link>
         </div>
       </section>
@@ -413,7 +413,7 @@ export function CreateTripPage() {
       <FeedbackToast toast={toast} clearToast={() => setToast(null)} />
       
       <header className="builder-header-v2">
-        <p className="eyebrow">Expedition Registry</p>
+        <p className="eyebrow">New Trip</p>
         <h1>{builderSteps[activeIndex].label}</h1>
         <p style={{ maxWidth: '600px', margin: '0.5rem auto', color: 'var(--text-380)' }}>
           {builderSteps[activeIndex].description}
@@ -434,7 +434,7 @@ export function CreateTripPage() {
                 <h3>Core Identity</h3>
                 <div className="form-group" style={{ marginTop: '2rem' }}>
                   <label className="field-label">Trip Title</label>
-                  <input className="input" placeholder="Ex: Arctic Survival Expedition" value={formState.title} onChange={e => setFormState(p => ({ ...p, title: e.target.value }))} />
+                  <input className="input" placeholder="Ex: Arctic Adventure" value={formState.title} onChange={e => setFormState(p => ({ ...p, title: e.target.value }))} />
                 </div>
                 <div className="form-group" style={{ marginTop: '1.5rem' }}>
                   <label className="field-label">Description</label>
@@ -621,7 +621,7 @@ export function CreateTripPage() {
                <div className="builder-section-v2" style={{ textAlign: 'center' }}>
                   <FiCheckCircle size={48} style={{ color: 'var(--green-580)', marginBottom: '1rem' }} />
                   <h3>Pre-Flight Check</h3>
-                  <p>All expedition data is synchronized. Review the summary below.</p>
+                  <p>All your trip data is ready. Review the summary below.</p>
                </div>
 
                <div className="trip-stats-bar-v2">
@@ -659,7 +659,7 @@ export function CreateTripPage() {
            {!isFirst && <button type="button" className="btn btn-ghost btn-lg" disabled={isPublishingTrip} onClick={() => setActiveStep(builderSteps[activeIndex - 1].key)}>Previous Step</button>}
            {isLast ? (
              <button type="submit" className="btn btn-primary btn-lg" style={{ minWidth: '240px' }} disabled={isPublishingTrip}>
-               {isPublishingTrip ? 'Publishing...' : 'Publish Expedition'}
+               {isPublishingTrip ? 'Publishing...' : 'Publish Trip'}
              </button>
            ) : (
              <button type="button" className="btn btn-primary btn-lg" style={{ minWidth: '240px' }} disabled={isPublishingTrip} onClick={() => setActiveStep(builderSteps[activeIndex + 1].key)}>Next Step</button>

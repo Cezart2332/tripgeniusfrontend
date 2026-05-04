@@ -138,6 +138,21 @@ registerRoute(
     })
 )
 
+// ─── OSRM Routing — Network First ───────────────────────────────────────────
+registerRoute(
+    ({ url }) => url.origin === 'https://router.project-osrm.org',
+    new NetworkFirst({
+        cacheName: 'osrm-routing-cache',
+        plugins: [
+            new CacheableResponsePlugin({ statuses: [200] }),
+            new ExpirationPlugin({ 
+                maxEntries: 50, 
+                maxAgeSeconds: 60 * 60 * 24 // 24h
+            })
+        ]
+    })
+)
+
 // ─── Push notifications ───────────────────────────────────────────────────────
 self.addEventListener('push', (event: PushEvent) => {
     const data = event.data?.json() ?? {}

@@ -282,7 +282,7 @@ export function AiAdvisorPage() {
   return (
     <section className="page ai-page-v2">
       <header className="ai-header-v2">
-        <p className="eyebrow">Expert Expedition Intelligence</p>
+        <p className="eyebrow">Your AI Travel Guide</p>
         <h1>Plan by conversation.</h1>
         <p style={{ maxWidth: '600px', opacity: 0.7 }}>
           Ask naturally, get ranked trip options, and jump directly into a synchronized workspace.
@@ -318,7 +318,7 @@ export function AiAdvisorPage() {
                 <div className="empty-state-icon-v2">
                   <FiMessageCircle />
                 </div>
-                <h2>Start an expedition.</h2>
+                <h2>Plan your next adventure.</h2>
                 <p>Ask about hidden gems, group itineraries, or budget-friendly routes. I'll analyze your style and suggest ranked options.</p>
                 <div className="empty-state-suggestions-v2">
                   <button onClick={() => setPrompt("Recommend a trip based on my profile")} className="suggestion-chip-v2">Trips based on preferences</button>

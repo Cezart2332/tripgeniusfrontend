@@ -642,7 +642,7 @@ export function ProfilePage() {
         action: action === 'Accepted' ? 'accept' : 'decline',
       })
       if (response.status === 200) {
-        showToast(`Expedition invite ${action.toLowerCase()}ed.`, 'success')
+        showToast(`Trip invite ${action.toLowerCase()}ed.`, 'success')
       }
 
       const userRes = await api.get('api/user/me')
@@ -767,7 +767,7 @@ export function ProfilePage() {
               <div className="profile-section-v2">
                 <h3>Identity Details</h3>
                 <label className="field-label" htmlFor="profile-description">
-                  Bio / Expedition Motto
+                  About me / Bio
                 </label>
                 <textarea
                   id="profile-description"
@@ -841,7 +841,7 @@ export function ProfilePage() {
             <div className="profile-section-v2">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
                 <div>
-                  <h3>Expedition Invites</h3>
+                  <h3>Trip Invitations</h3>
                   <p>Manage your pending trip invitations.</p>
                 </div>
               </div>
@@ -903,7 +903,7 @@ export function ProfilePage() {
             <div className="profile-section-v2">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
-                  <h3>Expedition Timeline</h3>
+                  <h3>My Travels</h3>
                   <p>Your journey through various territories.</p>
                 </div>
                 <img src="/newstickers/sticker3.png" alt="" style={{ width: '80px' }} />
@@ -1028,7 +1028,7 @@ export function ProfilePage() {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
                 <div>
                   <h3>Intelligence Feed</h3>
-                  <p>Stay updated on expedition changes.</p>
+                  <p>Stay updated on trip changes.</p>
                 </div>
                 <button
                   className="btn btn-ghost"
@@ -1043,7 +1043,7 @@ export function ProfilePage() {
                 {visibleNotifications.length === 0 && (
                   <div style={{ textAlign: 'center', padding: '3rem 0' }}>
                     <img src="/newstickers/sticker6.png" alt="" style={{ width: '120px', marginBottom: '1rem', opacity: 0.6 }} />
-                    <p className="empty-note">All quiet on the expedition front.</p>
+                    <p className="empty-note">All quiet on the trip front.</p>
                   </div>
                 )}
                 {visibleNotifications.map((notification) => {

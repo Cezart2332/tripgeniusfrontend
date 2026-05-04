@@ -660,7 +660,7 @@ export function AppLayout() {
                   transition={{ duration: 2, ease: "easeInOut" }}
                 />
               </div>
-              <p className="splash-tagline">Initializing expedition...</p>
+              <p className="splash-tagline">Getting things ready...</p>
             </div>
           </motion.div>
         )}

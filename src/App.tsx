@@ -13,6 +13,7 @@ import { ProfilePage } from './pages/ProfilePage'
 import { RegisterPage } from './pages/RegisterPage'
 import { SettingsPage } from './pages/SettingsPage'
 import { TripPage } from './pages/TripPage'
+import { NavigationPage } from './pages/NavigationPage'
 import { VerifyEmailPage } from './pages/VerifyEmailPage'
 import { ResetPasswordPage } from './pages/ResetPasswordPage'
 import { isReallyOnline, flushQueue } from './data/api'
@@ -46,6 +47,8 @@ function App() {
         <Route path="ai" element={<AiAdvisorPage />} />
         <Route path="settings" element={<SettingsPage />} />
       </Route>
+
+      <Route path="/navigation/:tripId/:day" element={<NavigationPage />} />
 
       <Route path="*" element={<Navigate replace to="/" />} />
     </Routes>

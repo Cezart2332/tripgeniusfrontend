@@ -50,20 +50,20 @@ type TripParticipationState = 'accepted' | 'invited' | 'requested' | 'visitor'
 
 const memberTabs: TripTabItem[] = [
   { key: 'overview', label: 'Overview', Icon: FiInfo },
-  { key: 'map', label: 'Timeline', Icon: FiMap },
-  { key: 'members', label: 'Expedition', Icon: FiUsers },
-  { key: 'chat', label: 'Signal Room', Icon: FiMessageSquare },
+  { key: 'map', label: 'Itinerary', Icon: FiMap },
+  { key: 'members', label: 'Members', Icon: FiUsers },
+  { key: 'chat', label: 'Chat', Icon: FiMessageSquare },
 ]
 
 const ownerTabs: TripTabItem[] = [
   ...memberTabs,
-  { key: 'settings', label: 'Workspace Settings', Icon: FiSettings },
+  { key: 'settings', label: 'Settings', Icon: FiSettings },
 ]
 
 const visitorTabs: TripTabItem[] = [
   { key: 'overview', label: 'Overview', Icon: FiInfo },
-  { key: 'map', label: 'Public Map', Icon: FiMap },
-  { key: 'members', label: 'Public Expedition', Icon: FiUsers },
+  { key: 'map', label: 'Public Plan', Icon: FiMap },
+  { key: 'members', label: 'Public Members', Icon: FiUsers },
 ]
 
 const defaultSelectedDay = (startDate: string, timelineLength: number): number => {
@@ -259,7 +259,7 @@ export function TripPage() {
         <div className="discovery-empty-state">
           <img src="/newstickers/sticker5.png" alt="" className="discovery-empty-sticker" />
           <h1>Trip not found</h1>
-          <p>This expedition room has been archived or the coordinates are invalid.</p>
+          <p>This trip room has been archived or the coordinates are invalid.</p>
           <Link className="btn btn-primary" to="/app/discover">
             Back to discovery
           </Link>
@@ -272,8 +272,8 @@ export function TripPage() {
     return (
       <section className="page trip-page-v2 container">
         <div className="discovery-empty-state">
-          <h1>Syncing coordinates...</h1>
-          <p>Connecting to the trip satellite for high-fidelity data.</p>
+          <h1>Loading your trip...</h1>
+          <p>We're getting everything ready for your next adventure.</p>
         </div>
       </section>
     )
@@ -666,7 +666,7 @@ function TripPageContent({ trip }: TripPageContentProps) {
       })
 
       if (res.status >= 200 && res.status < 300) {
-        setTripDetailsFeedback({ tone: 'success', message: `${member.username} added to expedition.` })
+        setTripDetailsFeedback({ tone: 'success', message: `${member.username} added to the trip.` })
       }
     } catch (err: any) {
       if (err?.queued) {
@@ -745,7 +745,7 @@ function TripPageContent({ trip }: TripPageContentProps) {
       return
     }
 
-    if (!window.confirm('Are you sure you want to remove this explorer?')) return
+    if (!window.confirm('Are you sure you want to remove this traveler?')) return
 
     setIsRemovingMemberId(userId)
     try {
@@ -754,7 +754,7 @@ function TripPageContent({ trip }: TripPageContentProps) {
     } catch (err: any) {
       if (err?.queued) {
         setMembers(prev => prev.filter(m => m.id !== userId))
-        setTripDetailsFeedback({ tone: 'success', message: 'Explorer removal will be synced.' })
+        setTripDetailsFeedback({ tone: 'success', message: 'Traveler removal will be synced.' })
       } else {
         setTripDetailsFeedback({ tone: 'error', message: 'Failed to remove member.' })
       }
@@ -815,7 +815,7 @@ function TripPageContent({ trip }: TripPageContentProps) {
     <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={revealTransition} className="trip-workspace-v2">
       <div className="trip-main-content">
         <div className="day-card-v2" style={{ marginBottom: '2rem' }}>
-          <h3>Expedition Summary</h3>
+          <h3>Trip Summary</h3>
           <p style={{ lineHeight: 1.6, color: 'var(--text-380)' }}>{tripDetails.description}</p>
         </div>
 
@@ -825,7 +825,7 @@ function TripPageContent({ trip }: TripPageContentProps) {
             <span>{timelines.length} Days</span>
           </div>
           <div className="trip-stat-v2">
-            <label>Expedition Size</label>
+            <label>Group Size</label>
             <span>{acceptedMembers.length}/{tripDetails.maxParticipants} Explorers</span>
           </div>
           <div className="trip-stat-v2">
@@ -872,11 +872,11 @@ function TripPageContent({ trip }: TripPageContentProps) {
           <h3>Your Access</h3>
           {viewerParticipationState === 'accepted' ? (
             <p className="empty-note" style={{ marginTop: '0.75rem' }}>
-              You are part of this expedition.
+              You are part of this trip.
             </p>
           ) : viewerParticipationState === 'invited' ? (
             <p className="empty-note" style={{ marginTop: '0.75rem' }}>
-              You have an invitation to join this expedition.
+              You have an invitation to join this trip.
             </p>
           ) : viewerParticipationState === 'requested' ? (
             <p className="empty-note" style={{ marginTop: '0.75rem' }}>
@@ -949,12 +949,12 @@ function TripPageContent({ trip }: TripPageContentProps) {
     </motion.div>
   )
 
-  const renderExpedition = () => (
+  const renderTripMembers = () => (
     <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={revealTransition}>
       <div className="profile-section-v2" style={{ marginBottom: '2rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
-            <h3>The Expedition Team</h3>
+            <h3>The Trip Team</h3>
             <p>Collaborators and explorers currently in the room.</p>
           </div>
           {canInviteMembers && (
@@ -1060,7 +1060,7 @@ function TripPageContent({ trip }: TripPageContentProps) {
           {chatMessages.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '4rem 0' }}>
                <img src="/newstickers/sticker3.png" alt="" style={{ width: '120px', opacity: 0.4 }} />
-               <p className="empty-note">Signal room is quiet. Start the conversation.</p>
+               <p className="empty-note">Chat is quiet. Start the conversation.</p>
             </div>
           ) : (
             chatMessages.map(msg => (
@@ -1097,7 +1097,7 @@ function TripPageContent({ trip }: TripPageContentProps) {
     <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={revealTransition}>
       <form className="builder-form-v2" onSubmit={saveOwnerTripDetails}>
         <div className="builder-section-v2">
-          <h3>Expedition Metadata</h3>
+          <h3>Trip Info</h3>
           <div style={{ display: 'grid', gridTemplateColumns: '240px 1fr', gap: '2rem', marginBottom: '2rem' }}>
              <label className="avatar-wrapper-v2" style={{ width: '240px', height: '160px', borderRadius: '24px' }}>
                 <img src={ownerTripDraft.imagePreviewUrl} alt="" className="avatar-preview-v2" />
@@ -1113,7 +1113,7 @@ function TripPageContent({ trip }: TripPageContentProps) {
                   <input className="input" value={ownerTripDraft.title} onChange={e => handleOwnerDraftChange('title', e.target.value)} />
                 </div>
                 <div className="form-group">
-                  <label className="field-label">Expedition Status</label>
+                  <label className="field-label">Trip Status</label>
                   <select className="input" value={ownerTripDraft.status} onChange={e => handleOwnerDraftChange('status', e.target.value)}>
                     <option value="Upcoming">Upcoming</option>
                     <option value="Started">Started</option>
@@ -1196,7 +1196,7 @@ function TripPageContent({ trip }: TripPageContentProps) {
       <AnimatePresence mode="wait">
         {activeTab === 'overview' && renderOverview()}
         {activeTab === 'map' && renderTimeline()}
-        {activeTab === 'members' && renderExpedition()}
+        {activeTab === 'members' && renderTripMembers()}
         {activeTab === 'chat' && renderChat()}
         {activeTab === 'settings' && renderSettings()}
       </AnimatePresence>

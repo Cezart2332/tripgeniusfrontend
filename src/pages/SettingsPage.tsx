@@ -501,7 +501,7 @@ export function SettingsPage() {
                   
                   <form onSubmit={updateEmail} className="profile-form-v2">
                     <label className="field-label" htmlFor="settings-email">
-                      Primary Expedition Email
+                      Your Contact Email
                     </label>
                     <input
                       id="settings-email"
@@ -549,7 +549,7 @@ export function SettingsPage() {
                 </div>
                 <div style={{ flex: 1 }}>
                   <h2>Shield Settings</h2>
-                  <p>Protect your expeditions with a strong, rotated password.</p>
+                  <p>Protect your trips with a strong, updated password.</p>
                   
                   <form onSubmit={updatePassword} className="profile-form-v2">
                     <div className="profile-section-v2" style={{ background: 'transparent', padding: 0, border: 'none' }}>
@@ -611,7 +611,7 @@ export function SettingsPage() {
                 </div>
                 <div style={{ flex: 1 }}>
                   <h2>Platform Health</h2>
-                  <p>Found a glitch in the map? Report it to the expedition technicians.</p>
+                  <p>Found a glitch in the map? Report it to our Support Team.</p>
                   
                   <form onSubmit={reportBugSend} className="profile-form-v2">
                     <label className="field-label" htmlFor="settings-bug-report">
@@ -652,7 +652,7 @@ export function SettingsPage() {
                 </div>
                 <div style={{ flex: 1 }}>
                   <h2 style={{ color: '#ff6b6b' }}>Burn Sequence</h2>
-                  <p>Permanently erase your explorer profile and all expedition history. This cannot be reversed.</p>
+                  <p>Permanently erase your account and all travel history. This cannot be reversed.</p>
                   
                   <div style={{ marginTop: '2rem' }}>
                     <button

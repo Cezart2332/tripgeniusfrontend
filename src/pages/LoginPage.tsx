@@ -141,7 +141,7 @@ export function LoginPage() {
         <div className="auth-form-side">
           <header className="auth-form-header">
             <h1>Welcome back</h1>
-            <p className="lead">Sign in to your expedition workspace.</p>
+            <p className="lead">Sign in to your account and trips.</p>
           </header>
 
           <nav className="auth-toggle-bar" aria-label="Authentication pages">
