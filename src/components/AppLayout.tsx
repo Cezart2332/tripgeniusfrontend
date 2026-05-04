@@ -235,8 +235,10 @@ export function AppLayout() {
 
   useEffect(() => {
     const lenis = new Lenis({
-      lerp: 0.09,
+      lerp: 0.12,
       smoothWheel: true,
+      wheelMultiplier: 1,
+      touchMultiplier: 1.5,
     })
 
     let rafId = 0

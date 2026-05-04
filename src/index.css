@@ -38,7 +38,6 @@ body,
 }
 
 html {
-  scroll-behavior: smooth;
   background-color: var(--bg-980);
   overflow-y: auto;
   overflow-x: hidden;
@@ -568,7 +567,7 @@ h3 {
   top: calc(env(safe-area-inset-top, 0px) + 1.5rem);
   right: 1rem;
   width: min(360px, calc(100vw - 2rem));
-  z-index: 70;
+  z-index: 10000;
   pointer-events: none;
 }
 

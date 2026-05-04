@@ -58,4 +58,19 @@ export default defineConfig({
       }
     })
   ],
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: (id) => {
+          if (id.includes('node_modules')) {
+            if (id.includes('mapbox-gl')) return 'vendor-mapbox';
+            if (id.includes('framer-motion')) return 'vendor-framer';
+            if (id.includes('react') || id.includes('redux')) return 'vendor-core';
+            return 'vendor-libs';
+          }
+        }
+      }
+    },
+    chunkSizeWarningLimit: 2500,
+  }
 })
