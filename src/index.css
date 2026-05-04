@@ -145,14 +145,54 @@ h3 {
   padding-inline: env(safe-area-inset-left, 0px) env(safe-area-inset-right, 0px);
 }
 
-/* ── Global Mobile Centering & Map Fixes ── */
+/* ── Global Mobile Refactor (Tighter, Professional Feel) ── */
 @media (max-width: 850px) {
+  :root {
+    --radius-lg: 16px;
+    --radius-md: 12px;
+  }
+
+  h1 { font-size: 1.6rem !important; }
+  h2 { font-size: 1.3rem !important; }
+  h3 { font-size: 1.1rem !important; }
+
+  .app-shell {
+    padding: calc(0.35rem + env(safe-area-inset-top)) 0.5rem calc(65px + env(safe-area-inset-bottom)) 0.5rem;
+  }
+
+  .panel {
+    padding: 0.75rem;
+    border-radius: var(--radius-lg);
+  }
+
+  .day-card-v2 {
+    padding: 0.65rem !important;
+    border-radius: var(--radius-md) !important;
+  }
+
+  .btn {
+    padding: 0.45rem 0.75rem;
+    font-size: 0.8rem;
+    font-weight: 800; /* Make text bolder to compensate for smaller size */
+  }
+
+  .btn-lg {
+    padding: 0.6rem 1rem;
+    font-size: 0.95rem;
+  }
+
+  .chip {
+    padding: 0.28rem 0.5rem;
+    font-size: 0.7rem;
+  }
+
   h1, h2, h3, p, .eyebrow, .field-label {
     text-align: center;
   }
   
   .lead {
     margin-inline: auto;
+    font-size: 0.85rem;
   }
 
   .btn, .icon-link, .chip, .choice-card {
@@ -183,42 +223,48 @@ h3 {
     justify-content: center !important;
     text-align: center;
     align-items: center;
+    gap: 0.75rem; /* Even tighter gaps */
   }
 
   .discovery-trip-row {
     flex-direction: column;
-    gap: 1.5rem;
+    gap: 1rem;
+    padding: 0.65rem;
   }
 
   .trip-stat-v2 {
     flex-direction: column;
+    gap: 0.25rem;
   }
 
   /* Trip Workspace Mobile Layout */
   .trip-workspace-v2 {
     display: flex !important;
     flex-direction: column !important;
-    gap: 2rem;
+    gap: 1.25rem;
   }
 
   .trip-main-content, 
   .trip-sidebar-v2 {
     width: 100% !important;
     position: static !important;
+    display: grid;
+    gap: 1.25rem;
   }
 
   .trip-sidebar-v2 {
-    order: -1; /* Show map at the top on mobile */
+    order: -1;
   }
 
   .trip-sidebar-v2 .day-card-v2 {
-    height: 450px !important;
+    height: auto !important; /* Allow Join card to be smaller */
+    min-height: 100px;
   }
 
   /* Ensure preview map is visible on mobile */
   .trip-page-v2 .map-wrapper {
-    height: 450px !important;
-    min-height: 450px !important;
+    height: 380px !important;
+    min-height: 380px !important;
     width: 100% !important;
   }
 }
@@ -2407,5 +2453,54 @@ h3 {
   .app-shell {
     padding-top: max(env(safe-area-inset-top), 0.75rem);
   }
+}
 
+/* ── Trip Workspace Refined Styles ── */
+.trip-hero-v2 {
+  position: relative;
+  width: 100%;
+  height: 320px;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  border: 1px solid var(--line);
+}
+
+.trip-hero-img-v2 {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: brightness(0.7) contrast(1.1);
+}
+
+.trip-hero-overlay-v2 {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 2rem;
+  background: linear-gradient(to top, rgba(8, 16, 12, 0.9), transparent);
+}
+
+@media (max-width: 850px) {
+  .trip-hero-v2 {
+    height: 220px;
+    border-radius: var(--radius-md);
+  }
+
+  .trip-hero-overlay-v2 {
+    padding: 1rem;
+    align-items: center;
+  }
+  
+  .trip-hero-overlay-v2 h1 {
+    font-size: 1.5rem !important;
+    text-align: center;
+  }
+}
+
+.trip-hero-meta-v2 {
+  display: flex;
+  gap: 0.6rem;
+  margin-bottom: 0.5rem;
 }
