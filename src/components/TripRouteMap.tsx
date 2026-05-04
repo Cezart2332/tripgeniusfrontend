@@ -39,21 +39,50 @@ export function TripRouteMap({ timeline, selectedDay }: TripRouteMapProps) {
     [selectedDay, timeline],
   )
 
+  const mapLoadedRef = useRef(false)
+
+  // 1. Initialize Map once
   useEffect(() => {
-    if (!containerRef.current || mapRef.current || !selectedStop) return
+    if (!containerRef.current || mapRef.current) return
 
     const map = new maplibregl.Map({
       container: containerRef.current,
       style: OSM_STYLE,
-      center: [selectedStop.fromCoords[1], selectedStop.fromCoords[0]],
+      center: selectedStop ? [selectedStop.fromCoords[1], selectedStop.fromCoords[0]] : [26.1025, 44.4268],
       zoom: 12,
     })
 
     map.addControl(new maplibregl.NavigationControl(), 'top-right')
     mapRef.current = map
 
-    map.on('load', async () => {
-      // Draw simple route preview
+    map.on('load', () => {
+      mapLoadedRef.current = true
+      map.resize()
+    })
+
+    const ro = new ResizeObserver(() => map.resize())
+    ro.observe(containerRef.current)
+
+    return () => {
+      ro.disconnect()
+      map.remove()
+      mapRef.current = null
+      mapLoadedRef.current = false
+    }
+  }, [])
+
+  // 2. Update Route when selectedStop changes
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !selectedStop) return
+
+    const updateRoute = async () => {
+      // Wait for map to be ready
+      if (!mapLoadedRef.current) {
+        setTimeout(updateRoute, 100)
+        return
+      }
+
       try {
         const coordinateString = `${selectedStop.fromCoords[1]},${selectedStop.fromCoords[0]};${selectedStop.toCoords[1]},${selectedStop.toCoords[0]}`
         const res = await fetch(`https://router.project-osrm.org/route/v1/driving/${coordinateString}?overview=full&geometries=geojson`)
@@ -61,37 +90,45 @@ export function TripRouteMap({ timeline, selectedDay }: TripRouteMapProps) {
         const route = data.routes?.[0]
         
         if (route) {
-          map.addSource('route', {
-            type: 'geojson',
-            data: {
+          if (map.getSource('route')) {
+            (map.getSource('route') as maplibregl.GeoJSONSource).setData({
               type: 'Feature',
               properties: {},
               geometry: route.geometry
-            }
-          })
+            })
+          } else {
+            map.addSource('route', {
+              type: 'geojson',
+              data: {
+                type: 'Feature',
+                properties: {},
+                geometry: route.geometry
+              }
+            })
 
-          map.addLayer({
-            id: 'route',
-            type: 'line',
-            source: 'route',
-            paint: {
-              'line-color': '#17f702',
-              'line-width': 6,
-              'line-opacity': 0.8
-            }
-          })
+            map.addLayer({
+              id: 'route',
+              type: 'line',
+              source: 'route',
+              paint: {
+                'line-color': '#17f702',
+                'line-width': 6,
+                'line-opacity': 0.8
+              }
+            })
+          }
 
           // Fit bounds
           const bounds = new maplibregl.LngLatBounds()
           route.geometry.coordinates.forEach((c: [number, number]) => bounds.extend(c))
-          map.fitBounds(bounds, { padding: 50 })
+          map.fitBounds(bounds, { padding: 50, duration: 1000 })
         }
       } catch (e) {
-        console.error('Failed to draw preview route', e)
+        console.error('Failed to update preview route', e)
       }
-    })
+    }
 
-    return () => map.remove()
+    updateRoute()
   }, [selectedStop])
 
   return (

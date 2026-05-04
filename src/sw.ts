@@ -112,15 +112,15 @@ registerRoute(
     })
 )
 
-// ─── OpenStreetMap Tiles — Cache First ────────────────────────────────────────
+// ─── Map Tiles (OSM & CartoDB) — Cache First ──────────────────────────────────
 registerRoute(
-    ({ url }) => url.origin === 'https://tile.openstreetmap.org',
+    ({ url }) => url.origin === 'https://tile.openstreetmap.org' || url.origin === 'https://basemaps.cartocdn.com',
     new CacheFirst({
-        cacheName: 'osm-tiles-cache',
+        cacheName: 'map-tiles-cache',
         plugins: [
-            new CacheableResponsePlugin({ statuses: [200] }),
+            new CacheableResponsePlugin({ statuses: [0, 200] }),
             new ExpirationPlugin({ 
-                maxEntries: 500, 
+                maxEntries: 1000, 
                 maxAgeSeconds: 60 * 60 * 24 * 30 // 30 days
             })
         ]

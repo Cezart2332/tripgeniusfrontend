@@ -194,10 +194,31 @@ h3 {
     flex-direction: column;
   }
 
+  /* Trip Workspace Mobile Layout */
+  .trip-workspace-v2 {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 2rem;
+  }
+
+  .trip-main-content, 
+  .trip-sidebar-v2 {
+    width: 100% !important;
+    position: static !important;
+  }
+
+  .trip-sidebar-v2 {
+    order: -1; /* Show map at the top on mobile */
+  }
+
+  .trip-sidebar-v2 .day-card-v2 {
+    height: 450px !important;
+  }
+
   /* Ensure preview map is visible on mobile */
   .trip-page-v2 .map-wrapper {
-    height: 550px !important;
-    min-height: 550px !important;
+    height: 450px !important;
+    min-height: 450px !important;
     width: 100% !important;
   }
 }

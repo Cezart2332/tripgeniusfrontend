@@ -418,7 +418,26 @@ function TripPageContent({ trip }: TripPageContentProps) {
 
 
 
-  }, [trip.id, token,baseURL])
+  }, [trip.id, token, baseURL])
+
+  // Pre-fetch all routes for offline use
+  useEffect(() => {
+    if (!timelines.length) return
+    
+    const prefetchRoutes = async () => {
+      for (const stop of timelines) {
+        try {
+          const coordinateString = `${stop.fromCoords[1]},${stop.fromCoords[0]};${stop.toCoords[1]},${stop.toCoords[0]}`
+          const url = `https://router.project-osrm.org/route/v1/driving/${coordinateString}?overview=full&geometries=geojson`
+          // Service worker will catch and cache these NetworkFirst requests
+          await fetch(url)
+        } catch (e) {
+          // Ignore pre-fetch errors
+        }
+      }
+    }
+    prefetchRoutes()
+  }, [timelines])
 
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false)
   const [inviteUsernameQuery, setInviteUsernameQuery] = useState('')
