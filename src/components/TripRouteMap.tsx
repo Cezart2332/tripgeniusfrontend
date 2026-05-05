@@ -156,7 +156,7 @@ export function TripRouteMap({ timeline, selectedDay }: TripRouteMapProps) {
             onClick={() => navigate(`/navigation/${tripId}/${selectedDay}`)}
           >
             <FiNavigation size={20} />
-            Începe acum!
+            Start now!
           </button>
         </div>
       )}

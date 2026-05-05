@@ -347,6 +347,24 @@ function TripPageContent({ trip }: TripPageContentProps) {
   const [searchParams, setSearchParams] = useSearchParams()
   const [tripDetails, setTripDetails] = useState<Trip>(trip)
   const connectionRef = useRef<signalR.HubConnection | null>(null);
+  const [activeTab, setActiveTab] = useState<TripWorkspaceTab>(() => {
+    const requestedTab = searchParams.get('view')
+    // ownerTabs contains all possible valid keys
+    return requestedTab && ownerTabs.some((tab) => tab.key === requestedTab)
+      ? (requestedTab as TripWorkspaceTab)
+      : 'overview'
+  })
+
+  // Sync activeTab with URL
+  useEffect(() => {
+    const requestedTab = searchParams.get('view')
+    const nextTab = requestedTab && ownerTabs.some((tab) => tab.key === requestedTab)
+      ? (requestedTab as TripWorkspaceTab)
+      : 'overview'
+    if (nextTab !== activeTab) {
+      setActiveTab(nextTab)
+    }
+  }, [searchParams])
   const [ownerTripDraft, setOwnerTripDraft] = useState<OwnerTripEditState>(
     createOwnerTripEditState(trip),
   )
@@ -363,6 +381,12 @@ function TripPageContent({ trip }: TripPageContentProps) {
     defaultSelectedDay(trip.startingDate, trip.timelines.length),
   )
   const [members, setMembers] = useState<TripMember[]>(trip.members)
+  
+  // Sync members only when the trip ID changes (initial load)
+  // Subsequent updates are handled locally in member action handlers
+  useEffect(() => {
+    setMembers(trip.members);
+  }, [trip.id]);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([])
   const [newMessage, setNewMessage] = useState('')
 
@@ -371,26 +395,41 @@ function TripPageContent({ trip }: TripPageContentProps) {
       try {
         const res = await api.get(`api/trip/get-messages/${trip.id}`)
         if (res.status === 200) {
-          setChatMessages(res.data)
+          const fetchedMessages: ChatMessage[] = res.data;
+          setChatMessages((prev) => {
+            const existingIds = new Set(prev.map(m => m.id));
+            const uniqueNew = fetchedMessages.filter(m => !existingIds.has(m.id));
+            return [...prev, ...uniqueNew].sort((a, b) => 
+              new Date(a.sentAt).getTime() - new Date(b.sentAt).getTime()
+            );
+          });
         }
       } catch (error) {
         console.error('Failed to load messages:', error)
       }
     }
 
-    const connection = new signalR.HubConnectionBuilder().withUrl(`${baseURL}/hubs/trip-chat?access_token=${token}`).withAutomaticReconnect().build()
-
+    const connection = new signalR.HubConnectionBuilder()
+      .withUrl(`${baseURL}/hubs/trip-chat?access_token=${token}`)
+      .withAutomaticReconnect()
+      .build()
 
     connection.on("ReceiveMessage", (msg: ChatMessage) => {
-      setChatMessages((prev) => [...prev, msg])
+      setChatMessages((prev) => {
+        if (prev.some(m => m.id === msg.id)) return prev;
+        return [...prev, msg];
+      })
     })
 
     connectionRef.current = connection
+    let isStopped = false;
     const start = async () => {
       try
       {
         await connection.start()
-        await connection.invoke("JoinTrip",trip.id)
+        if (!isStopped) {
+          await connection.invoke("JoinTrip", trip.id)
+        }
       }
       catch(err)
       {
@@ -399,25 +438,26 @@ function TripPageContent({ trip }: TripPageContentProps) {
     }
     start()
 
-
     fetchMessages()
+    
     return () => {
+      isStopped = true;
       const stop = async () => {
         try
         {
-          await connection.invoke("LeaveTrip",trip.id)
+          if (connection.state === signalR.HubConnectionState.Connected) {
+            await connection.invoke("LeaveTrip", trip.id)
+          }
         }
         catch(error)
         {
-          console.error(error)
+          console.error("LeaveTrip error:", error)
         }
         await connection.stop()
       }
-    stop()
+      stop()
+      connectionRef.current = null;
     }
-
-
-
   }, [trip.id, token, baseURL])
 
   // Pre-fetch all routes for offline use
@@ -464,11 +504,6 @@ function TripPageContent({ trip }: TripPageContentProps) {
     memberRole?: unknown
   }
 
-  const requestedTab = searchParams.get('view')
-  const normalizedRequestedTab = 
-    requestedTab === 'timeline' ? 'map' : 
-    requestedTab === 'edit' ? 'settings' : 
-    requestedTab
 
   const currentStop =
     timelines.find((timelineStop) => timelineStop.day === selectedDay) ??
@@ -547,12 +582,8 @@ function TripPageContent({ trip }: TripPageContentProps) {
 
   const tabs = isAcceptedMember ? (canManageTripDetails ? ownerTabs : memberTabs) : visitorTabs
 
-  const activeTab: TripWorkspaceTab =
-    normalizedRequestedTab && tabs.some((t) => t.key === normalizedRequestedTab)
-      ? (normalizedRequestedTab as TripWorkspaceTab)
-      : isAcceptedMember ? 'map' : 'overview'
-
   const selectTab = (nextTab: TripWorkspaceTab) => {
+    setActiveTab(nextTab) // Immediate UI update
     const nextParams = new URLSearchParams(searchParams)
     nextParams.set('view', nextTab)
     setSearchParams(nextParams, { replace: true })
@@ -667,6 +698,16 @@ function TripPageContent({ trip }: TripPageContentProps) {
     try {
       await api.post('api/trip/membership-request', {userId: candidate.id, tripId: tripDetails.id, invitedBy: authenticatedUser?.id })
       setInviteFeedback({ tone: 'success', message: `Invite sent to ${candidate.username}.` })
+      setMembers((prev) => [
+        ...prev,
+        {
+          id: String(candidate.id),
+          username: candidate.username,
+          role: 'member',
+          avatarUrl: candidate.profileUrl,
+          status: 'invited',
+        },
+      ])
     } catch (err: any) {
       if (err?.queued) {
         setInviteFeedback({ tone: 'success', message: `Invite for ${candidate.username} will be sent when online.` })
@@ -691,7 +732,12 @@ function TripPageContent({ trip }: TripPageContentProps) {
       })
 
       if (res.status >= 200 && res.status < 300) {
-        setTripDetailsFeedback({ tone: 'success', message: `${member.username} added to the trip.` })
+        setTripDetailsFeedback({ tone: 'success', message: `${member.username} ${action === 'Accepted' ? 'added to' : 'removed from'} the trip.` })
+        if (action === 'Accepted') {
+          setMembers(prev => prev.map(m => m.id === member.id ? { ...m, status: 'accepted' } : m))
+        } else {
+          setMembers(prev => prev.filter(m => m.id !== member.id))
+        }
       }
     } catch (err: any) {
       if (err?.queued) {
@@ -721,6 +767,16 @@ function TripPageContent({ trip }: TripPageContentProps) {
       const res = await api.post('api/trip/membership-request', {userId: authenticatedUser.id, tripId: tripDetails.id, invitedBy: authenticatedUser?.id })
       if (res.status >= 200 && res.status < 300) {
         setTripDetailsFeedback({ tone: 'success', message: 'Join request sent. Waiting for approval.' })
+        setMembers((prev) => [
+          ...prev,
+          {
+            id: String(authenticatedUser.id),
+            username: authenticatedUser.username,
+            role: 'member',
+            avatarUrl: authenticatedUser.profileUrl,
+            status: 'requested',
+          },
+        ])
       }
     } catch (err: any) {
       if (err?.queued) {
@@ -837,7 +893,14 @@ function TripPageContent({ trip }: TripPageContentProps) {
 
   // Renderers
   const renderOverview = () => (
-    <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={revealTransition} className="trip-workspace-v2">
+    <motion.div 
+      key="tab-overview"
+      initial={{ opacity: 0, y: 16 }} 
+      animate={{ opacity: 1, y: 0 }} 
+      exit={{ opacity: 0, y: -12 }} 
+      transition={revealTransition} 
+      className="trip-workspace-v2"
+    >
       <div className="trip-main-content">
         <div className="day-card-v2" style={{ marginBottom: '2rem' }}>
           <h3>Trip Summary</h3>
@@ -929,7 +992,14 @@ function TripPageContent({ trip }: TripPageContentProps) {
   )
 
   const renderTimeline = () => (
-    <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={revealTransition} className="trip-workspace-v2">
+    <motion.div 
+      key="tab-timeline"
+      initial={{ opacity: 0, y: 16 }} 
+      animate={{ opacity: 1, y: 0 }} 
+      exit={{ opacity: 0, y: -12 }} 
+      transition={revealTransition} 
+      className="trip-workspace-v2"
+    >
       <div className="trip-main-content">
         <div className="timeline-flow-v2">
           {timelines.map((stop) => (
@@ -975,7 +1045,13 @@ function TripPageContent({ trip }: TripPageContentProps) {
   )
 
   const renderTripMembers = () => (
-    <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={revealTransition}>
+    <motion.div 
+      key="tab-members"
+      initial={{ opacity: 0, y: 16 }} 
+      animate={{ opacity: 1, y: 0 }} 
+      exit={{ opacity: 0, y: -12 }} 
+      transition={revealTransition}
+    >
       <div className="profile-section-v2" style={{ marginBottom: '2rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
@@ -1075,6 +1151,7 @@ function TripPageContent({ trip }: TripPageContentProps) {
 
   const renderChat = () => (
     <motion.div 
+      key="tab-chat"
       initial={{ opacity: 0, y: 16 }} 
       animate={{ opacity: 1, y: 0 }} 
       exit={{ opacity: 0, y: -12 }} 
@@ -1119,7 +1196,13 @@ function TripPageContent({ trip }: TripPageContentProps) {
   )
 
   const renderSettings = () => (
-    <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={revealTransition}>
+    <motion.div 
+      key="tab-settings"
+      initial={{ opacity: 0, y: 16 }} 
+      animate={{ opacity: 1, y: 0 }} 
+      exit={{ opacity: 0, y: -12 }} 
+      transition={revealTransition}
+    >
       <form className="builder-form-v2" onSubmit={saveOwnerTripDetails}>
         <div className="builder-section-v2">
           <h3>Trip Info</h3>
@@ -1218,7 +1301,7 @@ function TripPageContent({ trip }: TripPageContentProps) {
         ))}
       </nav>
 
-      <AnimatePresence mode="wait">
+      <AnimatePresence mode="popLayout">
         {activeTab === 'overview' && renderOverview()}
         {activeTab === 'map' && renderTimeline()}
         {activeTab === 'members' && renderTripMembers()}

@@ -4,6 +4,8 @@ import maplibregl from 'maplibre-gl'
 import { FiArrowLeft, FiArrowUp, FiCornerUpLeft, FiCornerUpRight, FiFlag } from 'react-icons/fi'
 import api from '../data/api'
 import type { Trip } from '../types/models'
+import { saveRouteToIndexedDB, getNearestCachedRoute, getAllRoutes } from '../utils/db'
+import type { CachedRoute } from '../utils/db'
 
 // Reuse OSRM logic
 interface NavigationStep {
@@ -41,20 +43,21 @@ const OSM_STYLE: any = {
 }
 
 const translateManeuver = (type: string, modifier?: string, name?: string): string => {
-  const base = name && name !== '' ? ` pe ${name}` : ''
+  const base = name && name !== '' ? name : ''
+  
   switch (type) {
-    case 'depart': return `Porniți la drum${base}`
-    case 'arrive': return 'Ați ajuns la destinație'
+    case 'depart': return base || 'Start driving'
+    case 'arrive': return 'You have arrived!'
     case 'turn':
-      if (modifier === 'right') return `Virați la dreapta${base}`
-      if (modifier === 'left') return `Virați la stânga${base}`
-      if (modifier === 'slight right') return `Virați ușor la dreapta${base}`
-      if (modifier === 'slight left') return `Virați ușor la stânga${base}`
-      return `Virați${base}`
-    case 'new name': return `Continuați${base}`
-    case 'roundabout': return `Intrați în sensul giratoriu${base}`
-    case 'exit roundabout': return `Ieșiți din sensul giratoriu${base}`
-    default: return `Continuați drumul${base}`
+      if (modifier === 'right') return `Turn right${base ? ' on ' + base : ''}`
+      if (modifier === 'left') return `Turn left${base ? ' on ' + base : ''}`
+      if (modifier === 'slight right') return `Slight right${base ? ' on ' + base : ''}`
+      if (modifier === 'slight left') return `Slight left${base ? ' on ' + base : ''}`
+      return `Turn${base ? ' on ' + base : ''}`
+    case 'new name': return `Continue${base ? ' on ' + base : ''}`
+    case 'roundabout': return `Enter roundabout${base ? ' on ' + base : ''}`
+    case 'exit roundabout': return `Exit roundabout${base ? ' on ' + base : ''}`
+    default: return `Continue driving${base ? ' on ' + base : ''}`
   }
 }
 
@@ -90,6 +93,10 @@ export function NavigationPage() {
   const [navData, setNavData] = useState<RouteData | null>(null)
   const [arrivalDetected, setArrivalDetected] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
+  const [isOffline, setIsOffline] = useState(!navigator.onLine)
+  const [recentRoutes, setRecentRoutes] = useState<CachedRoute[]>([])
+  const [lastCacheLocation, setLastCacheLocation] = useState<[number, number] | null>(null)
+  const [offlineWarning, setOfflineWarning] = useState<string | null>(null)
 
   const selectedStop = useMemo(() => {
     if (!trip) return null
@@ -166,6 +173,16 @@ export function NavigationPage() {
           })
         }
 
+        // 500m Re-cache logic
+        if (lastCacheLocation) {
+          const distSinceLastCache = calculateDistance(newLoc[0], newLoc[1], lastCacheLocation[0], lastCacheLocation[1])
+          if (distSinceLastCache >= 500) {
+            updateRoute(newLoc)
+          }
+        } else {
+          setLastCacheLocation(newLoc)
+        }
+
         // Arrival Check
         if (selectedStop) {
           const dist = calculateDistance(newLoc[0], newLoc[1], selectedStop.toCoords[0], selectedStop.toCoords[1])
@@ -176,62 +193,108 @@ export function NavigationPage() {
       { enableHighAccuracy: true, maximumAge: 1000 }
     )
 
+    const handleOnline = () => setIsOffline(false)
+    const handleOffline = () => {
+      setIsOffline(true)
+      loadRecentRoutes()
+    }
+
+    window.addEventListener('online', handleOnline)
+    window.addEventListener('offline', handleOffline)
+
     return () => {
       navigator.geolocation.clearWatch(watchId)
       userMarkerRef.current?.remove()
+      window.removeEventListener('online', handleOnline)
+      window.removeEventListener('offline', handleOffline)
     }
-  }, [selectedStop])
+  }, [selectedStop, lastCacheLocation])
+
+  const loadRecentRoutes = async () => {
+    const routes = await getAllRoutes()
+    setRecentRoutes(routes.slice(0, 5))
+  }
+
+  const updateRoute = async (currentLoc?: [number, number], isManualSelection = false) => {
+    const from = currentLoc || userLocation
+    const to = selectedStop?.toCoords
+    if (!from || !to) return
+
+    try {
+      const coordinateString = `${from[1]},${from[0]};${to[1]},${to[0]}`
+      const res = await fetch(`https://router.project-osrm.org/route/v1/driving/${coordinateString}?overview=full&geometries=geojson&steps=true`)
+      const data = await res.json()
+      
+      if (data.code === 'OFFLINE') {
+        handleOfflineFallback(to[0], to[1])
+        return
+      }
+
+      const firstRoute = data.routes?.[0]
+      if (firstRoute) {
+        processRouteData(firstRoute)
+        // Save to IndexedDB
+        saveRouteToIndexedDB(
+          { lat: from[0], lng: from[1] },
+          { lat: to[0], lng: to[1] },
+          firstRoute
+        )
+        setLastCacheLocation(from)
+        if (isManualSelection) setOfflineWarning("Route may be inaccurate — reconnect to recalculate")
+      }
+    } catch (e) {
+      console.error('Route update failed', e)
+      handleOfflineFallback(to[0], to[1])
+    }
+  }
+
+  const handleOfflineFallback = async (lat: number, lng: number) => {
+    const cached = await getNearestCachedRoute(lat, lng)
+    if (cached) {
+      processRouteData(cached.routeData)
+      setOfflineWarning("Route may be inaccurate — reconnect to recalculate")
+    }
+  }
+
+  const processRouteData = (firstRoute: any) => {
+    if (!mapRef.current) return
+
+    const steps: NavigationStep[] = firstRoute.legs[0].steps.map((s: any) => ({
+      instruction: translateManeuver(s.maneuver.type, s.maneuver.modifier, s.name),
+      distance: s.distance,
+      location: s.maneuver.location,
+      type: s.maneuver.type,
+      modifier: s.maneuver.modifier
+    }))
+
+    setNavData({
+      coordinates: firstRoute.geometry.coordinates,
+      durationSeconds: firstRoute.duration,
+      distanceMeters: firstRoute.distance,
+      steps
+    })
+
+    const source = mapRef.current.getSource('nav-route') as maplibregl.GeoJSONSource
+    source?.setData({
+      type: 'FeatureCollection',
+      features: [{
+        type: 'Feature',
+        properties: {},
+        geometry: firstRoute.geometry
+      }]
+    })
+  }
 
   // Route Updates
   useEffect(() => {
     if (!userLocation || !selectedStop) return
 
-    const updateRoute = async () => {
-      try {
-        const from = userLocation
-        const to = selectedStop.toCoords
-        const coordinateString = `${from[1]},${from[0]};${to[1]},${to[0]}`
-        const res = await fetch(`https://router.project-osrm.org/route/v1/driving/${coordinateString}?overview=full&geometries=geojson&steps=true`)
-        const data = await res.json()
-        
-        const firstRoute = data.routes?.[0]
-        if (firstRoute && mapRef.current) {
-          const steps: NavigationStep[] = firstRoute.legs[0].steps.map((s: any) => ({
-            instruction: translateManeuver(s.maneuver.type, s.maneuver.modifier, s.name),
-            distance: s.distance,
-            location: s.maneuver.location,
-            type: s.maneuver.type,
-            modifier: s.maneuver.modifier
-          }))
-
-          setNavData({
-            coordinates: firstRoute.geometry.coordinates,
-            durationSeconds: firstRoute.duration,
-            distanceMeters: firstRoute.distance,
-            steps
-          })
-
-          const source = mapRef.current.getSource('nav-route') as maplibregl.GeoJSONSource
-          source?.setData({
-            type: 'FeatureCollection',
-            features: [{
-              type: 'Feature',
-              properties: {},
-              geometry: firstRoute.geometry
-            }]
-          })
-        }
-      } catch (e) {
-        console.error('Route update failed', e)
-      }
-    }
-
     updateRoute()
-    const interval = setInterval(updateRoute, 10000)
+    const interval = setInterval(() => updateRoute(), 10000)
     return () => clearInterval(interval)
   }, [userLocation, selectedStop])
 
-  if (isLoading) return <div className="nav-page-loading">Se încarcă sistemul de navigație...</div>
+  if (isLoading) return <div className="nav-page-loading">Loading navigation system...</div>
 
   return (
     <div className="navigation-screen" style={{ position: 'fixed', inset: 0, zIndex: 1000, background: '#000' }}>
@@ -269,18 +332,24 @@ export function NavigationPage() {
             </div>
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: '1.4rem', fontWeight: 800 }}>{navData.steps[0].instruction}</div>
-              <div style={{ fontSize: '1rem', opacity: 0.8 }}>Peste {Math.round(navData.steps[0].distance)} m</div>
+              <div style={{ fontSize: '1rem', opacity: 0.8 }}>In {Math.round(navData.steps[0].distance)} m</div>
             </div>
-            {!navigator.onLine && (
+            {isOffline && (
               <div style={{ background: '#db4a5b', color: '#fff', padding: '0.3rem 0.6rem', borderRadius: '8px', fontSize: '0.7rem', fontWeight: 900, textTransform: 'uppercase' }}>
                 Offline
               </div>
             )}
           </div>
           
+          {offlineWarning && isOffline && (
+            <div style={{ background: 'rgba(219, 74, 91, 0.9)', color: '#fff', padding: '0.5rem 1rem', borderRadius: '12px', marginTop: '0.5rem', fontSize: '0.85rem', textAlign: 'center' }}>
+              {offlineWarning}
+            </div>
+          )}
+
           <div style={{ marginTop: '0.75rem', display: 'flex', gap: '0.75rem' }}>
              <div style={{ background: 'rgba(30, 41, 59, 0.95)', color: '#fff', padding: '0.6rem 1.2rem', borderRadius: '20px', fontSize: '0.9rem', fontWeight: 700 }}>
-                {(navData.distanceMeters! / 1000).toFixed(1)} km rămași
+                {(navData.distanceMeters! / 1000).toFixed(1)} km left
              </div>
              <div style={{ background: 'rgba(30, 41, 59, 0.95)', color: '#fff', padding: '0.6rem 1.2rem', borderRadius: '20px', fontSize: '0.9rem', fontWeight: 700 }}>
                 ETA: {Math.round(navData.durationSeconds! / 60)} min
@@ -289,16 +358,45 @@ export function NavigationPage() {
         </div>
       )}
 
+      {/* Offline Banner */}
+      {isOffline && (
+        <div id="offline-banner" style={{ position: 'absolute', bottom: '2rem', left: '1rem', right: '1rem', zIndex: 1050, background: 'rgba(30, 41, 59, 0.98)', color: '#fff', padding: '1.5rem', borderRadius: '20px', boxShadow: '0 -10px 40px rgba(0,0,0,0.4)', border: '1px solid rgba(219, 74, 91, 0.3)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
+            <span style={{ fontSize: '1.5rem' }}>⚠️</span>
+            <div style={{ fontSize: '1.2rem', fontWeight: 800 }}>You are offline</div>
+          </div>
+          
+          <div style={{ fontSize: '0.9rem', opacity: 0.7, marginBottom: '1rem' }}>Recently cached routes:</div>
+          
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            {recentRoutes.length > 0 ? recentRoutes.map((r) => (
+              <button 
+                key={r.id} 
+                onClick={() => {
+                  processRouteData(r.routeData)
+                  setOfflineWarning("Route may be inaccurate — reconnect to recalculate")
+                }}
+                style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', padding: '0.75rem 1rem', borderRadius: '12px', textAlign: 'left', fontSize: '0.85rem' }}
+              >
+                To {r.end.lat.toFixed(4)}, {r.end.lng.toFixed(4)} ({new Date(r.timestamp).toLocaleTimeString('en-US')})
+              </button>
+            )) : (
+              <div style={{ fontSize: '0.85rem', opacity: 0.5 }}>No saved routes found.</div>
+            )}
+          </div>
+        </div>
+      )}
+
       {arrivalDetected && (
         <div style={{ position: 'absolute', inset: 0, zIndex: 2000, background: 'rgba(22, 163, 74, 0.9)', color: '#fff', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '2rem' }}>
            <FiFlag size={80} style={{ marginBottom: '1.5rem' }} />
-           <h1 style={{ fontSize: '2.5rem' }}>Ați ajuns la destinație!</h1>
+           <h1 style={{ fontSize: '2.5rem' }}>You have arrived!</h1>
            <button 
              className="btn btn-primary" 
              style={{ marginTop: '2rem', background: '#fff', color: '#16a34a', padding: '1rem 3rem', fontSize: '1.2rem' }} 
              onClick={() => navigate(-1)}
            >
-             Închide
+             Close
            </button>
         </div>
       )}

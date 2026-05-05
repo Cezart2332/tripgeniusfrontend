@@ -138,20 +138,44 @@ registerRoute(
     })
 )
 
-// ─── OSRM Routing — Network First ───────────────────────────────────────────
+// ─── OSRM Routing — Network First with custom fallback ────────────────────────
 registerRoute(
     ({ url }) => url.origin === 'https://router.project-osrm.org',
-    new NetworkFirst({
-        cacheName: 'osrm-routing-cache',
-        plugins: [
-            new CacheableResponsePlugin({ statuses: [200] }),
-            new ExpirationPlugin({ 
-                maxEntries: 50, 
-                maxAgeSeconds: 60 * 60 * 24 // 24h
-            })
-        ]
-    })
-)
+    async ({ request }) => {
+        const cacheName = 'routes-cache-v1';
+        
+        // Strategy: Network-first
+        if (navigator.onLine) {
+            try {
+                const response = await fetch(request);
+                const cache = await caches.open(cacheName);
+                cache.put(request, response.clone());
+                return response;
+            } catch (error) {
+                // If fetch fails but we're online (e.g. server down), try cache
+            }
+        }
+
+        // Fallback: try cache
+        const cachedResponse = await caches.match(request);
+        if (cachedResponse) {
+            return cachedResponse;
+        }
+
+        // Final fallback: JSON error
+        return new Response(
+            JSON.stringify({ 
+                code: 'OFFLINE', 
+                message: 'Ești offline și nu avem o rută cache-uită pentru această destinație.' 
+            }), 
+            { 
+                status: 503, 
+                headers: { 'Content-Type': 'application/json' } 
+            }
+        );
+    }
+);
+
 
 // ─── Push notifications ───────────────────────────────────────────────────────
 self.addEventListener('push', (event: PushEvent) => {

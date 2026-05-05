@@ -181,16 +181,29 @@ const getErrorMessage = (error: unknown, fallbackMessage: string): string => {
 }
 
 export function ProfilePage() {
-  const dispatch = useDispatch()
-  const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const user = useSelector((state: AuthStoreState) => state.auth.user)
   const shouldRedirectToLogin = !user
-  const requestedTab = searchParams.get('tab')
-  const activeTab: ProfileTab =
-    requestedTab && profileTabs.some((tab) => tab.key === requestedTab)
+  const dispatch = useDispatch()
+  const navigate = useNavigate()
+  const [activeTab, setActiveTab] = useState<ProfileTab>(() => {
+    const requestedTab = searchParams.get('tab')
+    return requestedTab && profileTabs.some((tab) => tab.key === requestedTab)
       ? (requestedTab as ProfileTab)
       : 'identity'
+  })
+  
+  // Sync activeTab with URL
+  useEffect(() => {
+    const requestedTab = searchParams.get('tab')
+    const nextTab = requestedTab && profileTabs.some((tab) => tab.key === requestedTab)
+      ? (requestedTab as ProfileTab)
+      : 'identity'
+    if (nextTab !== activeTab) {
+      setActiveTab(nextTab)
+    }
+  }, [searchParams])
+
   const [avatarUrl, setAvatarUrl] = useState(getAvatarUrl(user?.username, user?.profileUrl))
   const [, setAvatarFileName] = useState('No image uploaded yet')
   const [description, setDescription] = useState(
@@ -532,6 +545,7 @@ export function ProfilePage() {
   }
 
   const selectTab = (nextTab: ProfileTab) => {
+    setActiveTab(nextTab) // Immediate UI update
     const nextParams = new URLSearchParams(searchParams)
     nextParams.set('tab', nextTab)
     setSearchParams(nextParams, { replace: true })
@@ -643,6 +657,22 @@ export function ProfilePage() {
       })
       if (response.status === 200) {
         showToast(`Trip invite ${action.toLowerCase()}ed.`, 'success')
+        // Local state update for immediate feedback
+        if (user) {
+          const updatedTrips = user.trips.map(trip => {
+            if (String(trip.id) === String(tripId)) {
+              const updatedMembers = trip.members?.map(m => {
+                if (String((m as any).id) === String(user.id)) {
+                  return { ...m, status: action === 'Accepted' ? 'accepted' : 'declined' }
+                }
+                return m
+              })
+              return { ...trip, members: updatedMembers }
+            }
+            return trip
+          })
+          dispatch(setUser({ user: { ...user, trips: updatedTrips } }))
+        }
       }
 
       const userRes = await api.get('api/user/me')
@@ -731,7 +761,7 @@ export function ProfilePage() {
         </nav>
       </header>
 
-      <AnimatePresence mode="wait" initial={false}>
+      <AnimatePresence mode="popLayout" initial={false}>
         {activeTab === 'identity' ? (
           <motion.div
             key="identity"

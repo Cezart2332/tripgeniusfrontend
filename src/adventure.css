@@ -4102,12 +4102,14 @@ thead {
 }
 
 .toggle-switch-v2 {
-  width: 40px;
-  height: 22px;
-  background: rgba(255, 255, 255, 0.1);
+  width: 44px;
+  height: 24px;
+  background: rgba(255, 255, 255, 0.08);
   border-radius: 99px;
   position: relative;
-  transition: 0.3s all ease;
+  transition: 0.3s all cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  flex-shrink: 0;
 }
 
 .toggle-switch-v2::after {
@@ -4115,19 +4117,21 @@ thead {
   position: absolute;
   top: 3px;
   left: 3px;
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
   background: #fff;
   border-radius: 50%;
   transition: 0.3s all cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .toggle-v2 input:checked + .toggle-label-v2 + .toggle-switch-v2 {
-  background: var(--green-500);
+  background: var(--green-700);
+  border-color: rgba(23, 247, 2, 0.3);
 }
 
 .toggle-v2 input:checked + .toggle-label-v2 + .toggle-switch-v2::after {
-  left: 21px;
+  left: 23px;
 }
 
 .sidebar-desc-v2 {
@@ -4691,3 +4695,402 @@ thead {
   opacity: 0.5;
   margin-top: 0.5rem;
 }
+
+/* ── Standalone AI Refactor (Gemini/ChatGPT Style) ── */
+
+.ai-workspace-v2.standalone-ai {
+  grid-template-columns: 280px 1fr;
+  height: 100vh;
+  height: 100dvh;
+  position: fixed;
+  inset: 0;
+  background: var(--bg-980);
+  z-index: 1100;
+  gap: 0;
+  margin: 0;
+  max-width: 100%;
+}
+
+.ai-mobile-header {
+  display: none;
+  background: #111;
+  padding: 1rem;
+  align-items: center;
+  gap: 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  z-index: 1200;
+}
+
+.mobile-back-btn {
+  background: none;
+  border: none;
+  color: #fff;
+  font-size: 1.5rem;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.mobile-title {
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: #fff;
+}
+
+.ai-sidebar-v2 {
+  background: rgba(10, 20, 15, 0.4);
+  border-right: 1px solid rgba(154, 198, 148, 0.08);
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.profile-section-v2 {
+  margin-top: 1rem;
+}
+
+.ai-chat-v2 {
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  backdrop-filter: none;
+  box-shadow: none;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  position: relative;
+}
+
+.ai-workspace-v2.standalone-ai .ai-thread-v2 {
+  flex: 1;
+  padding: 0;
+  display: block;
+  border: none;
+  background: transparent;
+  max-height: none;
+  border-radius: 0;
+}
+
+.messages-container-v3 {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 2rem 2rem 10rem;
+}
+
+.ai-message-row-v3 {
+  width: 100%;
+  padding: 2rem 0;
+  opacity: 1;
+}
+
+.ai-message-row-v3.assistant {
+  background: transparent;
+}
+
+.ai-message-row-v3.user {
+  background: transparent;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.message-inner-v3 {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 0 1.5rem;
+}
+
+.message-header-v3 {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-220);
+  opacity: 0.8;
+}
+
+.message-avatar-v3 {
+  width: 28px;
+  height: 28px;
+  border-radius: 0;
+  object-fit: cover;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.message-content-v3 {
+  font-size: 1.15rem;
+  line-height: 1.6;
+  color: #ffffff;
+  word-break: break-word;
+  font-weight: 500;
+}
+
+.message-content-v3 p {
+  margin-bottom: 1rem;
+}
+
+.message-content-v3 p:last-child {
+  margin-bottom: 0;
+}
+
+/* Empty State V3 */
+.ai-empty-state-v3 {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.empty-state-header-v3 {
+  text-align: center;
+  margin-bottom: 4rem;
+}
+
+.empty-state-header-v3 h1 {
+  font-size: 3.5rem;
+  margin-bottom: 1rem;
+  background: linear-gradient(135deg, #fff 30%, var(--green-400));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.empty-state-header-v3 p {
+  font-size: 1.2rem;
+  color: var(--text-380);
+}
+
+.empty-state-suggestions-v3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+  width: 100%;
+}
+
+.suggestion-card-v3 {
+  padding: 1.5rem;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 0;
+  cursor: pointer;
+  transition: 0.2s all ease;
+}
+
+.suggestion-card-v3:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: var(--green-500);
+  transform: translateY(-4px);
+}
+
+.suggestion-icon {
+  font-size: 1.5rem;
+  color: var(--green-500);
+  margin-bottom: 1rem;
+}
+
+.suggestion-card-v3 h4 {
+  font-size: 1.1rem;
+  margin-bottom: 0.5rem;
+  color: #fff;
+}
+
+.suggestion-card-v3 p {
+  font-size: 0.9rem;
+  color: var(--text-400);
+}
+
+/* Composer V3 */
+.ai-composer-shell-v3 {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 2rem;
+  padding-bottom: calc(2rem + env(safe-area-inset-bottom));
+  background: linear-gradient(to top, var(--bg-980) 60%, transparent);
+  z-index: 10;
+  pointer-events: none;
+}
+
+.ai-composer-v3 {
+  max-width: 900px;
+  margin: 0 auto;
+  background: transparent;
+  border-bottom: 2px solid #ffffff;
+  border-radius: 0;
+  padding: 0.75rem 0;
+  transition: 0.3s border-color ease;
+  pointer-events: auto;
+}
+
+.ai-composer-v3:focus-within {
+  border-color: #ffffff;
+}
+
+.ai-composer-input-wrapper-v3 {
+  display: flex;
+  align-items: flex-end;
+  gap: 1rem;
+}
+
+.ai-composer-input-v3 {
+  flex: 1;
+  background: transparent;
+  border: none;
+  padding: 0.5rem 0;
+  color: #ffffff !important;
+  caret-color: #ffffff;
+  font-size: 1.25rem;
+  font-family: inherit;
+  font-weight: 600;
+  resize: none;
+  max-height: 200px;
+  min-height: 40px;
+  overflow-y: auto;
+}
+
+.ai-composer-input-v3:focus {
+  outline: none;
+}
+
+.ai-composer-submit-v3 {
+  width: 44px;
+  height: 44px;
+  border-radius: 0;
+  background: var(--green-500);
+  color: #000;
+  border: none;
+  display: grid;
+  place-items: center;
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition: 0.2s all ease;
+  flex-shrink: 0;
+  margin-bottom: 2px;
+}
+
+.ai-composer-submit-v3:hover:not(:disabled) {
+  background: #fff;
+  transform: scale(1.05);
+}
+
+.ai-composer-submit-v3:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.composer-footer-v3 {
+  font-size: 0.75rem;
+  color: var(--text-400);
+  text-align: center;
+  margin-top: 0.75rem;
+  opacity: 0.7;
+}
+
+/* Trip Grid in Chat */
+.ai-trips-grid-v3 {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.ai-trip-card-v3 {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 0;
+  padding: 1.25rem;
+  text-decoration: none;
+  transition: 0.3s all ease;
+}
+
+.ai-trip-card-v3:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--green-500);
+  transform: translateY(-4px);
+}
+
+.ai-trip-card-v3 h4 {
+  font-size: 1rem;
+  margin: 0.75rem 0;
+  color: #fff;
+}
+
+.ai-trip-card-v3 .explore-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--green-500);
+}
+
+/* Animations */
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Mobile Adjustments */
+@media (max-width: 860px) {
+  .ai-workspace-v2.standalone-ai {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .ai-mobile-header {
+    display: flex;
+    padding-top: max(1rem, env(safe-area-inset-top));
+  }
+  
+  .ai-sidebar-v2 {
+    display: none;
+  }
+  
+  .messages-container-v3 {
+    padding: 1rem 1rem 10rem;
+    max-width: 100%;
+  }
+  
+  .ai-message-row-v3 {
+    padding: 1.25rem 0;
+  }
+  
+  .message-content-v3 {
+    font-size: 1.05rem;
+  }
+  
+  .empty-state-header-v3 {
+    margin-bottom: 2rem;
+  }
+  
+  .empty-state-header-v3 h1 {
+    font-size: 2rem;
+  }
+  
+  .empty-state-suggestions-v3 {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+  
+  .ai-composer-shell-v3 {
+    padding: 1rem;
+    padding-bottom: calc(1rem + env(safe-area-inset-bottom));
+  }
+  
+  .ai-composer-input-v3 {
+    font-size: 1.1rem;
+    min-height: 32px;
+  }
+}
+

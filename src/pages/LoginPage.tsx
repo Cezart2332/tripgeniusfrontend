@@ -84,7 +84,7 @@ export function LoginPage() {
 
     try {
       await loginWithGoogleCredential(credentialResponse.credential)
-      await subscribeForNotifications()
+      subscribeForNotifications()
       showToast('Login successful. Redirecting...', 'success')
       navigate('/app/profile', { replace: true })
     } catch (err: unknown) {
@@ -112,7 +112,7 @@ export function LoginPage() {
 
     try {
       await login(email, password)
-      await subscribeForNotifications()
+      subscribeForNotifications()
       showToast('Login successful. Redirecting...', 'success')
       shouldNavigate = true
     } catch (err: unknown) {

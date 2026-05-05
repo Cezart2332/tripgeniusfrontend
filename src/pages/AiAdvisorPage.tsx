@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
-import { FiSend, FiMapPin, FiExternalLink, FiMessageCircle } from 'react-icons/fi'
+import { FiSend, FiMapPin, FiExternalLink, FiMessageCircle, FiArrowLeft } from 'react-icons/fi'
 import { useSelector, useDispatch } from 'react-redux'
 import { Link, useNavigate } from 'react-router-dom'
 import { setToken } from '../data/authSlice'
@@ -107,6 +107,7 @@ export function AiAdvisorPage() {
   const aiMessageIdRef = useRef<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([])
   const [isOffline, setIsOffline] = useState(!navigator.onLine)
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     const handleOnline = () => setIsOffline(false)
@@ -119,6 +120,14 @@ export function AiAdvisorPage() {
     }
   }, [])
 
+  // Auto-resize textarea
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
+    }
+  }, [prompt]);
+
   if (isOffline) {
     return <OfflineAiState />
   }
@@ -129,11 +138,20 @@ export function AiAdvisorPage() {
     try {
       const res = await api.get<AiChatResponse[]>('/api/ai/history')
       const historyMessages: Message[] = res.data.map((item) => ({
-        id: crypto.randomUUID(),
+        id: `hist-${item.role}-${item.message.slice(0, 20)}-${item.message.length}`, // More stable ID than randomUUID for history
         text: item.message,
         sender: item.role.toLowerCase() === 'user' ? 'user' : 'assistant',
         isComplete: true
       }))
+      
+      setMessages(prev => {
+        // Filter out any history messages that already exist (by stable ID)
+        const existingIds = new Set(prev.map(m => m.id));
+        const uniqueHistory = historyMessages.filter(m => !existingIds.has(m.id));
+        return [...prev, ...uniqueHistory];
+      })
+      
+      // If the backend returns the FULL history, we should probably just replace:
       setMessages(historyMessages)
     }
     catch (error) {
@@ -141,14 +159,12 @@ export function AiAdvisorPage() {
     }
   }
 
-
-
   useEffect(() => {
     if (!threadRef.current) {
       return
     }
     const refreshToken = async () => {
-      if (!navigator.onLine) return; // Don't try to refresh if offline
+      if (!navigator.onLine) return;
       try {
         const res = await api.post('/api/auth/refresh');
         dispatch(setToken({ token: res.data.token }))
@@ -160,17 +176,19 @@ export function AiAdvisorPage() {
       refreshToken()
     }
 
-
     threadRef.current.scrollTop = threadRef.current.scrollHeight
 
-    const connection = new signalR.HubConnectionBuilder().withUrl(`${baseURL}/hubs/ai-chat?access_token=${token}`).withAutomaticReconnect([1000, 2000, 5000, 10000, 30000]).build()
+    const connection = new signalR.HubConnectionBuilder()
+      .withUrl(`${baseURL}/hubs/ai-chat?access_token=${token}`)
+      .withAutomaticReconnect([1000, 2000, 5000, 10000, 30000])
+      .build()
 
     connection.on("StartAiMessage", () => {
       const id = crypto.randomUUID()
       setMessages((prev) => [...prev, { id, text: "", sender: 'assistant', isComplete: false }])
       aiMessageIdRef.current = id;
       setActiveAiMessageId(id)
-      setIsTyping(false); // Hide the dots bubble once the real bubble appears
+      setIsTyping(false);
     })
 
     connection.on("ReceiveAiChunk", (chunk: string) => {
@@ -204,31 +222,36 @@ export function AiAdvisorPage() {
 
     connectionRef.current = connection
 
+    let isStopped = false;
     const start = async () => {
       try {
         await connection.start()
-        await connection.invoke("JoinAiChat")
+        if (!isStopped) {
+          await connection.invoke("JoinAiChat")
+        }
       }
       catch (error) {
-        console.error(error)
+        console.error("SignalR Connection Error:", error)
       }
     }
     start()
+
     return () => {
+      isStopped = true;
       const stop = async () => {
         try {
-          await connection.invoke("LeaveAiChat")
-
+          if (connection.state === signalR.HubConnectionState.Connected) {
+            await connection.invoke("LeaveAiChat")
+          }
         }
         catch (error) {
-          console.log(error)
+          console.log("LeaveAiChat Error:", error)
         }
         await connection.stop()
       }
       stop()
+      connectionRef.current = null;
     }
-
-
   }, [token, baseURL, dispatch])
 
   useEffect(() => {
@@ -241,11 +264,9 @@ export function AiAdvisorPage() {
     void loadHistory()
   }, [token])
 
-
   useEffect(() => {
     const thread = threadRef.current;
     if (thread) {
-      // If we're near the bottom, keep scrolling with new content
       const isAtBottom = thread.scrollHeight - thread.scrollTop - thread.clientHeight < 250;
       if (isAtBottom) {
         thread.scrollTop = thread.scrollHeight;
@@ -253,11 +274,8 @@ export function AiAdvisorPage() {
     }
   }, [messages, isTyping, dispatch])
 
-
-
-
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (e?: FormEvent) => {
+    if (e) e.preventDefault();
 
     if (!prompt.trim() || isTyping) return;
 
@@ -279,141 +297,164 @@ export function AiAdvisorPage() {
     }
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSubmit();
+    }
+  }
+
   return (
-    <section className="page ai-page-v2">
-      <header className="ai-header-v2">
-        <p className="eyebrow">Your AI Travel Guide</p>
-        <h1>Plan by conversation.</h1>
-        <p style={{ maxWidth: '600px', opacity: 0.7 }}>
-          Ask naturally, get ranked trip options, and jump directly into a synchronized workspace.
-        </p>
-      </header>
+    <section className="ai-workspace-v2 standalone-ai">
+      <div className="ai-mobile-header">
+        <button className="mobile-back-btn" onClick={() => navigate('/app')}>
+          <FiArrowLeft />
+        </button>
+        <span className="mobile-title">AI Assistant</span>
+      </div>
 
-      <div className="ai-workspace-v2">
-        <aside className="ai-sidebar-v2">
-          <div className="profile-section-v2">
-            <h3>Configuration</h3>
-            <p className="sidebar-desc-v2">Refine how the AI interprets your profile data.</p>
-            <label className="toggle-v2">
-              <input
-                type="checkbox"
-                checked={preferProfile}
-                onChange={(event) => setPreferProfile(event.target.checked)}
-              />
-              <span className="toggle-label-v2">Personalized Matching</span>
-              <span className="toggle-switch-v2"></span>
-            </label>
-          </div>
+      <aside className="ai-sidebar-v2">
+        <div className="profile-section-v2">
+          <h3>Configuration</h3>
+          <p className="sidebar-desc-v2">Refine how the AI interprets your profile data.</p>
+          <label className="toggle-v2">
+            <input
+              type="checkbox"
+              checked={preferProfile}
+              onChange={(event) => setPreferProfile(event.target.checked)}
+            />
+            <span className="toggle-label-v2">Personalized Matching</span>
+            <span className="toggle-switch-v2"></span>
+          </label>
+        </div>
 
-          <div className="sidebar-footer-v2">
-            <img src="/newstickers/sticker6.png" alt="" className="sidebar-sticker-v2" />
-            <p className="empty-note">AI Intelligence is active and ready.</p>
-          </div>
-        </aside>
+        <div className="sidebar-footer-v2">
+          <img src="/newstickers/sticker6.png" alt="" className="sidebar-sticker-v2" />
+          <p className="empty-note">AI Intelligence is active and ready.</p>
+        </div>
+      </aside>
 
-        <section className="ai-chat-v2">
-          <div className="ai-thread-v2" ref={threadRef} data-lenis-prevent>
-            {messages.length === 0 && !isTyping ? (
-              <div className="ai-empty-state-v2">
-                <div className="empty-state-icon-v2">
-                  <FiMessageCircle />
+      <section className="ai-chat-v2">
+        <div className="ai-thread-v2" ref={threadRef} data-lenis-prevent>
+          {messages.length === 0 && !isTyping ? (
+            <div className="ai-empty-state-v3">
+              <header className="empty-state-header-v3">
+                <h1>Where are we heading next?</h1>
+                <p>I'm your TripGenius AI. Ask me about itineraries, hidden gems, or group planning.</p>
+              </header>
+              
+              <div className="empty-state-suggestions-v3">
+                <div className="suggestion-card-v3" onClick={() => setPrompt("Plan a 3-day trip to Tokyo for a group of 5")}>
+                  <div className="suggestion-icon"><FiMapPin /></div>
+                  <h4>Group Itineraries</h4>
+                  <p>Tokyo for a group of 5</p>
                 </div>
-                <h2>Plan your next adventure.</h2>
-                <p>Ask about hidden gems, group itineraries, or budget-friendly routes. I'll analyze your style and suggest ranked options.</p>
-                <div className="empty-state-suggestions-v2">
-                  <button onClick={() => setPrompt("Recommend a trip based on my profile")} className="suggestion-chip-v2">Trips based on preferences</button>
-                  <button onClick={() => setPrompt("Forget my preferences and suggest a random trip")} className="suggestion-chip-v2">Random Trip</button>
-                  <button onClick={() => setPrompt("Suggest a trip on a beach")} className="suggestion-chip-v2">Beach Trip</button>
+                <div className="suggestion-card-v3" onClick={() => setPrompt("Suggest some hidden gems in Iceland")}>
+                  <div className="suggestion-icon"><FiExternalLink /></div>
+                  <h4>Hidden Gems</h4>
+                  <p>Unexplored spots in Iceland</p>
+                </div>
+                <div className="suggestion-card-v3" onClick={() => setPrompt("Recommend a beach trip based on my style")}>
+                  <div className="suggestion-icon"><FiSend /></div>
+                  <h4>Style Matching</h4>
+                  <p>Beaches based on my profile</p>
                 </div>
               </div>
-            ) : (
-              <>
-                {messages.map((message) => (
-                  <article key={message.id} className={`ai-bubble-v2 ${message.sender}`}>
-                    <header className="bubble-header" style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+            </div>
+          ) : (
+            <div className="messages-container-v3">
+              {messages.map((message) => (
+                <div key={message.id} className={`ai-message-row-v3 ${message.sender}`}>
+                  <div className="message-inner-v3">
+                    <header className="message-header-v3">
                       <img 
                         src={message.sender === 'user' ? getAvatarUrl(user?.username, user?.profileUrl) : '/newstickers/sticker1.png'} 
                         alt="" 
-                        style={{ width: '20px', height: '20px', borderRadius: '50%', objectFit: 'cover' }} 
+                        className="message-avatar-v3"
                       />
                       <span>{message.sender === 'user' ? (user?.username || 'Explorer') : 'TripGenius AI'}</span>
                     </header>
-                    {message.sender === 'assistant' ? (() => {
-                      const parsed = parseAiMessage(message.text)
-                      return (
-                        <>
-                          <Typewriter text={parsed.text} isStreaming={!message.isComplete && activeAiMessageId === message.id} />
-                          {parsed.trips && parsed.trips.length > 0 && (
-                            <div className="ai-trips-grid">
-                              {parsed.trips.map((trip) => (
-                                <Link key={trip.id} to={`/app/trip/${trip.id}`} className="ai-trip-card">
-                                  <div className="panel">
-                                    <div>
-                                      <div className="recommendation-badge">
-                                        <FiMapPin size={12} /> AI Match
-                                      </div>
-                                      <h4>{trip.title}</h4>
+                    
+                    <div className="message-content-v3">
+                      {message.sender === 'assistant' ? (() => {
+                        const parsed = parseAiMessage(message.text)
+                        return (
+                          <>
+                            <Typewriter text={parsed.text} isStreaming={!message.isComplete && activeAiMessageId === message.id} />
+                            {parsed.trips && parsed.trips.length > 0 && (
+                              <div className="ai-trips-grid-v3">
+                                {parsed.trips.map((trip) => (
+                                  <Link key={trip.id} to={`/app/trip/${trip.id}`} className="ai-trip-card-v3">
+                                    <div className="recommendation-badge">
+                                      <FiMapPin size={12} /> AI Match
                                     </div>
+                                    <h4>{trip.title}</h4>
                                     <div className="explore-btn">
                                       <span>Explore</span>
                                       <FiExternalLink size={14} />
                                     </div>
-                                  </div>
-                                </Link>
-                              ))}
-                            </div>
-                          )}
-                        </>
-                      )
-                    })() : (
-                      <div className="message-content">
+                                  </Link>
+                                ))}
+                              </div>
+                            )}
+                          </>
+                        )
+                      })() : (
                         <ReactMarkdown remarkPlugins={[remarkGfm]}>{message.text}</ReactMarkdown>
-                      </div>
-                    )}
-                  </article>
-                ))}
-                {isTyping && (
-                  <article className="ai-bubble-v2 assistant typing-indicator-bubble">
-                    <header className="bubble-header">
-                      TripGenius AI
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+              {isTyping && (
+                <div className="ai-message-row-v3 assistant typing">
+                  <div className="message-inner-v3">
+                    <header className="message-header-v3">
+                      <img src="/newstickers/sticker1.png" alt="" className="message-avatar-v3" />
+                      <span>TripGenius AI</span>
                     </header>
                     <div className="ai-typing">
                       <span className="dot"></span>
                       <span className="dot"></span>
                       <span className="dot"></span>
                     </div>
-                  </article>
-                )}
-              </>
-            )}
-          </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
 
-          <div className="ai-composer-shell-v2">
-            <form className="ai-composer-v2" onSubmit={handleSubmit}>
-              <div className="ai-composer-input-wrapper-v2">
-                <input
-                  className="ai-composer-input-v2"
-                  value={prompt}
-                  onChange={(event) => setPrompt(event.target.value)}
-                  placeholder={isTyping ? "AI is formulating your strategy..." : "Ask for anything..."}
-                  disabled={isTyping}
-                />
-                <button
-                  className="ai-composer-submit-v2"
-                  type="submit"
-                  disabled={isTyping || !!activeAiMessageId || !prompt.trim()}
-                  aria-label="Send message"
-                >
-                  <FiSend />
-                </button>
-              </div>
-            </form>
-          </div>
-        </section>
-      </div>
+        <div className="ai-composer-shell-v3">
+          <form className="ai-composer-v3" onSubmit={handleSubmit}>
+            <div className="ai-composer-input-wrapper-v3">
+              <textarea
+                ref={textareaRef}
+                className="ai-composer-input-v3"
+                value={prompt}
+                onChange={(event) => setPrompt(event.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder={isTyping ? "AI is formulating your strategy..." : "Ask me anything about your next trip..."}
+                disabled={isTyping}
+                rows={1}
+              />
+              <button
+                className="ai-composer-submit-v3"
+                type="submit"
+                disabled={isTyping || !!activeAiMessageId || !prompt.trim()}
+                aria-label="Send message"
+              >
+                <FiSend />
+              </button>
+            </div>
+            <p className="composer-footer-v3">TripGenius AI can make mistakes. Verify important info.</p>
+          </form>
+        </div>
+      </section>
     </section>
   )
 }
+
 
 function OfflineAiState() {
   return (
