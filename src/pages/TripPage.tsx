@@ -1,16 +1,17 @@
 import { AnimatePresence, motion } from 'framer-motion'
 import { useEffect, useMemo, useState, useRef } from 'react'
 import type { ChangeEvent, FormEvent, KeyboardEvent } from 'react'
-import { 
-  FiUserPlus, 
-  FiX, 
-  FiUploadCloud, 
-  FiInfo, 
-  FiMap, 
-  FiUsers, 
-  FiMessageSquare, 
+import {
+  FiUserPlus,
+  FiX,
+  FiUploadCloud,
+  FiInfo,
+  FiMap,
+  FiUsers,
+  FiMessageSquare,
   FiSettings,
-  FiPlusCircle
+  FiPlusCircle,
+  FiClock
 } from 'react-icons/fi'
 import { useSelector } from 'react-redux'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
@@ -29,7 +30,7 @@ import { getAvatarUrl } from '../utils/userUtils'
 
 const MILLISECONDS_PER_DAY = 1000 * 60 * 60 * 24
 
-type TripWorkspaceTab = 'overview' | 'map' | 'members' | 'chat' | 'settings'
+type TripWorkspaceTab = 'overview' | 'map' | 'members' | 'chat' | 'settings' | 'history'
 
 interface TripTabItem {
   key: TripWorkspaceTab
@@ -53,6 +54,7 @@ const memberTabs: TripTabItem[] = [
   { key: 'map', label: 'Itinerary', Icon: FiMap },
   { key: 'members', label: 'Members', Icon: FiUsers },
   { key: 'chat', label: 'Chat', Icon: FiMessageSquare },
+  { key: 'history', label: 'History', Icon: FiClock },
 ]
 
 const ownerTabs: TripTabItem[] = [
@@ -111,9 +113,9 @@ const calculateRouteDistanceKm = (
   const a =
     Math.sin(dLat / 2) * Math.sin(dLat / 2) +
     Math.cos(toRadians(fromLat)) *
-      Math.cos(toRadians(toLat)) *
-      Math.sin(dLng / 2) *
-      Math.sin(dLng / 2)
+    Math.cos(toRadians(toLat)) *
+    Math.sin(dLng / 2) *
+    Math.sin(dLng / 2)
 
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
 
@@ -211,7 +213,7 @@ export function TripPage() {
           setFetchState('not-found')
           return
         }
-
+        console.log(nextTrip)
         setTrip(nextTrip)
         setFetchState('ready')
       } catch (err: any) {
@@ -283,7 +285,7 @@ export function TripPage() {
     return (
       <section className="page trip-page-v2 container">
         <div className="discovery-empty-state">
-           <img src="/newstickers/sticker6.png" alt="" className="discovery-empty-sticker" />
+          <img src="/newstickers/sticker6.png" alt="" className="discovery-empty-sticker" />
           <h1>Communication error</h1>
           <p>We lost contact with the server. Check your signal and try again.</p>
           <Link className="btn btn-primary" to="/app/discover">
@@ -381,7 +383,7 @@ function TripPageContent({ trip }: TripPageContentProps) {
     defaultSelectedDay(trip.startingDate, trip.timelines.length),
   )
   const [members, setMembers] = useState<TripMember[]>(trip.members)
-  
+
   // Sync members only when the trip ID changes (initial load)
   // Subsequent updates are handled locally in member action handlers
   useEffect(() => {
@@ -399,7 +401,7 @@ function TripPageContent({ trip }: TripPageContentProps) {
           setChatMessages((prev) => {
             const existingIds = new Set(prev.map(m => m.id));
             const uniqueNew = fetchedMessages.filter(m => !existingIds.has(m.id));
-            return [...prev, ...uniqueNew].sort((a, b) => 
+            return [...prev, ...uniqueNew].sort((a, b) =>
               new Date(a.sentAt).getTime() - new Date(b.sentAt).getTime()
             );
           });
@@ -424,33 +426,29 @@ function TripPageContent({ trip }: TripPageContentProps) {
     connectionRef.current = connection
     let isStopped = false;
     const start = async () => {
-      try
-      {
+      try {
         await connection.start()
         if (!isStopped) {
           await connection.invoke("JoinTrip", trip.id)
         }
       }
-      catch(err)
-      {
+      catch (err) {
         console.error(`Connection failed: ${err}`)
       }
     }
     start()
 
     fetchMessages()
-    
+
     return () => {
       isStopped = true;
       const stop = async () => {
-        try
-        {
+        try {
           if (connection.state === signalR.HubConnectionState.Connected) {
             await connection.invoke("LeaveTrip", trip.id)
           }
         }
-        catch(error)
-        {
+        catch (error) {
           console.error("LeaveTrip error:", error)
         }
         await connection.stop()
@@ -463,12 +461,12 @@ function TripPageContent({ trip }: TripPageContentProps) {
   // Pre-fetch all routes for offline use
   useEffect(() => {
     if (!timelines.length) return
-    
+
     const prefetchRoutes = async () => {
       for (const stop of timelines) {
         try {
           const coordinateString = `${stop.fromCoords[1]},${stop.fromCoords[0]};${stop.toCoords[1]},${stop.toCoords[0]}`
-          
+
           // 1. Preview Route
           const previewUrl = `https://router.project-osrm.org/route/v1/driving/${coordinateString}?overview=full&geometries=geojson`
           await fetch(previewUrl)
@@ -476,7 +474,7 @@ function TripPageContent({ trip }: TripPageContentProps) {
           // 2. Navigation Route (with steps)
           const navUrl = `https://router.project-osrm.org/route/v1/driving/${coordinateString}?overview=full&geometries=geojson&steps=true`
           await fetch(navUrl)
-          
+
         } catch (e) {
           // Ignore pre-fetch errors
         }
@@ -566,8 +564,8 @@ function TripPageContent({ trip }: TripPageContentProps) {
     () => members.filter((member) => {
       const memberStatus = normalizeTripMemberStatus(
         (member as unknown as Record<string, unknown>).status ??
-          (member as unknown as Record<string, unknown>).memberStatus ??
-          (member as unknown as Record<string, unknown>).member_status,
+        (member as unknown as Record<string, unknown>).memberStatus ??
+        (member as unknown as Record<string, unknown>).member_status,
       )
       return memberStatus === 'invited' || memberStatus === 'requested'
     }),
@@ -639,7 +637,7 @@ function TripPageContent({ trip }: TripPageContentProps) {
       if (ownerTripDraft.imageFile) formData.append('image', ownerTripDraft.imageFile)
 
       const res = await api.patch('api/trip/update-trip', formData)
-      
+
       const payload = res.data
       const updatedTrip = payload && typeof payload === 'object' && 'trip' in payload ? payload.trip : payload
 
@@ -679,7 +677,7 @@ function TripPageContent({ trip }: TripPageContentProps) {
     }
     setIsSearchingInviteUser(true)
     try {
-      const res = await api.post(`api/user/search-users`,{username:query})
+      const res = await api.post(`api/user/search-users`, { username: query })
       setCandidates(res.data)
     } catch {
       setInviteFeedback({ tone: 'error', message: 'User search failed.' })
@@ -696,7 +694,7 @@ function TripPageContent({ trip }: TripPageContentProps) {
 
     setIsInvitingUserId(candidateId)
     try {
-      await api.post('api/trip/membership-request', {userId: candidate.id, tripId: tripDetails.id, invitedBy: authenticatedUser?.id })
+      await api.post('api/trip/membership-request', { userId: candidate.id, tripId: tripDetails.id, invitedBy: authenticatedUser?.id })
       setInviteFeedback({ tone: 'success', message: `Invite sent to ${candidate.username}.` })
       setMembers((prev) => [
         ...prev,
@@ -764,7 +762,7 @@ function TripPageContent({ trip }: TripPageContentProps) {
 
     setIsRequestingAccess(true)
     try {
-      const res = await api.post('api/trip/membership-request', {userId: authenticatedUser.id, tripId: tripDetails.id, invitedBy: authenticatedUser?.id })
+      const res = await api.post('api/trip/membership-request', { userId: authenticatedUser.id, tripId: tripDetails.id, invitedBy: authenticatedUser?.id })
       if (res.status >= 200 && res.status < 300) {
         setTripDetailsFeedback({ tone: 'success', message: 'Join request sent. Waiting for approval.' })
         setMembers((prev) => [
@@ -807,7 +805,7 @@ function TripPageContent({ trip }: TripPageContentProps) {
 
     setIsUpdatingRoleMemberId(userId)
     try {
-      await api.patch('api/trip/change-role', { id:userId,tripId:trip.id, role: newRole })
+      await api.patch('api/trip/change-role', { id: userId, tripId: trip.id, role: newRole })
       setMembers(prev => prev.map(m => m.id === userId ? { ...m, role: newRole } : m))
     } catch (err: any) {
       if (err?.queued) {
@@ -852,11 +850,9 @@ function TripPageContent({ trip }: TripPageContentProps) {
     if (!window.confirm('Are you sure you want to remove this timeline stop?')) return
 
     setIsRemovingTimelineId(timelineId)
-    try
-    {
+    try {
       const res = await api.delete(`api/trip/timeline-remove/${trip.id}/${timelineId}`)
-      if(res.status === 200)
-      {    
+      if (res.status === 200) {
         setTimelines((previous) => {
           const next = previous.filter((stop) => stop.id !== timelineId)
 
@@ -871,10 +867,9 @@ function TripPageContent({ trip }: TripPageContentProps) {
 
           return next
         })
-        }
+      }
     }
-    catch(error)
-    {
+    catch (error) {
       console.error(error)
     } finally {
       setIsRemovingTimelineId(null)
@@ -885,20 +880,20 @@ function TripPageContent({ trip }: TripPageContentProps) {
   const sendMessage = async (e: FormEvent) => {
     console.log(newMessage)
     e.preventDefault()
-    if(!connectionRef.current || !newMessage.trim()) return
-    await connectionRef.current.invoke("SendMessage",trip.id,newMessage)
+    if (!connectionRef.current || !newMessage.trim()) return
+    await connectionRef.current.invoke("SendMessage", trip.id, newMessage)
 
     setNewMessage('')
   }
 
   // Renderers
   const renderOverview = () => (
-    <motion.div 
+    <motion.div
       key="tab-overview"
-      initial={{ opacity: 0, y: 16 }} 
-      animate={{ opacity: 1, y: 0 }} 
-      exit={{ opacity: 0, y: -12 }} 
-      transition={revealTransition} 
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -12 }}
+      transition={revealTransition}
       className="trip-workspace-v2"
     >
       <div className="trip-main-content">
@@ -927,23 +922,23 @@ function TripPageContent({ trip }: TripPageContentProps) {
             <h3>Route Preview</h3>
             {currentStop && <span className="chip chip-static">{currentStop.day} OF {timelines.length}</span>}
           </div>
-          
+
           {currentStop ? (
             <div className="stop-row-v2" style={{ border: 'none' }}>
-               <div className="stop-connector-v2">
-                  <div className="stop-dot-v2" style={{ background: 'var(--green-580)' }} />
-                  <div className="stop-line-v2" />
-                  <div className="stop-dot-v2" />
-               </div>
-               <div>
-                  <h4 style={{ color: '#f3fff1', marginBottom: '0.4rem' }}>{currentStop.startingPoint} → {currentStop.endPoint}</h4>
-                  <p style={{ fontSize: '0.85rem', color: 'var(--text-380)' }}>{currentStop.note}</p>
-                  <div style={{ marginTop: '1rem', display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                     <span style={{ fontSize: '0.8rem', opacity: 0.5 }}>{selectedRouteDistanceKm.toFixed(1)} KM</span>
-                     <span className="dot" />
-                     <span style={{ fontSize: '0.8rem', opacity: 0.5 }}>{formatDisplayDate(currentStop.date)}</span>
-                  </div>
-               </div>
+              <div className="stop-connector-v2">
+                <div className="stop-dot-v2" style={{ background: 'var(--green-580)' }} />
+                <div className="stop-line-v2" />
+                <div className="stop-dot-v2" />
+              </div>
+              <div>
+                <h4 style={{ color: '#f3fff1', marginBottom: '0.4rem' }}>{currentStop.startingPoint} → {currentStop.endPoint}</h4>
+                <p style={{ fontSize: '0.85rem', color: 'var(--text-380)' }}>{currentStop.note}</p>
+                <div style={{ marginTop: '1rem', display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                  <span style={{ fontSize: '0.8rem', opacity: 0.5 }}>{selectedRouteDistanceKm.toFixed(1)} KM</span>
+                  <span className="dot" />
+                  <span style={{ fontSize: '0.8rem', opacity: 0.5 }}>{formatDisplayDate(currentStop.date)}</span>
+                </div>
+              </div>
             </div>
           ) : (
             <p className="empty-note">No coordinates mapped yet.</p>
@@ -992,12 +987,12 @@ function TripPageContent({ trip }: TripPageContentProps) {
   )
 
   const renderTimeline = () => (
-    <motion.div 
+    <motion.div
       key="tab-timeline"
-      initial={{ opacity: 0, y: 16 }} 
-      animate={{ opacity: 1, y: 0 }} 
-      exit={{ opacity: 0, y: -12 }} 
-      transition={revealTransition} 
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -12 }}
+      transition={revealTransition}
       className="trip-workspace-v2"
     >
       <div className="trip-main-content">
@@ -1014,15 +1009,15 @@ function TripPageContent({ trip }: TripPageContentProps) {
                   </div>
                   {canManageTimelines && (
                     <div className="invite-actions-v2">
-                       <button className="btn btn-ghost btn-sm" onClick={() => navigate(`/app/edit-timeline/${trip.id}/${stop.id}`)}>Edit</button>
-                       <button
-                         className="btn btn-ghost btn-sm"
-                         style={{ color: '#ff6b6b' }}
-                         disabled={isRemovingTimelineId === stop.id}
-                         onClick={() => handleRemoveTimeline(stop.id)}
-                       >
-                         {isRemovingTimelineId === stop.id ? 'Removing...' : 'Remove'}
-                       </button>
+                      <button className="btn btn-ghost btn-sm" onClick={() => navigate(`/app/edit-timeline/${trip.id}/${stop.id}`)}>Edit</button>
+                      <button
+                        className="btn btn-ghost btn-sm"
+                        style={{ color: '#ff6b6b' }}
+                        disabled={isRemovingTimelineId === stop.id}
+                        onClick={() => handleRemoveTimeline(stop.id)}
+                      >
+                        {isRemovingTimelineId === stop.id ? 'Removing...' : 'Remove'}
+                      </button>
                     </div>
                   )}
                 </div>
@@ -1031,25 +1026,25 @@ function TripPageContent({ trip }: TripPageContentProps) {
           ))}
           {canManageTimelines && (
             <button className="btn btn-primary" onClick={() => navigate(`/app/add-timeline/${trip.id}`)}>
-               <FiPlusCircle /> Add Day
+              <FiPlusCircle /> Add Day
             </button>
           )}
         </div>
       </div>
       <div className="trip-sidebar-v2" style={{ position: 'sticky', top: '2rem' }}>
-         <div className="day-card-v2" style={{ padding: 0, height: '600px', overflow: 'hidden' }}>
-            <TripRouteMap timeline={timelines} selectedDay={selectedDay} />
-         </div>
+        <div className="day-card-v2" style={{ padding: 0, height: '600px', overflow: 'hidden' }}>
+          <TripRouteMap timeline={timelines} selectedDay={selectedDay} />
+        </div>
       </div>
     </motion.div>
   )
 
   const renderTripMembers = () => (
-    <motion.div 
+    <motion.div
       key="tab-members"
-      initial={{ opacity: 0, y: 16 }} 
-      animate={{ opacity: 1, y: 0 }} 
-      exit={{ opacity: 0, y: -12 }} 
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -12 }}
       transition={revealTransition}
     >
       <div className="profile-section-v2" style={{ marginBottom: '2rem' }}>
@@ -1075,8 +1070,8 @@ function TripPageContent({ trip }: TripPageContentProps) {
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <p className="eyebrow" style={{ fontSize: '0.65rem' }}>{normalizeMemberRole(m.role)}</p>
                 {canEditMemberRoles && normalizeMemberRole(m.role) !== 'owner' && (
-                  <select 
-                    className="input-trigger" 
+                  <select
+                    className="input-trigger"
                     style={{ fontSize: '0.65rem', padding: '0.1rem 0.4rem', background: 'rgba(255,255,255,0.05)', border: 'none', borderRadius: '4px', color: 'var(--green-580)' }}
                     value={normalizeMemberRole(m.role)}
                     disabled={isUpdatingRoleMemberId === m.id || isRemovingMemberId === m.id}
@@ -1115,31 +1110,31 @@ function TripPageContent({ trip }: TripPageContentProps) {
               return (
                 <div key={m.id} className="history-row-v2" style={{ background: 'rgba(9, 14, 10, 0.4)', gridTemplateColumns: '60px 1fr auto' }}>
                   <img src={getAvatarUrl(m.username, m.avatarUrl)} alt="" className="avatar" style={{ width: '50px', height: '50px', borderRadius: '14px', objectFit: 'cover' }} />
-                      <div>
-                        <h4 style={{ color: '#f3fff1' }}>{m.username}</h4>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                          <p className="eyebrow" style={{ fontSize: '0.65rem' }}>{memberStatusLabel}</p>
-                          {memberStatusLabel === 'Waiting for approval' && canInviteMembers && (
-                            <div style={{ display: 'flex', gap: '0.5rem', marginLeft: '0.75rem' }}>
-                              <button
-                                className="btn btn-primary btn-sm"
-                                disabled={isProcessingRequestMemberId === m.id}
-                                onClick={() => handleRespondToRequest(m, 'Accepted')}
-                              >
-                                {isProcessingRequestMemberId === m.id ? 'Processing...' : 'Accept'}
-                              </button>
-                              <button
-                                className="btn btn-ghost btn-sm"
-                                disabled={isProcessingRequestMemberId === m.id}
-                                onClick={() => handleRespondToRequest(m, 'Declined')}
-                                style={{ color: '#ff6b6b' }}
-                              >
-                                Decline
-                              </button>
-                            </div>
-                          )}
+                  <div>
+                    <h4 style={{ color: '#f3fff1' }}>{m.username}</h4>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <p className="eyebrow" style={{ fontSize: '0.65rem' }}>{memberStatusLabel}</p>
+                      {memberStatusLabel === 'Waiting for approval' && canInviteMembers && (
+                        <div style={{ display: 'flex', gap: '0.5rem', marginLeft: '0.75rem' }}>
+                          <button
+                            className="btn btn-primary btn-sm"
+                            disabled={isProcessingRequestMemberId === m.id}
+                            onClick={() => handleRespondToRequest(m, 'Accepted')}
+                          >
+                            {isProcessingRequestMemberId === m.id ? 'Processing...' : 'Accept'}
+                          </button>
+                          <button
+                            className="btn btn-ghost btn-sm"
+                            disabled={isProcessingRequestMemberId === m.id}
+                            onClick={() => handleRespondToRequest(m, 'Declined')}
+                            style={{ color: '#ff6b6b' }}
+                          >
+                            Decline
+                          </button>
                         </div>
-                      </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
               )
             })}
@@ -1150,85 +1145,85 @@ function TripPageContent({ trip }: TripPageContentProps) {
   )
 
   const renderChat = () => (
-    <motion.div 
+    <motion.div
       key="tab-chat"
-      initial={{ opacity: 0, y: 16 }} 
-      animate={{ opacity: 1, y: 0 }} 
-      exit={{ opacity: 0, y: -12 }} 
-      transition={revealTransition} 
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -12 }}
+      transition={revealTransition}
       className="ai-chat-v2 trip-chat-v2"
     >
-       <div className="ai-thread-v2">
-          {chatMessages.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '4rem 0' }}>
-               <img src="/newstickers/sticker3.png" alt="" style={{ width: '120px', opacity: 0.4 }} />
-               <p className="empty-note">Chat is quiet. Start the conversation.</p>
-            </div>
-          ) : (
-            chatMessages.map(msg => (
-              <div
-                key={msg.id}
-                className={msg.username === authenticatedUser?.username ? 'ai-bubble-v2 user' : 'ai-bubble-v2 assistant'}
-              >
-                 <header className="bubble-header" style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                    <img 
-                      src={getAvatarUrl(msg.username, msg.profileUrl)} 
-                      alt="" 
-                      style={{ width: '20px', height: '20px', borderRadius: '50%', objectFit: 'cover' }} 
-                    />
-                    <span>{msg.username}</span>
-                 </header>
-                 <p>{msg.content}</p>
-                 <span style={{ fontSize: '0.65rem', opacity: 0.4, float: 'right', marginTop: '0.3rem' }}>
-                   {new Date(msg.sentAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                 </span>
-              </div>
-            ))
-          )}
-       </div>
-       <form className="ai-composer-v2" onSubmit={sendMessage}>
-          <div className="ai-composer-input-v2">
-             <input className="input" placeholder="Broadcast a signal to the team..." value={newMessage} onChange={e => setNewMessage(e.target.value)} />
-             <button className="btn btn-primary" type="submit">Send</button>
+      <div className="ai-thread-v2">
+        {chatMessages.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '4rem 0' }}>
+            <img src="/newstickers/sticker3.png" alt="" style={{ width: '120px', opacity: 0.4 }} />
+            <p className="empty-note">Chat is quiet. Start the conversation.</p>
           </div>
-       </form>
+        ) : (
+          chatMessages.map(msg => (
+            <div
+              key={msg.id}
+              className={msg.username === authenticatedUser?.username ? 'ai-bubble-v2 user' : 'ai-bubble-v2 assistant'}
+            >
+              <header className="bubble-header" style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                <img
+                  src={getAvatarUrl(msg.username, msg.profileUrl)}
+                  alt=""
+                  style={{ width: '20px', height: '20px', borderRadius: '50%', objectFit: 'cover' }}
+                />
+                <span>{msg.username}</span>
+              </header>
+              <p>{msg.content}</p>
+              <span style={{ fontSize: '0.65rem', opacity: 0.4, float: 'right', marginTop: '0.3rem' }}>
+                {new Date(msg.sentAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              </span>
+            </div>
+          ))
+        )}
+      </div>
+      <form className="ai-composer-v2" onSubmit={sendMessage}>
+        <div className="ai-composer-input-v2">
+          <input className="input" placeholder="Broadcast a signal to the team..." value={newMessage} onChange={e => setNewMessage(e.target.value)} />
+          <button className="btn btn-primary" type="submit">Send</button>
+        </div>
+      </form>
     </motion.div>
   )
 
   const renderSettings = () => (
-    <motion.div 
+    <motion.div
       key="tab-settings"
-      initial={{ opacity: 0, y: 16 }} 
-      animate={{ opacity: 1, y: 0 }} 
-      exit={{ opacity: 0, y: -12 }} 
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -12 }}
       transition={revealTransition}
     >
       <form className="builder-form-v2" onSubmit={saveOwnerTripDetails}>
         <div className="builder-section-v2">
           <h3>Trip Info</h3>
           <div style={{ display: 'grid', gridTemplateColumns: '240px 1fr', gap: '2rem', marginBottom: '2rem' }}>
-             <label className="avatar-wrapper-v2" style={{ width: '240px', height: '160px', borderRadius: '24px' }}>
-                <img src={ownerTripDraft.imagePreviewUrl} alt="" className="avatar-preview-v2" />
-                <div className="avatar-upload-overlay-v2">
-                   <FiUploadCloud size={24} />
-                   <span>Upload Cover</span>
-                </div>
-                <input type="file" className="visually-hidden" accept="image/*" onChange={handleImageUpload} />
-             </label>
-             <div style={{ display: 'grid', gap: '1.5rem', flex: 1 }}>
-                <div className="form-group">
-                  <label className="field-label">Workspace Title</label>
-                  <input className="input" value={ownerTripDraft.title} onChange={e => handleOwnerDraftChange('title', e.target.value)} />
-                </div>
-                <div className="form-group">
-                  <label className="field-label">Trip Status</label>
-                  <select className="input" value={ownerTripDraft.status} onChange={e => handleOwnerDraftChange('status', e.target.value)}>
-                    <option value="Upcoming">Upcoming</option>
-                    <option value="Started">Started</option>
-                    <option value="Finished">Finished</option>
-                  </select>
-                </div>
-             </div>
+            <label className="avatar-wrapper-v2" style={{ width: '240px', height: '160px', borderRadius: '24px' }}>
+              <img src={ownerTripDraft.imagePreviewUrl} alt="" className="avatar-preview-v2" />
+              <div className="avatar-upload-overlay-v2">
+                <FiUploadCloud size={24} />
+                <span>Upload Cover</span>
+              </div>
+              <input type="file" className="visually-hidden" accept="image/*" onChange={handleImageUpload} />
+            </label>
+            <div style={{ display: 'grid', gap: '1.5rem', flex: 1 }}>
+              <div className="form-group">
+                <label className="field-label">Workspace Title</label>
+                <input className="input" value={ownerTripDraft.title} onChange={e => handleOwnerDraftChange('title', e.target.value)} />
+              </div>
+              <div className="form-group">
+                <label className="field-label">Trip Status</label>
+                <select className="input" value={ownerTripDraft.status} onChange={e => handleOwnerDraftChange('status', e.target.value)}>
+                  <option value="Upcoming">Upcoming</option>
+                  <option value="Started">Started</option>
+                  <option value="Finished">Finished</option>
+                </select>
+              </div>
+            </div>
           </div>
           <div className="form-group" style={{ marginTop: '1.5rem' }}>
             <label className="field-label">Mission Briefing</label>
@@ -1237,21 +1232,21 @@ function TripPageContent({ trip }: TripPageContentProps) {
         </div>
 
         <div className="builder-section-v2">
-           <h3>Chronology & Capacity</h3>
-           <div className="builder-grid-v2">
-              <div className="form-group">
-                <label className="field-label">Starting Sync</label>
-                <input className="input" type="date" value={ownerTripDraft.startingDate} onChange={e => handleOwnerDraftChange('startingDate', e.target.value)} />
-              </div>
-              <div className="form-group">
-                <label className="field-label">Ending Sync</label>
-                <input className="input" type="date" value={ownerTripDraft.endingDate} onChange={e => handleOwnerDraftChange('endingDate', e.target.value)} />
-              </div>
-           </div>
-           <div className="form-group" style={{ marginTop: '1.5rem', maxWidth: '300px' }}>
-              <label className="field-label">Explorer Capacity</label>
-              <input className="input" type="number" value={ownerTripDraft.maxParticipants} onChange={e => handleOwnerDraftChange('maxParticipants', e.target.value)} />
-           </div>
+          <h3>Chronology & Capacity</h3>
+          <div className="builder-grid-v2">
+            <div className="form-group">
+              <label className="field-label">Starting Sync</label>
+              <input className="input" type="date" value={ownerTripDraft.startingDate} onChange={e => handleOwnerDraftChange('startingDate', e.target.value)} />
+            </div>
+            <div className="form-group">
+              <label className="field-label">Ending Sync</label>
+              <input className="input" type="date" value={ownerTripDraft.endingDate} onChange={e => handleOwnerDraftChange('endingDate', e.target.value)} />
+            </div>
+          </div>
+          <div className="form-group" style={{ marginTop: '1.5rem', maxWidth: '300px' }}>
+            <label className="field-label">Explorer Capacity</label>
+            <input className="input" type="number" value={ownerTripDraft.maxParticipants} onChange={e => handleOwnerDraftChange('maxParticipants', e.target.value)} />
+          </div>
         </div>
 
         <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end', alignItems: 'center' }}>
@@ -1266,6 +1261,46 @@ function TripPageContent({ trip }: TripPageContentProps) {
           </button>
         </div>
       </form>
+    </motion.div>
+  )
+
+  const renderHistory = () => (
+    <motion.div
+      key="tab-history"
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -12 }}
+      transition={revealTransition}
+    >
+      <div className="profile-section-v2" style={{ marginBottom: '2rem' }}>
+        <div>
+          <h3>Trip History</h3>
+          <p>Chronological log of updates and milestones for this journey.</p>
+        </div>
+      </div>
+
+      <div className="discovery-grid">
+        {tripDetails.history && tripDetails.history.length > 0 ? (
+          [...tripDetails.history].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map((h) => (
+            <div key={h.id} className="history-row-v2" style={{ background: 'rgba(9, 14, 10, 0.4)', gridTemplateColumns: '1fr auto', padding: '1.25rem' }}>
+              <div>
+                <p style={{ color: '#f3fff1', fontSize: '1rem', marginBottom: '0.4rem' }}>{h.content}</p>
+                <p className="eyebrow" style={{ fontSize: '0.75rem', opacity: 0.6 }}>
+                  {formatDisplayDate(h.date)}
+                </p>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center' }}>
+                <FiClock style={{ opacity: 0.3 }} />
+              </div>
+            </div>
+          ))
+        ) : (
+          <div style={{ textAlign: 'center', padding: '4rem 0', gridColumn: '1 / -1' }}>
+            <img src="/newstickers/sticker4.png" alt="" style={{ width: '120px', opacity: 0.4 }} />
+            <p className="empty-note">No history logs recorded yet.</p>
+          </div>
+        )}
+      </div>
     </motion.div>
   )
 
@@ -1289,10 +1324,10 @@ function TripPageContent({ trip }: TripPageContentProps) {
 
       <nav className="profile-tab-bar-v2" style={{ marginBottom: '3rem' }}>
         {tabs.map((tab, idx) => (
-          <button 
-            key={tab.key} 
-            className={activeTab === tab.key ? 'profile-tab-btn-v2 is-active' : 'profile-tab-btn-v2'} 
-            onClick={() => selectTab(tab.key)} 
+          <button
+            key={tab.key}
+            className={activeTab === tab.key ? 'profile-tab-btn-v2 is-active' : 'profile-tab-btn-v2'}
+            onClick={() => selectTab(tab.key)}
             onKeyDown={e => handleTabKeyDown(e, idx)}
           >
             <span className="tab-icon-mobile"><tab.Icon /></span>
@@ -1307,6 +1342,7 @@ function TripPageContent({ trip }: TripPageContentProps) {
         {activeTab === 'members' && renderTripMembers()}
         {activeTab === 'chat' && renderChat()}
         {activeTab === 'settings' && renderSettings()}
+        {activeTab === 'history' && renderHistory()}
       </AnimatePresence>
 
       {/* Invite Modal */}
@@ -1314,31 +1350,31 @@ function TripPageContent({ trip }: TripPageContentProps) {
         {isInviteModalOpen && (
           <div className="modal-scrim" onClick={() => setIsInviteModalOpen(false)}>
             <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="builder-section-v2" style={{ width: '100%', maxWidth: '500px', background: 'var(--bg-900)' }} onClick={e => e.stopPropagation()}>
-               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2rem' }}>
-                  <h3>Invite Explorer</h3>
-                  <button className="btn btn-ghost btn-sm" onClick={() => setIsInviteModalOpen(false)}><FiX /></button>
-               </div>
-               <input className="input" placeholder="Search by username..." value={inviteUsernameQuery} onChange={e => { setInviteUsernameQuery(e.target.value); debounceSearchInviteCanditate(e.target.value); }} />
-               {isSearchingInviteUser ? (
-                 <p className="empty-note" style={{ marginTop: '0.75rem' }}>Searching users...</p>
-               ) : null}
-               
-               <div style={{ marginTop: '2rem', display: 'grid', gap: '1rem' }}>
-                  {candidates.map(c => (
-                    <div key={c.id} className="history-row-v2" style={{ gridTemplateColumns: '40px 1fr auto', padding: '0.6rem' }}>
-                       <img src={c.profileUrl || '/newstickers/sticker1.png'} alt="" style={{ width: '30px', height: '30px', borderRadius: '8px' }} />
-                       <span style={{ fontSize: '0.9rem' }}>{c.username}</span>
-                       <button
-                         className="btn btn-primary btn-sm"
-                         disabled={isInvitingUserId === String(c.id)}
-                         onClick={() => handleInviteAction(c)}
-                       >
-                         {isInvitingUserId === String(c.id) ? 'Inviting...' : 'Invite'}
-                       </button>
-                    </div>
-                  ))}
-               </div>
-               {inviteFeedback && <p className={`info-banner ${inviteFeedback.tone}`} style={{ marginTop: '1rem' }}>{inviteFeedback.message}</p>}
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2rem' }}>
+                <h3>Invite Explorer</h3>
+                <button className="btn btn-ghost btn-sm" onClick={() => setIsInviteModalOpen(false)}><FiX /></button>
+              </div>
+              <input className="input" placeholder="Search by username..." value={inviteUsernameQuery} onChange={e => { setInviteUsernameQuery(e.target.value); debounceSearchInviteCanditate(e.target.value); }} />
+              {isSearchingInviteUser ? (
+                <p className="empty-note" style={{ marginTop: '0.75rem' }}>Searching users...</p>
+              ) : null}
+
+              <div style={{ marginTop: '2rem', display: 'grid', gap: '1rem' }}>
+                {candidates.map(c => (
+                  <div key={c.id} className="history-row-v2" style={{ gridTemplateColumns: '40px 1fr auto', padding: '0.6rem' }}>
+                    <img src={c.profileUrl || '/newstickers/sticker1.png'} alt="" style={{ width: '30px', height: '30px', borderRadius: '8px' }} />
+                    <span style={{ fontSize: '0.9rem' }}>{c.username}</span>
+                    <button
+                      className="btn btn-primary btn-sm"
+                      disabled={isInvitingUserId === String(c.id)}
+                      onClick={() => handleInviteAction(c)}
+                    >
+                      {isInvitingUserId === String(c.id) ? 'Inviting...' : 'Invite'}
+                    </button>
+                  </div>
+                ))}
+              </div>
+              {inviteFeedback && <p className={`info-banner ${inviteFeedback.tone}`} style={{ marginTop: '1rem' }}>{inviteFeedback.message}</p>}
             </motion.div>
           </div>
         )}

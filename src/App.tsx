@@ -8,7 +8,6 @@ import { DiscoveryPage } from './pages/DiscoveryPage'
 import { EditTimelinePage } from './pages/EditTimelinePage'
 import { LandingPage } from './pages/LandingPage'
 import { LoginPage } from './pages/LoginPage'
-import { ProfileInvitesPage } from './pages/ProfileInvitesPage'
 import { ProfilePage } from './pages/ProfilePage'
 import { RegisterPage } from './pages/RegisterPage'
 import { SettingsPage } from './pages/SettingsPage'
@@ -38,7 +37,6 @@ function App() {
         <Route index element={<DiscoveryPage />} />
         <Route path="discover" element={<Navigate replace to="/app" />} />
         <Route path="profile" element={<ProfilePage />} />
-        <Route path="profile/invites" element={<ProfileInvitesPage />} />
         <Route path="create-trip" element={<CreateTripPage />} />
         <Route path="add-timeline/:tripId" element={<AddTimelinePage />} />
         <Route path="edit-timeline/:tripId/:id" element={<EditTimelinePage />} />

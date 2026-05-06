@@ -48,11 +48,7 @@ body {
   margin: 0;
   font-family: var(--body-font);
   color: var(--text-100);
-  background:
-    radial-gradient(circle at 10% -20%, rgba(23, 247, 2, 0.2), transparent 42%),
-    radial-gradient(circle at 86% 8%, rgba(65, 162, 56, 0.28), transparent 36%),
-    radial-gradient(circle at 58% 114%, rgba(66, 120, 61, 0.24), transparent 42%),
-    linear-gradient(146deg, var(--bg-980) 0%, var(--bg-960) 52%, var(--bg-940) 100%);
+  background: #0d0f0d;
   background-attachment: fixed;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -158,6 +154,14 @@ h3 {
 
   .app-shell {
     padding: calc(0.35rem + env(safe-area-inset-top)) 0.5rem calc(65px + env(safe-area-inset-bottom)) 0.5rem;
+  }
+
+  body {
+    background:
+      radial-gradient(circle at 10% -20%, rgba(23, 247, 2, 0.2), transparent 42%),
+      radial-gradient(circle at 86% 8%, rgba(65, 162, 56, 0.28), transparent 36%),
+      radial-gradient(circle at 58% 114%, rgba(66, 120, 61, 0.24), transparent 42%),
+      linear-gradient(146deg, var(--bg-980) 0%, var(--bg-960) 52%, var(--bg-940) 100%) !important;
   }
 
   .panel {

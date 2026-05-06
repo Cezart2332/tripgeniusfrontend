@@ -7,23 +7,23 @@ export type TripStatus =
   | 'active'
   | 'completed'
 
-  
+
 
 export interface User {
-    id: number,
-    username: string,
-    email:string,
-    profileUrl: string,
-    description: string,
-    tags: string[],
-    groupSize: number,
-    notifications: Notification[],
-    trips: Trip[]
+  id: number,
+  username: string,
+  email: string,
+  profileUrl: string,
+  description: string,
+  tags: string[],
+  groupSize: number,
+  notifications: Notification[],
+  trips: Trip[]
 }
 
 export interface Notification {
-  id:number,
-  content:string,
+  id: number,
+  content: string,
   isRead?: boolean,
   read?: boolean,
   IsRead?: boolean,
@@ -68,6 +68,7 @@ export interface Trip {
   tags: string[]
   timelines: TimelineStop[]
   members: TripMember[]
+  history: TripHistory[]
   isUserMember: boolean
 }
 
@@ -77,8 +78,14 @@ export interface ChatMessage {
   content: string
   sentAt: string
   imageUrl: string
-  username:string
-  profileUrl:string
+  username: string
+  profileUrl: string
+}
+
+export interface TripHistory {
+  id: number,
+  date: string,
+  content: string,
 }
 
 export interface AiSuggestion {
