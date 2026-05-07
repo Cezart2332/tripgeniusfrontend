@@ -7,7 +7,7 @@ import { useDispatch, useSelector } from 'react-redux'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { tripTypeOptions } from '../data/tripTypeOptions'
 import type { Trip, User } from '../types/models'
-import api from '../data/api'
+import api, { updateCachedResponse } from '../data/api'
 import { setUser } from '../data/authSlice'
 import { AxiosError } from 'axios'
 import { FeedbackToast } from '../components/FeedbackToast'
@@ -504,6 +504,20 @@ export function ProfilePage() {
 
     setIsSaving(true)
 
+    // Optimistic Update: Update Redux state immediately
+    if (user) {
+      const optimisticUser: User = {
+        ...user,
+        description: description.trim(),
+        tags: tripTypes,
+        groupSize: typeof maxGroupSize === 'number' ? maxGroupSize : user.groupSize
+      }
+      dispatch(setUser({ user: optimisticUser }))
+      
+      // Update the Service Worker's cache for /api/user/me so refresh works offline
+      updateCachedResponse('api/user/me', optimisticUser)
+    }
+
     try {
       const updatedUser = await update(
         avatarFile,
@@ -530,12 +544,20 @@ export function ProfilePage() {
       if (err?.queued) {
         showToast('Profile and preferences will be updated successfully.', 'success')
       }
-      else if (err instanceof AxiosError) {
-        const message = err.response?.data?.message || err.response?.data || "There was a problem updating your profile, please try again later."
-        showToast(String(message), 'error')
-      }
       else {
-        showToast('Could not update profile. Please try again.', 'error')
+        // Rollback on actual server error (not network error)
+        if (user) {
+          dispatch(setUser({ user }))
+          updateCachedResponse('api/user/me', user)
+        }
+        
+        if (err instanceof AxiosError) {
+          const message = err.response?.data?.message || err.response?.data || "There was a problem updating your profile, please try again later."
+          showToast(String(message), 'error')
+        }
+        else {
+          showToast('Could not update profile. Please try again.', 'error')
+        }
       }
     }
     finally {
@@ -931,15 +953,15 @@ export function ProfilePage() {
             className="profile-history-v2"
           >
             <div className="profile-section-v2">
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div className="profile-tab-header-v2">
                 <div>
                   <h3>My Travels</h3>
                   <p>Your journey through various territories.</p>
                 </div>
-                <img src="/newstickers/sticker3.png" alt="" style={{ width: '80px' }} />
+                <img src="/newstickers/sticker3.png" alt="" style={{ width: '80px' }} className="header-sticker-v2" />
               </div>
 
-              <div className="profile-history-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginTop: '1rem' }}>
+              <div className="profile-history-grid">
                 <div className="history-list-v2">
                   <h4>Upcoming</h4>
                   {futureTrips?.length === 0 && <p className="empty-note">No upcoming trips planned.</p>}
@@ -986,7 +1008,7 @@ export function ProfilePage() {
             transition={revealTransition}
           >
             <div className="profile-section-v2">
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+              <div className="profile-tab-header-v2">
                 <div>
                   <h3>Match Intelligence</h3>
                   <p>Trips that resonate with your travel DNA.</p>

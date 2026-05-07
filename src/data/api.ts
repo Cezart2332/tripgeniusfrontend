@@ -150,6 +150,31 @@ window.addEventListener('online', async () => {
     if (online) flushQueue()
 })
 
+/**
+ * Updates the browser's Cache Storage (api-cache) for a specific GET request.
+ * Useful for optimistic UI updates when offline.
+ */
+export async function updateCachedResponse(url: string, data: any) {
+    if (!('caches' in window)) return
+
+    try {
+        const cache = await caches.open('api-cache')
+        const fullUrl = url.startsWith('http') ? url : `${baseURL}/${url.startsWith('/') ? url.slice(1) : url}`
+        
+        // Construct a new response with the provided data
+        const response = new Response(JSON.stringify(data), {
+            headers: { 'Content-Type': 'application/json' },
+            status: 200,
+            statusText: 'OK'
+        })
+        
+        await cache.put(fullUrl, response)
+        console.log(`[Cache Sync] Updated ${fullUrl} with optimistic data.`)
+    } catch (err) {
+        console.error('[Cache Sync] Failed to update cache:', err)
+    }
+}
+
 // ─── Request Interceptor ──────────────────────────────────────────────────────
 
 api.interceptors.request.use(async (config) => {

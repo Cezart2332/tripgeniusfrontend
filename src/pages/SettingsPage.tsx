@@ -359,24 +359,26 @@ export function SettingsPage() {
       <FeedbackToast toast={toast} clearToast={() => setToast(null)} />
       
       <header className="profile-header-v2">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          {isMobile && activeTab !== 'menu' && (
-            <button 
-              className="icon-link" 
-              onClick={() => selectTab('menu')}
-              aria-label="Back to settings menu"
-              style={{ width: '40px', height: '40px', background: 'rgba(255,255,255,0.05)' }}
-            >
-              <FiChevronLeft size={20} />
-            </button>
-          )}
-          <div>
-            <p className="eyebrow">Settings center</p>
-            <h1>
-              {isMobile && activeTab !== 'menu' 
-                ? settingsTabs.find(t => t.key === activeTab)?.label 
-                : 'Platform Workspace'}
-            </h1>
+        <div className="profile-tab-header-v2">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            {isMobile && activeTab !== 'menu' && (
+              <button 
+                className="icon-link" 
+                onClick={() => selectTab('menu')}
+                aria-label="Back to settings menu"
+                style={{ width: '40px', height: '40px', background: 'rgba(255,255,255,0.05)' }}
+              >
+                <FiChevronLeft size={20} />
+              </button>
+            )}
+            <div>
+              <p className="eyebrow">Settings center</p>
+              <h1>
+                {isMobile && activeTab !== 'menu' 
+                  ? settingsTabs.find(t => t.key === activeTab)?.label 
+                  : 'Platform Workspace'}
+              </h1>
+            </div>
           </div>
         </div>
 
@@ -491,12 +493,12 @@ export function SettingsPage() {
             className="settings-grid-v2"
           >
             <div className="settings-card-v2">
-              <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'flex-start' }}>
+              <div className="settings-card-content-v2">
                 <div className="notification-icon-v2">
                   <FiMail />
                 </div>
                 <div style={{ flex: 1 }}>
-                  <h2>Account Identity</h2>
+                  <h3>Account Identity</h3>
                   <p>Update your primary email address for invites and trip synchronization.</p>
                   
                   <form onSubmit={updateEmail} className="profile-form-v2">
@@ -543,12 +545,12 @@ export function SettingsPage() {
             className="settings-grid-v2"
           >
             <div className="settings-card-v2">
-              <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'flex-start' }}>
+              <div className="settings-card-content-v2">
                 <div className="notification-icon-v2">
                   <FiShield />
                 </div>
                 <div style={{ flex: 1 }}>
-                  <h2>Shield Settings</h2>
+                  <h3>Shield Settings</h3>
                   <p>Protect your trips with a strong, updated password.</p>
                   
                   <form onSubmit={updatePassword} className="profile-form-v2">
@@ -605,12 +607,12 @@ export function SettingsPage() {
             className="settings-grid-v2"
           >
             <div className="settings-card-v2">
-              <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'flex-start' }}>
+              <div className="settings-card-content-v2">
                 <div className="notification-icon-v2">
                   <FiMessageSquare />
                 </div>
                 <div style={{ flex: 1 }}>
-                  <h2>Platform Health</h2>
+                  <h3>Platform Health</h3>
                   <p>Found a glitch in the map? Report it to our Support Team.</p>
                   
                   <form onSubmit={reportBugSend} className="profile-form-v2">
@@ -646,12 +648,12 @@ export function SettingsPage() {
             className="settings-grid-v2"
           >
             <div className="settings-card-v2" style={{ borderColor: 'rgba(255, 100, 100, 0.2)' }}>
-              <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'flex-start' }}>
+              <div className="settings-card-content-v2">
                 <div className="notification-icon-v2" style={{ background: 'rgba(255, 100, 100, 0.1)', color: '#ff6b6b' }}>
                   <FiAlertTriangle />
                 </div>
                 <div style={{ flex: 1 }}>
-                  <h2 style={{ color: '#ff6b6b' }}>Burn Sequence</h2>
+                  <h3 style={{ color: '#ff6b6b' }}>Burn Sequence</h3>
                   <p>Permanently erase your account and all travel history. This cannot be reversed.</p>
                   
                   <div style={{ marginTop: '2rem' }}>

@@ -18,7 +18,7 @@ import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { TripRouteMap } from '../components/TripRouteMap'
 import type { ChatMessage, MemberRole, TimelineStop, Trip, TripMember, User } from '../types/models'
 import * as signalR from '@microsoft/signalr'
-import api from '../data/api'
+import api, { updateCachedResponse } from '../data/api'
 import { AxiosError } from 'axios'
 import {
   formatDisplayDate,
@@ -658,8 +658,23 @@ function TripPageContent({ trip }: TripPageContentProps) {
       }
 
       setTripDetailsFeedback({ tone: 'success', message: 'Trip details updated.' })
+      
+      // Update cache
+      updateCachedResponse(`api/trip/get-trip/${tripDetails.id}`, updatedTrip || { ...tripDetails, ...ownerTripDraft })
     } catch (err: any) {
       if (err?.queued) {
+        const optimisticTrip = {
+          ...tripDetails,
+          title: ownerTripDraft.title,
+          description: ownerTripDraft.description,
+          startingDate: new Date(ownerTripDraft.startingDate).toISOString(),
+          endingDate: new Date(ownerTripDraft.endingDate).toISOString(),
+          status: ownerTripDraft.status,
+          maxParticipants: Number(ownerTripDraft.maxParticipants),
+          tags: ownerTripDraft.tags,
+        }
+        setTripDetails(optimisticTrip)
+        updateCachedResponse(`api/trip/get-trip/${tripDetails.id}`, optimisticTrip)
         setTripDetailsFeedback({ tone: 'success', message: 'Trip updates will be synced when you are back online.' })
       } else {
         setTripDetailsFeedback({ tone: 'error', message: 'Failed to update trip.' })
@@ -739,12 +754,15 @@ function TripPageContent({ trip }: TripPageContentProps) {
       }
     } catch (err: any) {
       if (err?.queued) {
-        // Optimistic Update for accepting/declining
-        if (action === 'Accepted') {
-          setMembers(prev => prev.map(m => m.id === member.id ? { ...m, status: 'accepted' } : m))
-        } else {
-          setMembers(prev => prev.filter(m => m.id !== member.id))
-        }
+        const updatedMembers = action === 'Accepted' 
+          ? members.map(m => m.id === member.id ? { ...m, status: 'accepted' } : m)
+          : members.filter(m => m.id !== member.id)
+          
+        setMembers(updatedMembers)
+        
+        // Sync cache
+        updateCachedResponse(`api/trip/get-trip/${tripDetails.id}`, { ...tripDetails, members: updatedMembers })
+        
         setTripDetailsFeedback({ tone: 'success', message: `Response to ${member.username} will be processed later.` })
       } else {
         setTripDetailsFeedback({ tone: 'error', message: 'Failed to respond to request.' })
@@ -1048,13 +1066,13 @@ function TripPageContent({ trip }: TripPageContentProps) {
       transition={revealTransition}
     >
       <div className="profile-section-v2" style={{ marginBottom: '2rem' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div className="trip-members-head-v2">
           <div>
             <h3>The Trip Team</h3>
             <p>Collaborators and explorers currently in the room.</p>
           </div>
           {canInviteMembers && (
-            <button className="btn btn-primary" onClick={() => setIsInviteModalOpen(true)}>
+            <button className="btn btn-primary invite-btn-mobile" onClick={() => setIsInviteModalOpen(true)}>
               <FiUserPlus /> Invite Explorer
             </button>
           )}
@@ -1110,12 +1128,12 @@ function TripPageContent({ trip }: TripPageContentProps) {
               return (
                 <div key={m.id} className="history-row-v2" style={{ background: 'rgba(9, 14, 10, 0.4)', gridTemplateColumns: '60px 1fr auto' }}>
                   <img src={getAvatarUrl(m.username, m.avatarUrl)} alt="" className="avatar" style={{ width: '50px', height: '50px', borderRadius: '14px', objectFit: 'cover' }} />
-                  <div>
+                  <div className="member-info-v2">
                     <h4 style={{ color: '#f3fff1' }}>{m.username}</h4>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <div className="member-status-row-v2">
                       <p className="eyebrow" style={{ fontSize: '0.65rem' }}>{memberStatusLabel}</p>
                       {memberStatusLabel === 'Waiting for approval' && canInviteMembers && (
-                        <div style={{ display: 'flex', gap: '0.5rem', marginLeft: '0.75rem' }}>
+                        <div className="member-actions-v2">
                           <button
                             className="btn btn-primary btn-sm"
                             disabled={isProcessingRequestMemberId === m.id}

@@ -83,7 +83,7 @@ const Typewriter = ({ text, isStreaming }: { text: string; isStreaming?: boolean
   }, [text, displayedText, isStreaming]);
 
   return (
-    <div className="message-content" style={{ position: 'relative' }}>
+    <div className="message-content-v3" style={{ position: 'relative' }}>
       <ReactMarkdown remarkPlugins={[remarkGfm]}>{isStreaming ? displayedText : text}</ReactMarkdown>
       {isStreaming && displayedText.length < text.length && (
         <span className="typing-cursor" style={{ display: 'inline-block', height: '1em', width: '2px', background: 'var(--green-500)', marginLeft: '4px' }}></span>
@@ -178,6 +178,11 @@ export function AiAdvisorPage() {
 
     threadRef.current.scrollTop = threadRef.current.scrollHeight
 
+    // Reset state on initialization to avoid "stuck" UI if connection restarted
+    setIsTyping(false);
+    setActiveAiMessageId(null);
+    aiMessageIdRef.current = null;
+
     const connection = new signalR.HubConnectionBuilder()
       .withUrl(`${baseURL}/hubs/ai-chat?access_token=${token}`)
       .withAutomaticReconnect([1000, 2000, 5000, 10000, 30000])
@@ -218,6 +223,22 @@ export function AiAdvisorPage() {
       aiMessageIdRef.current = null;
       setActiveAiMessageId(null)
       setIsTyping(false);
+    });
+    
+    connection.onreconnecting((error) => {
+      console.warn("SignalR Reconnecting:", error);
+      setIsTyping(false); // Clear typing state if connection is unstable
+      setActiveAiMessageId(null);
+    });
+
+    connection.onreconnected((connectionId) => {
+      console.log("SignalR Reconnected. Connection ID:", connectionId);
+    });
+
+    connection.onclose((error) => {
+      console.error("SignalR Connection Closed:", error);
+      setIsTyping(false);
+      setActiveAiMessageId(null);
     });
 
     connectionRef.current = connection
@@ -434,7 +455,7 @@ export function AiAdvisorPage() {
                 value={prompt}
                 onChange={(event) => setPrompt(event.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder={isTyping ? "AI is formulating your strategy..." : "Ask me anything about your next trip..."}
+                placeholder={isTyping ? "Formulating strategy..." : "Ask me anything..."}
                 disabled={isTyping}
                 rows={1}
               />
