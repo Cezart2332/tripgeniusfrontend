@@ -911,7 +911,7 @@ export function ProfilePage() {
                       <FiMail />
                     </div>
                     <div style={{ flex: 1 }}>
-                      <p style={{ color: '#f3fff1', fontWeight: 500 }}>Invitation to {invite.tripTitle}</p>
+                      <p style={{ color: 'var(--text-100)', fontWeight: 500 }}>Invitation to {invite.tripTitle}</p>
                     </div>
                     <div className="invite-actions-v2">
                       <button
@@ -1114,7 +1114,7 @@ export function ProfilePage() {
                         <FiBell />
                       </div>
                       <div style={{ flex: 1 }}>
-                        <p style={{ color: '#f3fff1', fontWeight: 500 }}>{notification.content}</p>
+                        <p style={{ color: 'var(--text-100)', fontWeight: 500 }}>{notification.content}</p>
                         <p style={{ fontSize: '0.75rem', opacity: 0.5, marginTop: '0.2rem' }}>
                           {formatNotificationTimestamp(notification)}
                         </p>

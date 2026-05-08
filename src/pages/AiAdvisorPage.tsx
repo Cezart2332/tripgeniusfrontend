@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
-import { FiSend, FiMapPin, FiExternalLink, FiMessageCircle, FiArrowLeft } from 'react-icons/fi'
+import { FiSend, FiMapPin, FiExternalLink, FiMessageCircle, FiArrowLeft, FiArrowDown } from 'react-icons/fi'
 import { useSelector, useDispatch } from 'react-redux'
 import { Link, useNavigate } from 'react-router-dom'
 import { setToken } from '../data/authSlice'
@@ -108,6 +108,8 @@ export function AiAdvisorPage() {
   const [messages, setMessages] = useState<Message[]>([])
   const [isOffline, setIsOffline] = useState(!navigator.onLine)
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const initialScrollDone = useRef(false);
+  const [showScrollButton, setShowScrollButton] = useState(false);
 
   useEffect(() => {
     const handleOnline = () => setIsOffline(false)
@@ -176,7 +178,7 @@ export function AiAdvisorPage() {
       refreshToken()
     }
 
-    threadRef.current.scrollTop = threadRef.current.scrollHeight
+    // Initial scroll handled by messages effect
 
     // Reset state on initialization to avoid "stuck" UI if connection restarted
     setIsTyping(false);
@@ -285,15 +287,41 @@ export function AiAdvisorPage() {
     void loadHistory()
   }, [token])
 
-  useEffect(() => {
+  const handleScroll = () => {
     const thread = threadRef.current;
     if (thread) {
-      const isAtBottom = thread.scrollHeight - thread.scrollTop - thread.clientHeight < 250;
-      if (isAtBottom) {
-        thread.scrollTop = thread.scrollHeight;
-      }
+      const isAtBottom = thread.scrollHeight - thread.scrollTop - thread.clientHeight < 150;
+      setShowScrollButton(!isAtBottom && thread.scrollHeight > thread.clientHeight);
     }
-  }, [messages, isTyping, dispatch])
+  };
+
+  const scrollToBottom = () => {
+    const thread = threadRef.current;
+    if (thread) {
+      thread.scrollTo({
+        top: thread.scrollHeight,
+        behavior: 'smooth'
+      });
+    }
+  };
+
+  useEffect(() => {
+    const thread = threadRef.current;
+    if (thread && messages.length > 0) {
+      if (!initialScrollDone.current) {
+        // Force scroll to bottom on initial history load
+        thread.scrollTop = thread.scrollHeight;
+        initialScrollDone.current = true;
+      } else {
+        // Auto-scroll only if already near bottom (streaming/new messages)
+        const isAtBottom = thread.scrollHeight - thread.scrollTop - thread.clientHeight < 250;
+        if (isAtBottom) {
+          thread.scrollTop = thread.scrollHeight;
+        }
+      }
+      handleScroll();
+    }
+  }, [messages, isTyping])
 
   const handleSubmit = async (e?: FormEvent) => {
     if (e) e.preventDefault();
@@ -356,7 +384,12 @@ export function AiAdvisorPage() {
       </aside>
 
       <section className="ai-chat-v2">
-        <div className="ai-thread-v2" ref={threadRef} data-lenis-prevent>
+        <div 
+          className="ai-thread-v2" 
+          ref={threadRef} 
+          data-lenis-prevent
+          onScroll={handleScroll}
+        >
           {messages.length === 0 && !isTyping ? (
             <div className="ai-empty-state-v3">
               <header className="empty-state-header-v3">
@@ -445,6 +478,16 @@ export function AiAdvisorPage() {
             </div>
           )}
         </div>
+
+        {showScrollButton && (
+          <button 
+            className="ai-scroll-down-btn" 
+            onClick={scrollToBottom}
+            aria-label="Scroll to bottom"
+          >
+            <FiArrowDown />
+          </button>
+        )}
 
         <div className="ai-composer-shell-v3">
           <form className="ai-composer-v3" onSubmit={handleSubmit}>

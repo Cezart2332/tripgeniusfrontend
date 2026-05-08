@@ -103,7 +103,7 @@ export function VerifyEmailPage() {
                 {status === 'success' && (
                   <>
                     <FiCheckCircle style={{ fontSize: '3rem', color: 'var(--green-580)' }} />
-                    <h3 style={{ margin: 0, color: '#f3fff1' }}>Verification Complete!</h3>
+                    <h3 style={{ margin: 0, color: 'var(--text-100)' }}>Verification Complete!</h3>
                     <p>Your account is now fully active. Ready for your next adventure?</p>
                     <Link to="/login" className="btn btn-primary" style={{ width: '100%', marginTop: '0.5rem' }}>
                       Go to Login
@@ -112,8 +112,8 @@ export function VerifyEmailPage() {
                 )}
                 {status === 'error' && (
                   <>
-                    <FiMail style={{ fontSize: '3rem', color: '#ff6b6b' }} />
-                    <h3 style={{ margin: 0, color: '#ff6b6b' }}>Verification Failed</h3>
+                    <FiMail style={{ fontSize: '3rem', color: 'var(--danger-500)' }} />
+                    <h3 style={{ margin: 0, color: 'var(--danger-500)' }}>Verification Failed</h3>
                     <p>{errorMessage}</p>
                     <Link to="/login" className="btn btn-primary" style={{ width: '100%', marginTop: '0.5rem' }}>
                       Back to Login

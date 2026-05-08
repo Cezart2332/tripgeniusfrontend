@@ -2046,6 +2046,96 @@ h3 {
   }
 }
 
+.ai-scroll-down-btn {
+  position: absolute;
+  bottom: 120px;
+  right: 2rem;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: rgba(43, 83, 64, 0.46);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(154, 247, 208, 0.4);
+  color: var(--green-500);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 100;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), 0 0 15px rgba(23, 247, 2, 0.2);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: scroll-btn-pop 0.3s ease-out;
+}
+
+.ai-scroll-down-btn:hover {
+  transform: translateY(-4px);
+  background: rgba(53, 110, 84, 0.6);
+  border-color: var(--green-500);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4), 0 0 20px rgba(23, 247, 2, 0.4);
+}
+
+.ai-scroll-down-btn svg {
+  font-size: 1.2rem;
+}
+
+@keyframes scroll-btn-pop {
+  0% { transform: scale(0.5) translateY(20px); opacity: 0; }
+  100% { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+@media (max-width: 850px) {
+  .ai-scroll-down-btn {
+    bottom: 140px;
+    right: 1.5rem;
+    width: 38px;
+    height: 38px;
+  }
+}
+
+/* Custom Map Markers */
+.custom-marker-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.custom-map-marker {
+  pointer-events: auto;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2.5px solid #ffffff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  cursor: pointer;
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  /* Centering relative to the wrapper */
+  transform: translate(0, 0); 
+}
+
+.custom-map-marker:hover {
+  transform: scale(1.2) translateY(-4px);
+  z-index: 100 !important;
+}
+
+.custom-map-marker .marker-icon-inner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+.custom-map-marker svg {
+  width: 18px;
+  height: 18px;
+  stroke-width: 2.5px;
+}
+
 @media (max-width: 850px) {
   .toolbar-actions {
     width: 100%;

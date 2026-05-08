@@ -300,7 +300,7 @@ function LocationAutocompleteField({ id, label, placeholder, value, onValueChang
            {isLoading && <p style={{ padding: '1rem', fontSize: '0.8rem', opacity: 0.5 }}>Querying OpenStreetMap...</p>}
            {suggestions.map(s => (
              <button key={s.id} type="button" className="location-option" style={{ width: '100%', textAlign: 'left', padding: '1rem', border: 'none', background: 'transparent', cursor: 'pointer' }} onMouseDown={() => onLocationSelect(s)}>
-                <div style={{ fontWeight: 600, color: '#f3fff1' }}>{s.name}</div>
+                <div style={{ fontWeight: 600, color: 'var(--text-100)' }}>{s.name}</div>
                 <div style={{ fontSize: '0.75rem', opacity: 0.5 }}>{s.placeName}</div>
              </button>
            ))}
@@ -344,7 +344,7 @@ export function CreateTripPage() {
     setCalendarState(null)
   }
 
-  const handleCreate = async (e: FormEvent) => {
+  const handleCreate = async (e: React.FormEvent | React.MouseEvent) => {
     e.preventDefault()
 
     if (isPublishingTrip) {
@@ -426,7 +426,7 @@ export function CreateTripPage() {
         ))}
       </div>
 
-      <motion.form onSubmit={handleCreate} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={revealTransition}>
+      <motion.form onSubmit={e => e.preventDefault()} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={revealTransition}>
         <AnimatePresence mode="wait">
           {activeStep === 'details' && (
             <motion.div key="details" className="builder-form-v2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={builderPaneTransition}>
@@ -658,7 +658,7 @@ export function CreateTripPage() {
         <div className="create-actions" style={{ marginTop: '3rem', display: 'flex', gap: '1rem', justifyContent: 'center' }}>
            {!isFirst && <button type="button" className="btn btn-ghost btn-lg" disabled={isPublishingTrip} onClick={() => setActiveStep(builderSteps[activeIndex - 1].key)}>Previous Step</button>}
            {isLast ? (
-             <button type="submit" className="btn btn-primary btn-lg" style={{ minWidth: '240px' }} disabled={isPublishingTrip}>
+             <button type="button" onClick={handleCreate} className="btn btn-primary btn-lg" style={{ minWidth: '240px' }} disabled={isPublishingTrip}>
                {isPublishingTrip ? 'Publishing...' : 'Publish Trip'}
              </button>
            ) : (
@@ -672,7 +672,7 @@ export function CreateTripPage() {
          <div className="calendar-shell">
             <div className="calendar-head" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
                <button type="button" className="btn btn-ghost btn-sm" onClick={() => shiftMonth(-1)}><FiArrowLeft /></button>
-               <h4 style={{ color: '#f3fff1' }}>{calendarState && monthFormatter.format(calendarState.monthCursor)}</h4>
+               <h4 style={{ color: 'var(--text-100)' }}>{calendarState && monthFormatter.format(calendarState.monthCursor)}</h4>
                <button type="button" className="btn btn-ghost btn-sm" onClick={() => shiftMonth(1)}><FiArrowLeft style={{ transform: 'rotate(180deg)' }} /></button>
             </div>
             <div className="calendar-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '0.4rem' }}>
@@ -680,7 +680,7 @@ export function CreateTripPage() {
                  if (!date) return <div key={i} />
                  const isSel = selectedCalendarDate && isSameDay(date, selectedCalendarDate)
                  return (
-                   <button key={i} type="button" className={isSel ? 'calendar-day is-selected' : 'calendar-day'} style={{ padding: '0.8rem', borderRadius: '12px', border: 'none', background: isSel ? 'var(--green-580)' : 'rgba(255,255,255,0.03)', color: isSel ? '#fff' : '#f3fff1', cursor: 'pointer' }} onClick={() => selectDate(date)}>
+                   <button key={i} type="button" className={isSel ? 'calendar-day is-selected' : 'calendar-day'} style={{ padding: '0.8rem', borderRadius: '12px', border: 'none', background: isSel ? 'var(--green-580)' : 'var(--surface-860)', color: isSel ? 'var(--text-100)' : 'var(--text-100)', cursor: 'pointer' }} onClick={() => selectDate(date)}>
                       {date.getDate()}
                    </button>
                  )

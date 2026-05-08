@@ -129,6 +129,7 @@ export function NavigationPage() {
       center: [selectedStop.fromCoords[1], selectedStop.fromCoords[0]],
       zoom: 15,
       pitch: 60,
+      scrollZoom: true,
     })
 
     mapRef.current = map
@@ -298,7 +299,7 @@ export function NavigationPage() {
 
   return (
     <div className="navigation-screen" style={{ position: 'fixed', inset: 0, zIndex: 1000, background: '#000' }}>
-      <div ref={containerRef} style={{ width: '100%', height: '100%' }} />
+      <div ref={containerRef} data-lenis-prevent style={{ width: '100%', height: '100%' }} />
 
       {/* Back Button */}
       <button 
@@ -326,32 +327,32 @@ export function NavigationPage() {
       {/* Navigation HUD */}
       {navData && navData.steps && navData.steps.length > 0 && (
         <div className="nav-hud-v2" style={{ position: 'absolute', top: '4rem', left: '1rem', right: '1rem', zIndex: 1010 }}>
-          <div style={{ background: '#1e293b', color: '#fff', padding: '1.25rem', borderRadius: '16px', boxShadow: '0 10px 25px rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', gap: '1rem', border: '1px solid rgba(23, 247, 2, 0.2)' }}>
-            <div style={{ fontSize: '2.5rem', color: '#17f702' }}>
+          <div style={{ background: 'var(--surface-900)', color: 'var(--text-100)', padding: '1.25rem', borderRadius: '16px', boxShadow: 'var(--shadow)', display: 'flex', alignItems: 'center', gap: '1rem', border: '1px solid var(--line)', backdropFilter: 'blur(12px)' }}>
+            <div style={{ fontSize: '2.5rem', color: 'var(--green-580)' }}>
               {getManeuverIcon(navData.steps[0].type, navData.steps[0].modifier)}
             </div>
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: '1.4rem', fontWeight: 800 }}>{navData.steps[0].instruction}</div>
-              <div style={{ fontSize: '1rem', opacity: 0.8 }}>In {Math.round(navData.steps[0].distance)} m</div>
+              <div style={{ fontSize: '1rem', color: 'var(--text-380)' }}>In {Math.round(navData.steps[0].distance)} m</div>
             </div>
             {isOffline && (
-              <div style={{ background: '#db4a5b', color: '#fff', padding: '0.3rem 0.6rem', borderRadius: '8px', fontSize: '0.7rem', fontWeight: 900, textTransform: 'uppercase' }}>
+              <div style={{ background: 'var(--danger-500)', color: 'var(--text-100)', padding: '0.3rem 0.6rem', borderRadius: '8px', fontSize: '0.7rem', fontWeight: 900, textTransform: 'uppercase' }}>
                 Offline
               </div>
             )}
           </div>
           
           {offlineWarning && isOffline && (
-            <div style={{ background: 'rgba(219, 74, 91, 0.9)', color: '#fff', padding: '0.5rem 1rem', borderRadius: '12px', marginTop: '0.5rem', fontSize: '0.85rem', textAlign: 'center' }}>
+            <div style={{ background: 'rgba(219, 74, 91, 0.2)', color: 'var(--danger-500)', border: '1px solid rgba(219, 74, 91, 0.3)', padding: '0.5rem 1rem', borderRadius: '12px', marginTop: '0.5rem', fontSize: '0.85rem', textAlign: 'center', backdropFilter: 'blur(8px)' }}>
               {offlineWarning}
             </div>
           )}
 
           <div style={{ marginTop: '0.75rem', display: 'flex', gap: '0.75rem' }}>
-             <div style={{ background: 'rgba(30, 41, 59, 0.95)', color: '#fff', padding: '0.6rem 1.2rem', borderRadius: '20px', fontSize: '0.9rem', fontWeight: 700 }}>
+             <div style={{ background: 'var(--surface-900)', color: 'var(--text-100)', border: '1px solid var(--line-soft)', padding: '0.6rem 1.2rem', borderRadius: '20px', fontSize: '0.9rem', fontWeight: 700, backdropFilter: 'blur(8px)' }}>
                 {(navData.distanceMeters! / 1000).toFixed(1)} km left
              </div>
-             <div style={{ background: 'rgba(30, 41, 59, 0.95)', color: '#fff', padding: '0.6rem 1.2rem', borderRadius: '20px', fontSize: '0.9rem', fontWeight: 700 }}>
+             <div style={{ background: 'var(--surface-900)', color: 'var(--text-100)', border: '1px solid var(--line-soft)', padding: '0.6rem 1.2rem', borderRadius: '20px', fontSize: '0.9rem', fontWeight: 700, backdropFilter: 'blur(8px)' }}>
                 ETA: {Math.round(navData.durationSeconds! / 60)} min
              </div>
           </div>
@@ -360,13 +361,13 @@ export function NavigationPage() {
 
       {/* Offline Banner */}
       {isOffline && (
-        <div id="offline-banner" style={{ position: 'absolute', bottom: '2rem', left: '1rem', right: '1rem', zIndex: 1050, background: 'rgba(30, 41, 59, 0.98)', color: '#fff', padding: '1.5rem', borderRadius: '20px', boxShadow: '0 -10px 40px rgba(0,0,0,0.4)', border: '1px solid rgba(219, 74, 91, 0.3)' }}>
+        <div id="offline-banner" style={{ position: 'absolute', bottom: '2rem', left: '1rem', right: '1rem', zIndex: 1050, background: 'var(--surface-900)', color: 'var(--text-100)', padding: '1.5rem', borderRadius: '20px', boxShadow: 'var(--shadow)', border: '1px solid rgba(219, 74, 91, 0.4)', backdropFilter: 'blur(12px)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
             <span style={{ fontSize: '1.5rem' }}>⚠️</span>
             <div style={{ fontSize: '1.2rem', fontWeight: 800 }}>You are offline</div>
           </div>
           
-          <div style={{ fontSize: '0.9rem', opacity: 0.7, marginBottom: '1rem' }}>Recently cached routes:</div>
+          <div style={{ fontSize: '0.9rem', color: 'var(--text-380)', marginBottom: '1rem' }}>Recently cached routes:</div>
           
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
             {recentRoutes.length > 0 ? recentRoutes.map((r) => (
@@ -376,24 +377,25 @@ export function NavigationPage() {
                   processRouteData(r.routeData)
                   setOfflineWarning("Route may be inaccurate — reconnect to recalculate")
                 }}
-                style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', padding: '0.75rem 1rem', borderRadius: '12px', textAlign: 'left', fontSize: '0.85rem' }}
+                className="btn btn-ghost"
+                style={{ background: 'var(--surface-860)', border: '1px solid var(--line-soft)', color: 'var(--text-100)', padding: '0.75rem 1rem', borderRadius: '12px', textAlign: 'left', fontSize: '0.85rem' }}
               >
                 To {r.end.lat.toFixed(4)}, {r.end.lng.toFixed(4)} ({new Date(r.timestamp).toLocaleTimeString('en-US')})
               </button>
             )) : (
-              <div style={{ fontSize: '0.85rem', opacity: 0.5 }}>No saved routes found.</div>
+              <div style={{ fontSize: '0.85rem', color: 'var(--text-380)' }}>No saved routes found.</div>
             )}
           </div>
         </div>
       )}
 
       {arrivalDetected && (
-        <div style={{ position: 'absolute', inset: 0, zIndex: 2000, background: 'rgba(22, 163, 74, 0.9)', color: '#fff', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '2rem' }}>
+        <div style={{ position: 'absolute', inset: 0, zIndex: 2000, background: 'var(--bg-940)', color: 'var(--text-100)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '2rem', backdropFilter: 'blur(10px)' }}>
            <FiFlag size={80} style={{ marginBottom: '1.5rem' }} />
            <h1 style={{ fontSize: '2.5rem' }}>You have arrived!</h1>
            <button 
              className="btn btn-primary" 
-             style={{ marginTop: '2rem', background: '#fff', color: '#16a34a', padding: '1rem 3rem', fontSize: '1.2rem' }} 
+             style={{ marginTop: '2rem', background: 'var(--text-100)', color: 'var(--green-700)', padding: '1rem 3rem', fontSize: '1.2rem' }} 
              onClick={() => navigate(-1)}
            >
              Close

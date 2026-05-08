@@ -459,21 +459,21 @@ export function SettingsPage() {
                 padding: '1.25rem 1.5rem',
                 textAlign: 'left',
                 width: '100%',
-                background: 'rgba(255, 107, 107, 0.1)',
+                background: 'rgba(219, 74, 91, 0.1)',
                 cursor: 'pointer',
                 marginTop: '1rem',
-                borderColor: 'rgba(255, 107, 107, 0.2)'
+                borderColor: 'rgba(219, 74, 91, 0.2)'
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                <div className="notification-icon-v2" style={{ width: '36px', height: '36px', fontSize: '1rem', background: 'rgba(255, 107, 107, 0.2)', color: '#ff6b6b' }}>
+                <div className="notification-icon-v2" style={{ width: '36px', height: '36px', fontSize: '1rem', background: 'rgba(219, 74, 91, 0.15)', color: 'var(--danger-500)' }}>
                   <FiLogOut />
                 </div>
-                <span style={{ fontWeight: 600, fontSize: '1.05rem', color: '#ff6b6b' }}>
+                <span style={{ fontWeight: 600, fontSize: '1.05rem', color: 'var(--danger-500)' }}>
                   {isLoggingOut ? 'Logging out...' : 'Sign out'}
                 </span>
               </div>
-              <FiChevronRight style={{ opacity: 0.4, color: '#ff6b6b' }} />
+              <FiChevronRight style={{ opacity: 0.4, color: 'var(--danger-500)' }} />
             </button>
             
             <div style={{ textAlign: 'center', marginTop: '2rem', opacity: 0.4 }}>
@@ -647,13 +647,13 @@ export function SettingsPage() {
             transition={revealTransition}
             className="settings-grid-v2"
           >
-            <div className="settings-card-v2" style={{ borderColor: 'rgba(255, 100, 100, 0.2)' }}>
+            <div className="settings-card-v2" style={{ borderColor: 'rgba(219, 74, 91, 0.3)' }}>
               <div className="settings-card-content-v2">
-                <div className="notification-icon-v2" style={{ background: 'rgba(255, 100, 100, 0.1)', color: '#ff6b6b' }}>
+                <div className="notification-icon-v2" style={{ background: 'rgba(219, 74, 91, 0.15)', color: 'var(--danger-500)' }}>
                   <FiAlertTriangle />
                 </div>
                 <div style={{ flex: 1 }}>
-                  <h3 style={{ color: '#ff6b6b' }}>Burn Sequence</h3>
+                  <h3 style={{ color: 'var(--danger-500)' }}>Burn Sequence</h3>
                   <p>Permanently erase your account and all travel history. This cannot be reversed.</p>
                   
                   <div style={{ marginTop: '2rem' }}>

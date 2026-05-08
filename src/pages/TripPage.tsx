@@ -13,6 +13,7 @@ import {
   FiPlusCircle,
   FiClock
 } from 'react-icons/fi'
+import { SiGooglemaps, SiWaze, SiApple } from 'react-icons/si'
 import { useSelector } from 'react-redux'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { TripRouteMap } from '../components/TripRouteMap'
@@ -598,6 +599,16 @@ function TripPageContent({ trip }: TripPageContentProps) {
     selectTab(tabs[nextIndex].key)
   }
 
+  const openExternalMap = (type: 'google' | 'waze' | 'apple') => {
+    if (!currentStop) return;
+    const [lat, lon] = currentStop.toCoords;
+    let url = '';
+    if (type === 'google') url = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lon}`;
+    if (type === 'waze') url = `https://waze.com/ul?ll=${lat},${lon}&navigate=yes`;
+    if (type === 'apple') url = `http://maps.apple.com/?daddr=${lat},${lon}`;
+    window.open(url, '_blank');
+  };
+
   // API Methods
   const handleOwnerDraftChange = (field: Exclude<keyof OwnerTripEditState, 'imageFile'>, value: string) => {
     setOwnerTripDraft((p) => ({ ...p, [field]: value }))
@@ -949,7 +960,7 @@ function TripPageContent({ trip }: TripPageContentProps) {
                 <div className="stop-dot-v2" />
               </div>
               <div>
-                <h4 style={{ color: '#f3fff1', marginBottom: '0.4rem' }}>{currentStop.startingPoint} → {currentStop.endPoint}</h4>
+                <h4 style={{ color: 'var(--text-100)', marginBottom: '0.4rem' }}>{currentStop.startingPoint} → {currentStop.endPoint}</h4>
                 <p style={{ fontSize: '0.85rem', color: 'var(--text-380)' }}>{currentStop.note}</p>
                 <div style={{ marginTop: '1rem', display: 'flex', gap: '1rem', alignItems: 'center' }}>
                   <span style={{ fontSize: '0.8rem', opacity: 0.5 }}>{selectedRouteDistanceKm.toFixed(1)} KM</span>
@@ -962,9 +973,23 @@ function TripPageContent({ trip }: TripPageContentProps) {
             <p className="empty-note">No coordinates mapped yet.</p>
           )}
 
-          <div className="trip-overview-map" style={{ height: '300px', borderRadius: '16px', overflow: 'hidden', marginTop: '2rem' }}>
-            <TripRouteMap timeline={timelines} selectedDay={selectedDay} />
+          <div className="trip-overview-map" style={{ height: '300px', borderRadius: '16px', overflow: 'hidden', marginTop: '2rem', position: 'relative' }}>
+            <TripRouteMap timeline={timelines} selectedDay={selectedDay} showOverlay={false} />
           </div>
+
+          {currentStop && (
+            <div style={{ marginTop: '1.5rem', display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
+              <button onClick={() => openExternalMap('google')} className="btn btn-ghost" style={{ background: 'var(--surface-860)', color: 'var(--text-220)', gap: '0.6rem', border: '1px solid var(--surface-820)', borderRadius: '12px' }}>
+                <SiGooglemaps size={18} style={{ color: '#4285F4' }} /> Google Maps
+              </button>
+              <button onClick={() => openExternalMap('waze')} className="btn btn-ghost" style={{ background: 'var(--surface-860)', color: 'var(--text-220)', gap: '0.6rem', border: '1px solid var(--surface-820)', borderRadius: '12px' }}>
+                <SiWaze size={18} style={{ color: '#33CCFF' }} /> Waze
+              </button>
+              <button onClick={() => openExternalMap('apple')} className="btn btn-ghost" style={{ background: 'var(--surface-860)', color: 'var(--text-220)', gap: '0.6rem', border: '1px solid var(--surface-820)', borderRadius: '12px' }}>
+                <SiApple size={18} style={{ color: '#FFFFFF' }} /> Apple Maps
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -1030,7 +1055,7 @@ function TripPageContent({ trip }: TripPageContentProps) {
                       <button className="btn btn-ghost btn-sm" onClick={() => navigate(`/app/edit-timeline/${trip.id}/${stop.id}`)}>Edit</button>
                       <button
                         className="btn btn-ghost btn-sm"
-                        style={{ color: '#ff6b6b' }}
+                        style={{ color: 'var(--danger-500)' }}
                         disabled={isRemovingTimelineId === stop.id}
                         onClick={() => handleRemoveTimeline(stop.id)}
                       >
@@ -1081,16 +1106,16 @@ function TripPageContent({ trip }: TripPageContentProps) {
 
       <div className="discovery-grid">
         {acceptedMembers.map((m) => (
-          <div key={m.id} className="history-row-v2" style={{ background: 'rgba(9, 14, 10, 0.4)', gridTemplateColumns: '60px 1fr auto' }}>
+          <div key={m.id} className="history-row-v2" style={{ background: 'var(--surface-860)', gridTemplateColumns: '60px 1fr auto' }}>
             <img src={getAvatarUrl(m.username, m.avatarUrl)} alt="" className="avatar" style={{ width: '50px', height: '50px', borderRadius: '14px', objectFit: 'cover' }} />
             <div>
-              <h4 style={{ color: '#f3fff1' }}>{m.username}</h4>
+              <h4 style={{ color: 'var(--text-100)' }}>{m.username}</h4>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <p className="eyebrow" style={{ fontSize: '0.65rem' }}>{normalizeMemberRole(m.role)}</p>
                 {canEditMemberRoles && normalizeMemberRole(m.role) !== 'owner' && (
                   <select
                     className="input-trigger"
-                    style={{ fontSize: '0.65rem', padding: '0.1rem 0.4rem', background: 'rgba(255,255,255,0.05)', border: 'none', borderRadius: '4px', color: 'var(--green-580)' }}
+                    style={{ fontSize: '0.65rem', padding: '0.1rem 0.4rem', background: 'var(--surface-860)', border: '1px solid var(--line-soft)', borderRadius: '4px', color: 'var(--green-580)' }}
                     value={normalizeMemberRole(m.role)}
                     disabled={isUpdatingRoleMemberId === m.id || isRemovingMemberId === m.id}
                     onChange={(e) => handleRoleChange(m.id, e.target.value as MemberRole)}
@@ -1104,7 +1129,7 @@ function TripPageContent({ trip }: TripPageContentProps) {
             {canRemoveMembers && normalizeMemberRole(m.role) !== 'owner' && (
               <button
                 className="btn btn-ghost btn-sm"
-                style={{ color: '#ff6b6b' }}
+                style={{ color: 'var(--danger-500)' }}
                 disabled={isRemovingMemberId === m.id}
                 onClick={() => handleRemove(m.id)}
               >
@@ -1126,10 +1151,10 @@ function TripPageContent({ trip }: TripPageContentProps) {
               )
 
               return (
-                <div key={m.id} className="history-row-v2" style={{ background: 'rgba(9, 14, 10, 0.4)', gridTemplateColumns: '60px 1fr auto' }}>
+                <div key={m.id} className="history-row-v2" style={{ background: 'var(--surface-860)', gridTemplateColumns: '60px 1fr auto' }}>
                   <img src={getAvatarUrl(m.username, m.avatarUrl)} alt="" className="avatar" style={{ width: '50px', height: '50px', borderRadius: '14px', objectFit: 'cover' }} />
                   <div className="member-info-v2">
-                    <h4 style={{ color: '#f3fff1' }}>{m.username}</h4>
+                    <h4 style={{ color: 'var(--text-100)' }}>{m.username}</h4>
                     <div className="member-status-row-v2">
                       <p className="eyebrow" style={{ fontSize: '0.65rem' }}>{memberStatusLabel}</p>
                       {memberStatusLabel === 'Waiting for approval' && canInviteMembers && (
@@ -1145,7 +1170,7 @@ function TripPageContent({ trip }: TripPageContentProps) {
                             className="btn btn-ghost btn-sm"
                             disabled={isProcessingRequestMemberId === m.id}
                             onClick={() => handleRespondToRequest(m, 'Declined')}
-                            style={{ color: '#ff6b6b' }}
+                            style={{ color: 'var(--danger-500)' }}
                           >
                             Decline
                           </button>
@@ -1300,9 +1325,9 @@ function TripPageContent({ trip }: TripPageContentProps) {
       <div className="discovery-grid">
         {tripDetails.history && tripDetails.history.length > 0 ? (
           [...tripDetails.history].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map((h) => (
-            <div key={h.id} className="history-row-v2" style={{ background: 'rgba(9, 14, 10, 0.4)', gridTemplateColumns: '1fr auto', padding: '1.25rem' }}>
+            <div key={h.id} className="history-row-v2" style={{ background: 'var(--surface-860)', gridTemplateColumns: '1fr auto', padding: '1.25rem' }}>
               <div>
-                <p style={{ color: '#f3fff1', fontSize: '1rem', marginBottom: '0.4rem' }}>{h.content}</p>
+                <p style={{ color: 'var(--text-100)', fontSize: '1rem', marginBottom: '0.4rem' }}>{h.content}</p>
                 <p className="eyebrow" style={{ fontSize: '0.75rem', opacity: 0.6 }}>
                   {formatDisplayDate(h.date)}
                 </p>
