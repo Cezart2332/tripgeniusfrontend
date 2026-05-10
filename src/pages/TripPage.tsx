@@ -11,12 +11,18 @@ import {
   FiMessageSquare,
   FiSettings,
   FiPlusCircle,
-  FiClock
+  FiClock,
+  FiChevronDown,
+  FiChevronUp,
+  FiActivity,
+  FiExternalLink,
+  FiDollarSign
 } from 'react-icons/fi'
 import { SiGooglemaps, SiWaze, SiApple } from 'react-icons/si'
 import { useSelector } from 'react-redux'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { TripRouteMap } from '../components/TripRouteMap'
+import { ActivityType, ActivityTypeLabels } from '../types/models'
 import type { ChatMessage, MemberRole, TimelineStop, Trip, TripMember, User } from '../types/models'
 import * as signalR from '@microsoft/signalr'
 import api, { updateCachedResponse } from '../data/api'
@@ -180,6 +186,122 @@ const getTripMemberStatusLabel = (status: unknown): string => {
 const revealTransition = {
   duration: 0.58,
   ease: [0.22, 1, 0.36, 1] as const,
+}
+
+interface TimelineStopCardProps {
+  stop: TimelineStop
+  isSelected: boolean
+  onSelect: () => void
+  canManage: boolean
+  onEdit: () => void
+  onRemove: () => void
+  isRemoving: boolean
+}
+
+function TimelineStopCard({ stop, isSelected, onSelect, canManage, onEdit, onRemove, isRemoving }: TimelineStopCardProps) {
+  const [isExpanded, setIsExpanded] = useState(false)
+
+  return (
+    <div className="timeline-day-v2">
+      <div className="day-marker-v2" />
+      <div className={isSelected ? 'day-card-v2 is-selected' : 'day-card-v2'} onClick={onSelect} style={{ cursor: 'pointer' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <div style={{ flex: 1 }}>
+            <p className="eyebrow">Day {stop.startDay}{stop.startDay !== stop.endDay ? ` - ${stop.endDay}` : ''}</p>
+            <h3 style={{ margin: '0.2rem 0' }}>{stop.startingPoint} → {stop.endPoint}</h3>
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-380)', marginBottom: stop.activities && stop.activities.length > 0 ? '1rem' : 0 }}>{stop.note}</p>
+            
+            <div className="activities-dropdown-v2" style={{ marginTop: '0.8rem' }}>
+              {(stop.activities && stop.activities.length > 0) ? (
+                <>
+                  <button 
+                    className="btn btn-ghost btn-sm" 
+                    onClick={(e) => { e.stopPropagation(); setIsExpanded(!isExpanded); }}
+                    style={{ 
+                      gap: '0.5rem', 
+                      background: 'rgba(255,255,255,0.05)', 
+                      border: '1px solid var(--line-soft)',
+                      borderRadius: '8px',
+                      padding: '0.4rem 0.8rem',
+                      fontSize: '0.8rem',
+                      color: 'var(--text-100)'
+                    }}
+                  >
+                    <FiActivity size={14} color="var(--primary-500)" />
+                    {stop.activities.length} Activities
+                    {isExpanded ? <FiChevronUp /> : <FiChevronDown />}
+                  </button>
+
+                  <AnimatePresence>
+                    {isExpanded && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        style={{ overflow: 'hidden' }}
+                      >
+                        <div className="activities-list-v2" style={{ marginTop: '1rem', display: 'grid', gap: '0.75rem' }}>
+                          {stop.activities.map((activity, idx) => (
+                            <div key={idx} className="activity-item-v2" style={{ padding: '0.75rem', background: 'var(--bg-980)', borderRadius: '12px', border: '1px solid var(--line-soft)' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
+                                <h4 style={{ fontSize: '0.9rem', color: 'var(--text-100)', fontWeight: 600 }}>{activity.name}</h4>
+                                <span className="chip chip-static chip-sm" style={{ fontSize: '0.65rem', background: 'var(--surface-860)' }}>
+                                  {typeof activity.type === 'number' ? ActivityTypeLabels[activity.type as ActivityType] : activity.type}
+                                </span>
+                              </div>
+                              {activity.description && (
+                                <p style={{ fontSize: '0.8rem', color: 'var(--text-380)', marginBottom: '0.5rem', lineHeight: '1.4' }}>{activity.description}</p>
+                              )}
+                              <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                                {activity.cost !== undefined && activity.cost !== null && activity.cost > 0 && (
+                                  <span style={{ fontSize: '0.75rem', color: 'var(--green-500)', display: 'flex', alignItems: 'center', gap: '0.25rem', fontWeight: 500 }}>
+                                    <FiDollarSign size={12} /> {activity.cost}
+                                  </span>
+                                )}
+                                {activity.link && (
+                                  <a 
+                                    href={activity.link.startsWith('http') ? activity.link : `https://${activity.link}`} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer" 
+                                    style={{ fontSize: '0.75rem', color: 'var(--primary-400)', display: 'flex', alignItems: 'center', gap: '0.25rem', textDecoration: 'none' }} 
+                                    onClick={e => e.stopPropagation()}
+                                  >
+                                    <FiExternalLink size={12} /> View Details
+                                  </a>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </>
+              ) : canManage && (
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-400)', fontStyle: 'italic', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                  <FiActivity size={12} opacity={0.5} />
+                  No activities planned for this stop.
+                </div>
+              )}
+            </div>
+          </div>
+          {canManage && (
+            <div className="invite-actions-v2" onClick={e => e.stopPropagation()}>
+              <button className="btn btn-ghost btn-sm" onClick={onEdit}>Edit</button>
+              <button
+                className="btn btn-ghost btn-sm"
+                style={{ color: 'var(--danger-500)' }}
+                disabled={isRemoving}
+                onClick={onRemove}
+              >
+                {isRemoving ? 'Removing...' : 'Remove'}
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
 }
 
 export function TripPage() {
@@ -378,7 +500,7 @@ function TripPageContent({ trip }: TripPageContentProps) {
   } | null>(null)
   const [isRequestingAccess, setIsRequestingAccess] = useState(false)
   const [timelines, setTimelines] = useState<TimelineStop[]>(
-    () => [...trip.timelines].sort((a, b) => a.day - b.day),
+    () => [...trip.timelines].sort((a, b) => a.startDay - b.startDay),
   )
   const [selectedDay, setSelectedDay] = useState(
     defaultSelectedDay(trip.startingDate, trip.timelines.length),
@@ -505,7 +627,7 @@ function TripPageContent({ trip }: TripPageContentProps) {
 
 
   const currentStop =
-    timelines.find((timelineStop) => timelineStop.day === selectedDay) ??
+    timelines.find((timelineStop) => timelineStop.startDay === selectedDay) ??
     timelines[0]
 
   const selectedRouteDistanceKm = useMemo(
@@ -890,8 +1012,8 @@ function TripPageContent({ trip }: TripPageContentProps) {
             return next
           }
 
-          if (!next.some((stop) => stop.day === selectedDay)) {
-            setSelectedDay(next[0].day)
+          if (!next.some((stop) => stop.startDay === selectedDay)) {
+            setSelectedDay(next[0].startDay)
           }
 
           return next
@@ -949,7 +1071,7 @@ function TripPageContent({ trip }: TripPageContentProps) {
         <div className="builder-section-v2">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
             <h3>Route Preview</h3>
-            {currentStop && <span className="chip chip-static">{currentStop.day} OF {timelines.length}</span>}
+            {currentStop && <span className="chip chip-static">{currentStop.startDay}{currentStop.startDay !== currentStop.endDay ? `-${currentStop.endDay}` : ''} OF {timelines.length}</span>}
           </div>
 
           {currentStop ? (
@@ -1041,31 +1163,16 @@ function TripPageContent({ trip }: TripPageContentProps) {
       <div className="trip-main-content">
         <div className="timeline-flow-v2">
           {timelines.map((stop) => (
-            <div key={stop.day} className="timeline-day-v2">
-              <div className="day-marker-v2" />
-              <div className={selectedDay === stop.day ? 'day-card-v2 is-selected' : 'day-card-v2'} onClick={() => setSelectedDay(stop.day)} style={{ cursor: 'pointer' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                  <div>
-                    <p className="eyebrow">Day {stop.day}</p>
-                    <h3 style={{ margin: '0.2rem 0' }}>{stop.startingPoint} → {stop.endPoint}</h3>
-                    <p style={{ fontSize: '0.85rem', color: 'var(--text-380)' }}>{stop.note}</p>
-                  </div>
-                  {canManageTimelines && (
-                    <div className="invite-actions-v2">
-                      <button className="btn btn-ghost btn-sm" onClick={() => navigate(`/app/edit-timeline/${trip.id}/${stop.id}`)}>Edit</button>
-                      <button
-                        className="btn btn-ghost btn-sm"
-                        style={{ color: 'var(--danger-500)' }}
-                        disabled={isRemovingTimelineId === stop.id}
-                        onClick={() => handleRemoveTimeline(stop.id)}
-                      >
-                        {isRemovingTimelineId === stop.id ? 'Removing...' : 'Remove'}
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
+            <TimelineStopCard 
+              key={stop.id} 
+              stop={stop} 
+              isSelected={selectedDay === stop.startDay}
+              onSelect={() => setSelectedDay(stop.startDay)}
+              canManage={canManageTimelines}
+              onEdit={() => navigate(`/app/edit-timeline/${trip.id}/${stop.id}`)}
+              onRemove={() => handleRemoveTimeline(stop.id)}
+              isRemoving={isRemovingTimelineId === stop.id}
+            />
           ))}
           {canManageTimelines && (
             <button className="btn btn-primary" onClick={() => navigate(`/app/add-timeline/${trip.id}`)}>

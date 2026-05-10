@@ -1,7 +1,8 @@
 import { motion } from 'framer-motion'
 import { useState } from 'react'
-import { FiArrowLeft, FiMapPin, FiCalendar } from 'react-icons/fi'
+import { FiArrowLeft, FiMapPin, FiCalendar, FiActivity, FiPlusCircle, FiTrash2 } from 'react-icons/fi'
 import { Link, useNavigate, useParams } from 'react-router-dom'
+import { ActivityType } from '../types/models'
 import type { TimelineStop } from '../types/models'
 import api from '../data/api'
 import { FeedbackToast } from '../components/FeedbackToast'
@@ -18,16 +19,6 @@ interface LocationSuggestion extends LocationSelection {
   id: string
 }
 
-interface MapboxFeature {
-  id: string
-  text: string
-  place_name: string
-  center: [number, number]
-}
-
-interface MapboxGeocodingResponse {
-  features?: MapboxFeature[]
-}
 
 const revealTransition = {
   duration: 0.58,
@@ -53,18 +44,18 @@ const toBackendCoords = (coords: [number, number]): [number, number] => [
 export function AddTimelinePage() {
   const navigate = useNavigate()
   const { tripId } = useParams<{ tripId: string }>()
-  const mapboxPublicToken =
-    (import.meta.env.VITE_MAPBOX_PUBLIC_TOKEN as string | undefined)?.trim() ?? ''
 
   const [timelineDraft, setTimelineDraft] = useState<TimelineStop>({
     id: 0,
-    day: 1,
+    startDay: 1,
+    endDay: 1,
     date: '',
     startingPoint: '',
     endPoint: '',
     fromCoords: [0, 0],
     toCoords: [0, 0],
     note: '',
+    activities: [],
   })
   const [fromFocused, setFromFocused] = useState(false)
   const [toFocused, setToFocused] = useState(false)
@@ -78,7 +69,7 @@ export function AddTimelinePage() {
   }
 
   const searchLocations = async (query: string, field: 'startingPoint' | 'endingPoint') => {
-    if (!mapboxPublicToken || query.length < 2) {
+    if (query.length < 3) {
       if (field === 'startingPoint') {
         setFromSuggestions([])
       } else {
@@ -88,28 +79,10 @@ export function AddTimelinePage() {
     }
 
     try {
-      const endpoint = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(
-        query,
-      )}.json?autocomplete=true&limit=6&types=place,locality,address,poi&access_token=${mapboxPublicToken}`
-
-      const response = await fetch(endpoint)
-      if (!response.ok) throw new Error('Location search failed')
-
-      const payload = (await response.json()) as MapboxGeocodingResponse
-      const suggestions = (payload.features ?? [])
-        .map((feature) => ({
-          id: feature.id,
-          name: feature.text || feature.place_name,
-          placeName: feature.place_name,
-          lng: Number(feature.center?.[0]),
-          lat: Number(feature.center?.[1]),
-        }))
-        .filter(
-          (feature) =>
-            Number.isFinite(feature.lng) &&
-            Number.isFinite(feature.lat) &&
-            feature.placeName,
-        )
+      const res = await api.get('/api/geocoding/search', {
+        params: { query, limit: 6 }
+      })
+      const suggestions = res.data as LocationSuggestion[]
 
       if (field === 'startingPoint') {
         setFromSuggestions(suggestions)
@@ -169,10 +142,21 @@ export function AddTimelinePage() {
     try
     {
       const payload = {
-        ...timelineDraft,
-        tripId,
+        startDay: timelineDraft.startDay,
+        endDay: timelineDraft.endDay,
+        startingPoint: timelineDraft.startingPoint,
+        endPoint: timelineDraft.endPoint,
         fromCoords: toBackendCoords(timelineDraft.fromCoords),
         toCoords: toBackendCoords(timelineDraft.toCoords),
+        note: timelineDraft.note,
+        activities: timelineDraft.activities.map(a => ({
+          name: a.name,
+          description: a.description,
+          link: a.link || '',
+          cost: a.cost,
+          type: a.type
+        })),
+        tripId,
       }
       const res = await api.post('api/trip/add-timeline', payload)
 
@@ -336,39 +320,152 @@ export function AddTimelinePage() {
           <fieldset>
             <legend>Additional Information</legend>
 
-            <div className="form-group">
-              <label className="field-label" htmlFor="day">
-                <FiCalendar aria-hidden="true" />
-                Day
-              </label>
-              <input
-                id="day"
-                className="input"
-                type="number"
-                min={1}
-                step={1}
-                value={timelineDraft.day}
-                onChange={(e) =>
-                  updateTimelineDraft((previous) => ({
-                    ...previous,
-                    day: Number.parseInt(e.target.value, 10) || 0,
-                  }))
-                }
-              />
+            <div className="builder-grid-v2">
+              <div className="form-group">
+                <label className="field-label" htmlFor="startDay">
+                  <FiCalendar aria-hidden="true" />
+                  Start Day
+                </label>
+                <input
+                  id="startDay"
+                  className="input"
+                  type="number"
+                  min={1}
+                  step={1}
+                  value={timelineDraft.startDay || ''}
+                  onChange={(e) =>
+                    updateTimelineDraft((previous) => ({
+                      ...previous,
+                      startDay: Number.parseInt(e.target.value, 10) || 0,
+                    }))
+                  }
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="field-label" htmlFor="endDay">
+                  <FiCalendar aria-hidden="true" />
+                  End Day
+                </label>
+                <input
+                  id="endDay"
+                  className="input"
+                  type="number"
+                  min={1}
+                  step={1}
+                  value={timelineDraft.endDay || ''}
+                  onChange={(e) =>
+                    updateTimelineDraft((previous) => ({
+                      ...previous,
+                      endDay: Number.parseInt(e.target.value, 10) || 0,
+                    }))
+                  }
+                />
+              </div>
             </div>
 
-            <div className="form-group">
-              <label className="field-label" htmlFor="note">
-                Notes
-              </label>
-              <textarea
-                id="note"
-                className="input"
-                placeholder="Add any notes or highlights for this day..."
-                rows={4}
-                value={timelineDraft.note}
-                onChange={(e) => updateTimelineDraft((previous) => ({ ...previous, note: e.target.value }))}
-              />
+            {/* Activities Section */}
+            <div style={{ marginTop: '2rem', paddingTop: '1.5rem', borderTop: '1px dashed var(--line-soft)' }}>
+               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                  <h4 style={{ fontSize: '0.9rem', color: 'var(--text-100)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                     <FiActivity size={16} /> Activities
+                  </h4>
+                  <button 
+                    type="button" 
+                    className="btn btn-ghost btn-sm" 
+                    onClick={() => updateTimelineDraft(p => ({ 
+                      ...p, 
+                      activities: [...p.activities, { id: 0, name: '', description: '', link: '', cost: 0, type: ActivityType.Attraction }] 
+                    }))}
+                  >
+                     <FiPlusCircle /> Add
+                  </button>
+               </div>
+
+               <div style={{ display: 'grid', gap: '1rem' }}>
+                  {timelineDraft.activities.map((act, j) => (
+                    <div key={j} style={{ padding: '1rem', background: 'rgba(255,255,255,0.02)', borderRadius: '12px', border: '1px solid var(--line-soft)' }}>
+                       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
+                          <input 
+                            className="input" 
+                            style={{ background: 'transparent', border: 'none', borderBottom: '1px solid var(--line-soft)', borderRadius: 0, paddingLeft: 0, fontSize: '0.9rem', fontWeight: 600 }} 
+                            placeholder="Activity name..." 
+                            value={act.name} 
+                            onChange={e => updateTimelineDraft(p => ({
+                              ...p,
+                              activities: p.activities.map((a, aidx) => aidx === j ? { ...a, name: e.target.value } : a)
+                            }))}
+                          />
+                          <button type="button" className="btn btn-ghost btn-sm" style={{ color: 'var(--danger-500)' }} onClick={() => updateTimelineDraft(p => ({
+                            ...p,
+                            activities: p.activities.filter((_, aidx) => aidx !== j)
+                          }))}>
+                             <FiTrash2 size={14} />
+                          </button>
+                       </div>
+                       <div className="builder-grid-v2">
+                          <div className="form-group">
+                             <label className="field-label" style={{ fontSize: '0.75rem' }}>Type</label>
+                             <select 
+                               className="input" 
+                               style={{ fontSize: '0.8rem' }}
+                               value={act.type}
+                               onChange={e => updateTimelineDraft(p => ({
+                                 ...p,
+                                 activities: p.activities.map((a, aidx) => aidx === j ? { ...a, type: Number(e.target.value) as ActivityType } : a)
+                               }))}
+                             >
+                                <option value={ActivityType.Attraction}>Attraction</option>
+                                <option value={ActivityType.Food}>Food</option>
+                                <option value={ActivityType.Accommodation}>Accommodation</option>
+                                <option value={ActivityType.Transport}>Transport</option>
+                                <option value={ActivityType.Other}>Other</option>
+                             </select>
+                          </div>
+                          <div className="form-group">
+                             <label className="field-label" style={{ fontSize: '0.75rem' }}>Cost (EUR)</label>
+                             <input 
+                               type="number" 
+                               className="input" 
+                               style={{ fontSize: '0.8rem' }}
+                               value={act.cost || ''}
+                               onChange={e => updateTimelineDraft(p => ({
+                                 ...p,
+                                 activities: p.activities.map((a, aidx) => aidx === j ? { ...a, cost: Number(e.target.value) } : a)
+                               }))}
+                             />
+                          </div>
+                       </div>
+                       <div className="form-group" style={{ marginTop: '0.5rem' }}>
+                          <label className="field-label" style={{ fontSize: '0.75rem' }}>Description</label>
+                          <textarea 
+                            className="input" 
+                            rows={2} 
+                            style={{ fontSize: '0.8rem' }}
+                            placeholder="Brief details..." 
+                            value={act.description}
+                            onChange={e => updateTimelineDraft(p => ({
+                              ...p,
+                              activities: p.activities.map((a, aidx) => aidx === j ? { ...a, description: e.target.value } : a)
+                            }))}
+                          />
+                       </div>
+                       <div className="form-group" style={{ marginTop: '0.5rem' }}>
+                          <label className="field-label" style={{ fontSize: '0.75rem' }}>External Link</label>
+                          <input 
+                            className="input" 
+                            style={{ fontSize: '0.8rem' }}
+                            placeholder="https://..." 
+                            value={act.link || ''}
+                            onChange={e => updateTimelineDraft(p => ({
+                              ...p,
+                              activities: p.activities.map((a, aidx) => aidx === j ? { ...a, link: e.target.value } : a)
+                            }))}
+                          />
+                       </div>
+                    </div>
+                  ))}
+               </div>
             </div>
           </fieldset>
 

@@ -37,7 +37,7 @@ export function TripRouteMap({ timeline, selectedDay, showOverlay = true }: Trip
   const [isNavOpen, setIsNavOpen] = useState(false)
 
   const selectedStop = useMemo(
-    () => timeline.find((stop) => stop.day === selectedDay) ?? timeline[0] ?? null,
+    () => timeline.find((stop) => stop.startDay === selectedDay) ?? timeline[0] ?? null,
     [selectedDay, timeline],
   )
 

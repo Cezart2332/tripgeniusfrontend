@@ -41,17 +41,50 @@ export interface TripMember {
 }
 
 export interface CreateTimelineStop {
-  day: number
-  date: string
+  startDay: number
+  endDay: number
   startingPoint: string
   endPoint: string
   fromCoords: [number, number]
   toCoords: [number, number]
   note: string
+  activities: TripActivityRequest[]
+}
+
+export interface TripActivityRequest {
+  name: string
+  description: string
+  link?: string
+  cost?: number
+  type: ActivityType
+}
+
+export const ActivityType = {
+  Attraction: 0,
+  Food: 1,
+  Accommodation: 2,
+  Transport: 3,
+  Other: 4,
+} as const
+
+export type ActivityType = typeof ActivityType[keyof typeof ActivityType]
+
+export const ActivityTypeLabels: Record<ActivityType, string> = {
+  [ActivityType.Attraction]: 'Attraction',
+  [ActivityType.Food]: 'Food',
+  [ActivityType.Accommodation]: 'Accommodation',
+  [ActivityType.Transport]: 'Transport',
+  [ActivityType.Other]: 'Other',
+}
+
+export interface TripActivity extends TripActivityRequest {
+  id: number
 }
 
 export interface TimelineStop extends CreateTimelineStop {
   id: number
+  date: string
+  activities: TripActivity[]
 }
 
 export interface Trip {
@@ -94,4 +127,13 @@ export interface AiSuggestion {
   source: 'TripGenius' | 'External'
   summary: string
   matchingTags: string[]
+}
+
+export interface AiTripPlannerRequest {
+  description: string
+  durationDays: number
+  interests: string[]
+  budget: number
+  startingPoint: string
+  maxParticipants: number
 }

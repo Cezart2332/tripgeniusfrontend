@@ -173,7 +173,10 @@ export function DiscoveryPage() {
             Filter by style, budget, and preferences to find the right trip.
           </p>
         </div>
-        <div className="discovery-header-actions">
+        <div className="discovery-header-actions" style={{ display: 'flex', gap: '1rem' }}>
+          <Link className="btn btn-ghost" style={{ gap: '0.6rem', color: 'var(--green-580)', border: '1px solid rgba(154,198,148,0.2)' }} to="/app/ai-planner">
+             <FiZap /> Generate trip with AI
+          </Link>
           <Link className="btn btn-primary" to="/app/create-trip">
             <FiPlusCircle aria-hidden="true" />
             Create trip

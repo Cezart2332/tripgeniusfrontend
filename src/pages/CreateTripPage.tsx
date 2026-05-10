@@ -1,28 +1,39 @@
 import { AnimatePresence, motion } from 'framer-motion'
-import { useEffect, useMemo, useState } from 'react'
-import type { ReactNode } from 'react'
+import { useMemo, useState } from 'react'
 import {
   FiArrowLeft,
   FiCalendar,
-  FiMapPin,
   FiUploadCloud,
   FiX,
   FiPlusCircle,
   FiTrash2,
   FiCheckCircle,
-  FiTag
+  FiTag,
+  FiActivity
 } from 'react-icons/fi'
 import { Link, useNavigate } from 'react-router-dom'
 import { tripTypeOptions } from '../data/tripTypeOptions'
-import type { User } from '../types/models'
+import { ActivityType } from '../types/models'
 import { useSelector } from 'react-redux'
-import type { TripStatus } from '../types/models'
+import type { TripStatus, User } from '../types/models'
 import api from '../data/api'
 import { FeedbackToast } from '../components/FeedbackToast'
 import type { FeedbackToastState } from '../components/FeedbackToast'
+import { ModalSurface } from '../components/ModalSurface'
+import { LocationAutocompleteField } from '../components/LocationAutocompleteField'
 import waitForBackendButtonUnlock from '../utils/interactionDelay'
 
+interface TripActivityDraft {
+  name: string
+  description: string
+  link?: string
+  cost?: number
+  type: ActivityType
+}
+
 interface TimelineDraftStop {
+  startDay: number
+  endDay: number
   from: string
   to: string
   fromLng: string
@@ -30,6 +41,7 @@ interface TimelineDraftStop {
   toLng: string
   toLat: string
   note: string
+  activities: TripActivityDraft[]
 }
 
 interface CreateTripFormState {
@@ -49,45 +61,12 @@ interface CreateTripFormState {
 }
 
 
-interface LocationSelection {
-  name: string
-  placeName: string
-  lng: number
-  lat: number
-}
 
-interface LocationSuggestion extends LocationSelection {
-  id: string
-}
 interface AuthStoreState {
   auth: {
     user: User | null
     token: string | null
   }
-}
-
-interface NominatimResult {
-  place_id: number
-  display_name: string
-  lat: string
-  lon: string
-}
-
-interface ModalSurfaceProps {
-  isOpen: boolean
-  title: string
-  subtitle?: string
-  onClose: () => void
-  children: ReactNode
-}
-
-interface LocationAutocompleteFieldProps {
-  id: string
-  label: string
-  placeholder: string
-  value: string
-  onValueChange: (value: string) => void
-  onLocationSelect: (selection: LocationSelection) => void
 }
 
 type CalendarTarget =
@@ -135,7 +114,9 @@ const getDateOffset = (offset: number): string => {
   return formatLocalDate(nextDate)
 }
 
-const createTimelineStopDraft = (): TimelineDraftStop => ({
+const createTimelineStopDraft = (index: number = 0): TimelineDraftStop => ({
+  startDay: index + 1,
+  endDay: index + 1,
   from: '',
   to: '',
   fromLng: '',
@@ -143,6 +124,7 @@ const createTimelineStopDraft = (): TimelineDraftStop => ({
   toLng: '',
   toLat: '',
   note: '',
+  activities: [],
 })
 
 const createInitialFormState = (): CreateTripFormState => {
@@ -162,7 +144,7 @@ const createInitialFormState = (): CreateTripFormState => {
     coverImageDataUrl: '',
     coverImageFileName: 'No image selected',
     coverImageFile : null,
-    timeline: [createTimelineStopDraft()],
+    timeline: [createTimelineStopDraft(0)],
   }
 }
 
@@ -205,110 +187,6 @@ const isSameDay = (left: Date, right: Date): boolean =>
   left.getFullYear() === right.getFullYear() &&
   left.getMonth() === right.getMonth() &&
   left.getDate() === right.getDate()
-
-function ModalSurface({ isOpen, title, subtitle, onClose, children }: ModalSurfaceProps) {
-  useEffect(() => {
-    if (!isOpen) return
-    const onKeyDown = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
-    window.addEventListener('keydown', onKeyDown)
-    return () => window.removeEventListener('keydown', onKeyDown)
-  }, [isOpen, onClose])
-
-  return (
-    <AnimatePresence>
-      {isOpen && (
-        <motion.div className="modal-scrim" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose}>
-          <motion.div className="builder-section-v2" style={{ maxWidth: '500px', width: '90%', background: 'var(--bg-900)' }} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} onClick={e => e.stopPropagation()}>
-             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2rem' }}>
-                <div>
-                   <h3>{title}</h3>
-                   {subtitle && <p className="eyebrow">{subtitle}</p>}
-                </div>
-                <button className="btn btn-ghost btn-sm" onClick={onClose}><FiX /></button>
-             </div>
-             {children}
-          </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>
-  )
-}
-
-const nominatimCache: Record<string, LocationSuggestion[]> = {}
-
-function LocationAutocompleteField({ id, label, placeholder, value, onValueChange, onLocationSelect }: LocationAutocompleteFieldProps) {
-  const [isFocused, setIsFocused] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
-  const [suggestions, setSuggestions] = useState<LocationSuggestion[]>([])
-
-  useEffect(() => {
-    const trimmed = value.trim()
-    if (trimmed.length < 3) {
-      setSuggestions([])
-      return
-    }
-
-    if (nominatimCache[trimmed]) {
-      setSuggestions(nominatimCache[trimmed])
-      return
-    }
-
-    const controller = new AbortController()
-    const timer = setTimeout(async () => {
-      setIsLoading(true)
-      try {
-        const res = await fetch(
-          `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(trimmed)}&format=json&addressdetails=1&limit=6`,
-          {
-            signal: controller.signal,
-            headers: {
-              'User-Agent': 'TripGenius/1.0',
-              'Accept-Language': 'ro'
-            }
-          }
-        )
-        const data = await res.json() as NominatimResult[]
-        const results: LocationSuggestion[] = data.map(f => ({
-          id: String(f.place_id),
-          name: f.display_name.split(',')[0],
-          placeName: f.display_name,
-          lng: parseFloat(f.lon),
-          lat: parseFloat(f.lat)
-        }))
-        
-        nominatimCache[trimmed] = results
-        setSuggestions(results)
-      } catch (err) {
-        console.error('Nominatim search failed:', err)
-      } finally {
-        setIsLoading(false)
-      }
-    }, 600)
-    
-    return () => { clearTimeout(timer); controller.abort() }
-  }, [value])
-
-  return (
-    <div className="form-group" style={{ position: 'relative' }}>
-      <label className="field-label" htmlFor={id}>{label}</label>
-      <div className="location-input-shell" style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.03)', borderRadius: '12px', padding: '0 1rem' }}>
-        <FiMapPin style={{ opacity: 0.4 }} />
-        <input id={id} className="input" style={{ border: 'none', background: 'transparent' }} value={value} onChange={e => onValueChange(e.target.value)} onFocus={() => setIsFocused(true)} onBlur={() => setTimeout(() => setIsFocused(false), 200)} placeholder={placeholder} />
-      </div>
-      {isFocused && (suggestions.length > 0 || isLoading) && (
-        <div className="location-dropdown" style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 10, background: 'var(--bg-900)', border: '1px solid rgba(154,198,148,0.1)', borderRadius: '12px', marginTop: '0.5rem', overflow: 'hidden', boxShadow: '0 10px 25px rgba(0,0,0,0.4)' }}>
-           {isLoading && <p style={{ padding: '1rem', fontSize: '0.8rem', opacity: 0.5 }}>Querying OpenStreetMap...</p>}
-           {suggestions.map(s => (
-             <button key={s.id} type="button" className="location-option" style={{ width: '100%', textAlign: 'left', padding: '1rem', border: 'none', background: 'transparent', cursor: 'pointer' }} onMouseDown={() => onLocationSelect(s)}>
-                <div style={{ fontWeight: 600, color: 'var(--text-100)' }}>{s.name}</div>
-                <div style={{ fontSize: '0.75rem', opacity: 0.5 }}>{s.placeName}</div>
-             </button>
-           ))}
-        </div>
-      )}
-    </div>
-  )
-}
 
 export function CreateTripPage() {
   const navigate = useNavigate()
@@ -370,7 +248,8 @@ export function CreateTripPage() {
       formData.append('price', String(formState.budgetPerPerson))
       
       formState.timeline.forEach((stop, i) => {
-        formData.append(`Timelines[${i}].Day`, String(i + 1))
+        formData.append(`Timelines[${i}].StartDay`, String(stop.startDay))
+        formData.append(`Timelines[${i}].EndDay`, String(stop.endDay))
         formData.append(`Timelines[${i}].StartingPoint`, stop.from)
         formData.append(`Timelines[${i}].FromCoords[0]`, stop.fromLat)
         formData.append(`Timelines[${i}].FromCoords[1]`, stop.fromLng)
@@ -378,6 +257,16 @@ export function CreateTripPage() {
         formData.append(`Timelines[${i}].ToCoords[0]`, stop.toLat)
         formData.append(`Timelines[${i}].ToCoords[1]`, stop.toLng)
         formData.append(`Timelines[${i}].Note`, stop.note)
+
+        stop.activities.forEach((activity, j) => {
+          formData.append(`Timelines[${i}].Activities[${j}].Name`, activity.name)
+          formData.append(`Timelines[${i}].Activities[${j}].Description`, activity.description)
+          if (activity.link) formData.append(`Timelines[${i}].Activities[${j}].Link`, activity.link)
+          if (activity.cost !== undefined && activity.cost !== null) {
+            formData.append(`Timelines[${i}].Activities[${j}].Cost`, String(activity.cost))
+          }
+          formData.append(`Timelines[${i}].Activities[${j}].Type`, String(activity.type))
+        })
       })
 
       await api.post('/api/trip/create-trip', formData)
@@ -465,11 +354,11 @@ export function CreateTripPage() {
                   <h3>Capacity & Cost</h3>
                   <div className="form-group" style={{ marginTop: '1.5rem' }}>
                     <label className="field-label">Budget per Person (EUR)</label>
-                    <input type="number" className="input" value={formState.budgetPerPerson} onChange={e => setFormState(p => ({ ...p, budgetPerPerson: Number(e.target.value) }))} />
+                    <input type="number" className="input" value={formState.budgetPerPerson || ''} onChange={e => setFormState(p => ({ ...p, budgetPerPerson: Number(e.target.value) }))} />
                   </div>
                   <div className="form-group" style={{ marginTop: '1rem' }}>
                     <label className="field-label">Max Explorers</label>
-                    <input type="number" className="input" value={formState.maxMembers} onChange={e => setFormState(p => ({ ...p, maxMembers: Number(e.target.value) }))} />
+                    <input type="number" className="input" value={formState.maxMembers || ''} onChange={e => setFormState(p => ({ ...p, maxMembers: Number(e.target.value) }))} />
                   </div>
                 </div>
               </div>
@@ -590,27 +479,168 @@ export function CreateTripPage() {
                     <div key={i} className="timeline-day-v2">
                        <div className="day-marker-v2" />
                        <div className="builder-section-v2">
-                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
-                             <h3>Day {i + 1} Coordinates</h3>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
+                             <div>
+                               <h3>Stop #{i + 1}</h3>
+                               <p className="eyebrow" style={{ marginTop: '0.25rem' }}>Coordinates & Schedule</p>
+                             </div>
                              {formState.timeline.length > 1 && (
                                <button type="button" className="btn btn-ghost btn-sm" onClick={() => setFormState(p => ({ ...p, timeline: p.timeline.filter((_, idx) => idx !== i) }))}>
                                   <FiTrash2 />
                                </button>
                              )}
                           </div>
+                          
+                          <div className="builder-grid-v2" style={{ marginBottom: '1.5rem' }}>
+                             <div className="form-group">
+                               <label className="field-label">Start Day</label>
+                               <input type="number" className="input" min={1} value={stop.startDay || ''} onChange={e => setFormState(p => ({ ...p, timeline: p.timeline.map((s, idx) => idx === i ? { ...s, startDay: Number(e.target.value) } : s) }))} />
+                             </div>
+                             <div className="form-group">
+                               <label className="field-label">End Day</label>
+                               <input type="number" className="input" min={1} value={stop.endDay || ''} onChange={e => setFormState(p => ({ ...p, timeline: p.timeline.map((s, idx) => idx === i ? { ...s, endDay: Number(e.target.value) } : s) }))} />
+                             </div>
+                          </div>
+
                           <div className="builder-grid-v2">
                              <LocationAutocompleteField id={`from-${i}`} label="Starting Point" placeholder="Search locality..." value={stop.from} onValueChange={v => setFormState(p => ({ ...p, timeline: p.timeline.map((s, idx) => idx === i ? { ...s, from: v } : s) }))} onLocationSelect={s => setFormState(p => ({ ...p, timeline: p.timeline.map((st, idx) => idx === i ? { ...st, from: s.placeName, fromLat: String(s.lat), fromLng: String(s.lng) } : st) }))} />
                              <LocationAutocompleteField id={`to-${i}`} label="End Point" placeholder="Search locality..." value={stop.to} onValueChange={v => setFormState(p => ({ ...p, timeline: p.timeline.map((s, idx) => idx === i ? { ...s, to: v } : s) }))} onLocationSelect={s => setFormState(p => ({ ...p, timeline: p.timeline.map((st, idx) => idx === i ? { ...st, to: s.placeName, toLat: String(s.lat), toLng: String(s.lng) } : st) }))} />
                           </div>
+
                           <div className="form-group" style={{ marginTop: '1.5rem' }}>
                              <label className="field-label">Navigation Note</label>
-                             <input className="input" placeholder="Planned activities for the day..." value={stop.note} onChange={e => setFormState(p => ({ ...p, timeline: p.timeline.map((s, idx) => idx === i ? { ...s, note: e.target.value } : s) }))} />
+                             <input className="input" placeholder="General info about this stretch..." value={stop.note} onChange={e => setFormState(p => ({ ...p, timeline: p.timeline.map((s, idx) => idx === i ? { ...s, note: e.target.value } : s) }))} />
+                          </div>
+
+                          {/* Activities Section */}
+                          <div style={{ marginTop: '2rem', paddingTop: '1.5rem', borderTop: '1px dashed var(--line-soft)' }}>
+                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                                <h4 style={{ fontSize: '0.9rem', color: 'var(--text-100)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                   <FiActivity size={16} /> Activities
+                                </h4>
+                                <button 
+                                  type="button" 
+                                  className="btn btn-ghost btn-sm" 
+                                  onClick={() => setFormState(p => ({ 
+                                    ...p, 
+                                    timeline: p.timeline.map((s, idx) => idx === i ? { 
+                                      ...s, 
+                                      activities: [...s.activities, { name: '', description: '', link: '', cost: 0, type: ActivityType.Attraction as ActivityType }] 
+                                    } : s) 
+                                  }))}
+                                >
+                                   <FiPlusCircle /> Add
+                                </button>
+                             </div>
+
+                             <div style={{ display: 'grid', gap: '1rem' }}>
+                                {stop.activities.map((act, j) => (
+                                  <div key={j} style={{ padding: '1rem', background: 'rgba(255,255,255,0.02)', borderRadius: '12px', border: '1px solid var(--line-soft)' }}>
+                                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
+                                        <input 
+                                          className="input" 
+                                          style={{ background: 'transparent', border: 'none', borderBottom: '1px solid var(--line-soft)', borderRadius: 0, paddingLeft: 0, fontSize: '0.9rem', fontWeight: 600 }} 
+                                          placeholder="Activity name..." 
+                                          value={act.name} 
+                                          onChange={e => setFormState(p => ({
+                                            ...p,
+                                            timeline: p.timeline.map((s, idx) => idx === i ? {
+                                              ...s,
+                                              activities: s.activities.map((a, aidx) => aidx === j ? { ...a, name: e.target.value } : a)
+                                            } : s)
+                                          }))}
+                                        />
+                                        <button type="button" className="btn btn-ghost btn-sm" style={{ color: 'var(--danger-500)' }} onClick={() => setFormState(p => ({
+                                          ...p,
+                                          timeline: p.timeline.map((s, idx) => idx === i ? {
+                                            ...s,
+                                            activities: s.activities.filter((_, aidx) => aidx !== j)
+                                          } : s)
+                                        }))}>
+                                           <FiTrash2 size={14} />
+                                        </button>
+                                     </div>
+                                     <div className="builder-grid-v2">
+                                        <div className="form-group">
+                                           <label className="field-label" style={{ fontSize: '0.75rem' }}>Type</label>
+                                           <select 
+                                             className="input" 
+                                             style={{ fontSize: '0.8rem' }}
+                                             value={act.type}
+                                             onChange={e => setFormState(p => ({
+                                               ...p,
+                                               timeline: p.timeline.map((s, idx) => idx === i ? {
+                                                 ...s,
+                                                 activities: s.activities.map((a, aidx) => aidx === j ? { ...a, type: Number(e.target.value) as ActivityType } : a)
+                                               } : s)
+                                             }))}
+                                           >
+                                              <option value={ActivityType.Attraction}>Attraction</option>
+                                              <option value={ActivityType.Food}>Food</option>
+                                              <option value={ActivityType.Accommodation}>Accommodation</option>
+                                              <option value={ActivityType.Transport}>Transport</option>
+                                              <option value={ActivityType.Other}>Other</option>
+                                           </select>
+                                        </div>
+                                        <div className="form-group">
+                                           <label className="field-label" style={{ fontSize: '0.75rem' }}>Cost (EUR)</label>
+                                           <input 
+                                             type="number" 
+                                             className="input" 
+                                             style={{ fontSize: '0.8rem' }}
+                                             value={act.cost || ''}
+                                             onChange={e => setFormState(p => ({
+                                               ...p,
+                                               timeline: p.timeline.map((s, idx) => idx === i ? {
+                                                 ...s,
+                                                 activities: s.activities.map((a, aidx) => aidx === j ? { ...a, cost: Number(e.target.value) } : a)
+                                               } : s)
+                                             }))}
+                                           />
+                                        </div>
+                                     </div>
+                                     <div className="form-group" style={{ marginTop: '0.5rem' }}>
+                                        <label className="field-label" style={{ fontSize: '0.75rem' }}>Description</label>
+                                        <textarea 
+                                          className="input" 
+                                          rows={2} 
+                                          style={{ fontSize: '0.8rem' }}
+                                          placeholder="Brief details..." 
+                                          value={act.description}
+                                          onChange={e => setFormState(p => ({
+                                            ...p,
+                                            timeline: p.timeline.map((s, idx) => idx === i ? {
+                                              ...s,
+                                              activities: s.activities.map((a, aidx) => aidx === j ? { ...a, description: e.target.value } : a)
+                                            } : s)
+                                          }))}
+                                        />
+                                     </div>
+                                     <div className="form-group" style={{ marginTop: '0.5rem' }}>
+                                        <label className="field-label" style={{ fontSize: '0.75rem' }}>External Link</label>
+                                        <input 
+                                          className="input" 
+                                          style={{ fontSize: '0.8rem' }}
+                                          placeholder="https://..." 
+                                          value={act.link || ''}
+                                          onChange={e => setFormState(p => ({
+                                            ...p,
+                                            timeline: p.timeline.map((s, idx) => idx === i ? {
+                                              ...s,
+                                              activities: s.activities.map((a, aidx) => aidx === j ? { ...a, link: e.target.value } : a)
+                                            } : s)
+                                          }))}
+                                        />
+                                     </div>
+                                  </div>
+                                ))}
+                             </div>
                           </div>
                        </div>
                     </div>
                   ))}
                </div>
-               <button type="button" className="btn btn-ghost" style={{ alignSelf: 'center', marginTop: '2rem' }} onClick={() => setFormState(p => ({ ...p, timeline: [...p.timeline, createTimelineStopDraft()] }))}>
+               <button type="button" className="btn btn-ghost" style={{ alignSelf: 'center', marginTop: '2rem' }} onClick={() => setFormState(p => ({ ...p, timeline: [...p.timeline, createTimelineStopDraft(formState.timeline.length)] }))}>
                   <FiPlusCircle /> Extend Timeline
                </button>
             </motion.div>

@@ -101,7 +101,7 @@ export function NavigationPage() {
   const selectedStop = useMemo(() => {
     if (!trip) return null
     const dayNum = parseInt(day || '1')
-    return trip.timelines.find(t => t.day === dayNum) || trip.timelines[0]
+    return trip.timelines.find(t => t.startDay === dayNum) || trip.timelines[0]
   }, [trip, day])
 
   // Fetch Trip Data

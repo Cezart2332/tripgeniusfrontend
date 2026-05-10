@@ -12,6 +12,7 @@ import { ProfilePage } from './pages/ProfilePage'
 import { RegisterPage } from './pages/RegisterPage'
 import { SettingsPage } from './pages/SettingsPage'
 import { TripPage } from './pages/TripPage'
+import { AiTripPlannerPage } from './pages/AiTripPlannerPage'
 import { NavigationPage } from './pages/NavigationPage'
 import { VerifyEmailPage } from './pages/VerifyEmailPage'
 import { ResetPasswordPage } from './pages/ResetPasswordPage'
@@ -38,6 +39,7 @@ function App() {
         <Route path="discover" element={<Navigate replace to="/app" />} />
         <Route path="profile" element={<ProfilePage />} />
         <Route path="create-trip" element={<CreateTripPage />} />
+        <Route path="ai-planner" element={<AiTripPlannerPage />} />
         <Route path="add-timeline/:tripId" element={<AddTimelinePage />} />
         <Route path="edit-timeline/:tripId/:id" element={<EditTimelinePage />} />
         <Route path="trip" element={<Navigate replace to="/app/discover" />} />

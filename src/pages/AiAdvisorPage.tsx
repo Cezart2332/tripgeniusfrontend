@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
-import { FiSend, FiMapPin, FiExternalLink, FiMessageCircle, FiArrowLeft, FiArrowDown } from 'react-icons/fi'
+import { FiSend, FiMapPin, FiExternalLink, FiMessageCircle, FiArrowLeft, FiArrowDown, FiLink } from 'react-icons/fi'
 import { useSelector, useDispatch } from 'react-redux'
 import { Link, useNavigate } from 'react-router-dom'
 import { setToken } from '../data/authSlice'
@@ -51,6 +51,32 @@ function parseAiMessage(raw: string): ParsedMessage {
   }
 }
 
+interface LinkCard {
+  title: string
+  url: string
+}
+
+function parseAiLinks(raw: string): { text: string; links: LinkCard[] } {
+  const linkMatch = raw.match(/\[LINKS:(.*?)\]+\s*$/s)
+
+  const partialTagIndex = raw.indexOf('[LINKS:')
+  if (partialTagIndex !== -1 && !linkMatch) {
+    return { text: raw.slice(0, partialTagIndex).trim(), links: [] }
+  }
+
+  if (!linkMatch) return { text: raw, links: [] }
+
+  try {
+    const jsonStr = linkMatch[1].trim()
+    const parsed = JSON.parse(jsonStr)
+    const text = raw.replace(/\[LINKS:.*$/s, '').trim()
+    return { text, links: parsed.links || [] }
+  } catch {
+    const text = raw.replace(/\[LINKS:.*$/s, '').trim()
+    return { text, links: [] }
+  }
+}
+
 interface Message {
   id: string,
   text: string;
@@ -63,31 +89,24 @@ interface AiChatResponse {
   role: string;
 }
 
-const Typewriter = ({ text, isStreaming }: { text: string; isStreaming?: boolean }) => {
-  const [displayedText, setDisplayedText] = useState(text);
-
-  useEffect(() => {
-    if (!isStreaming) {
-      return;
-    }
-
-    if (text.length > displayedText.length) {
-      const timeout = setTimeout(() => {
-        const diff = text.length - displayedText.length;
-        // Faster steps for a snappier feel
-        const step = diff > 50 ? 15 : (diff > 20 ? 8 : 1);
-        setDisplayedText(text.slice(0, displayedText.length + step));
-      }, 25);
-      return () => clearTimeout(timeout);
-    }
-  }, [text, displayedText, isStreaming]);
+/**
+ * StreamingMessage — renders AI text.
+ * During streaming: plain text (pre-wrap) + blinking cursor. No markdown parsing → zero layout shifts.
+ * On completion: swap to ReactMarkdown for proper formatting.
+ */
+const StreamingMessage = ({ text, isStreaming }: { text: string; isStreaming?: boolean }) => {
+  if (isStreaming) {
+    return (
+      <div className="message-content-v3 streaming-text-v3">
+        <span>{text}</span>
+        <span className="typing-cursor" />
+      </div>
+    );
+  }
 
   return (
-    <div className="message-content-v3" style={{ position: 'relative' }}>
-      <ReactMarkdown remarkPlugins={[remarkGfm]}>{isStreaming ? displayedText : text}</ReactMarkdown>
-      {isStreaming && displayedText.length < text.length && (
-        <span className="typing-cursor" style={{ display: 'inline-block', height: '1em', width: '2px', background: 'var(--green-500)', marginLeft: '4px' }}></span>
-      )}
+    <div className="message-content-v3">
+      <ReactMarkdown remarkPlugins={[remarkGfm]}>{text}</ReactMarkdown>
     </div>
   );
 };
@@ -431,10 +450,13 @@ export function AiAdvisorPage() {
                     
                     <div className="message-content-v3">
                       {message.sender === 'assistant' ? (() => {
-                        const parsed = parseAiMessage(message.text)
+                        // Strip [LINKS:...] first, then strip [TRIPS:...]
+                        const withLinks = parseAiLinks(message.text)
+                        const parsed = parseAiMessage(withLinks.text)
+                        const links = withLinks.links
                         return (
                           <>
-                            <Typewriter text={parsed.text} isStreaming={!message.isComplete && activeAiMessageId === message.id} />
+                            <StreamingMessage text={parsed.text} isStreaming={!message.isComplete && activeAiMessageId === message.id} />
                             {parsed.trips && parsed.trips.length > 0 && (
                               <div className="ai-trips-grid-v3">
                                 {parsed.trips.map((trip) => (
@@ -451,6 +473,30 @@ export function AiAdvisorPage() {
                                 ))}
                               </div>
                             )}
+                            {links.length > 0 && (
+                              <div className="ai-links-grid-v3">
+                                {links.map((link, i) => (
+                                  <a
+                                    key={i}
+                                    href={link.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="ai-link-card-v3"
+                                  >
+                                    <div className="link-card-icon-v3">
+                                      <FiLink size={14} />
+                                    </div>
+                                    <div className="link-card-body-v3">
+                                      <h4>{link.title}</h4>
+                                      <span className="link-card-url-v3">{new URL(link.url).hostname.replace('www.', '')}</span>
+                                    </div>
+                                    <div className="link-card-arrow-v3">
+                                      <FiExternalLink size={14} />
+                                    </div>
+                                  </a>
+                                ))}
+                              </div>
+                            )}
                           </>
                         )
                       })() : (
@@ -461,16 +507,19 @@ export function AiAdvisorPage() {
                 </div>
               ))}
               {isTyping && (
-                <div className="ai-message-row-v3 assistant typing">
-                  <div className="message-inner-v3">
+                <div className="ai-message-row-v3 assistant">
+                  <div className="message-inner-v3 ai-thinking-v3">
                     <header className="message-header-v3">
                       <img src="/newstickers/sticker1.png" alt="" className="message-avatar-v3" />
                       <span>TripGenius AI</span>
                     </header>
-                    <div className="ai-typing">
-                      <span className="dot"></span>
-                      <span className="dot"></span>
-                      <span className="dot"></span>
+                    <div className="ai-thinking-body-v3">
+                      <div className="ai-thinking-dots-v3">
+                        <span />
+                        <span />
+                        <span />
+                      </div>
+                      <span className="ai-thinking-label-v3">AI is thinking</span>
                     </div>
                   </div>
                 </div>
