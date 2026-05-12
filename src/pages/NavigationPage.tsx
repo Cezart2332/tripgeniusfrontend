@@ -130,6 +130,7 @@ export function NavigationPage() {
       zoom: 15,
       pitch: 60,
       scrollZoom: true,
+      cooperativeGestures: true,
     })
 
     mapRef.current = map
@@ -328,11 +329,11 @@ export function NavigationPage() {
       {navData && navData.steps && navData.steps.length > 0 && (
         <div className="nav-hud-v2" style={{ position: 'absolute', top: '4rem', left: '1rem', right: '1rem', zIndex: 1010 }}>
           <div style={{ background: 'var(--surface-900)', color: 'var(--text-100)', padding: '1.25rem', borderRadius: '16px', boxShadow: 'var(--shadow)', display: 'flex', alignItems: 'center', gap: '1rem', border: '1px solid var(--line)', backdropFilter: 'blur(12px)' }}>
-            <div style={{ fontSize: '2.5rem', color: 'var(--green-580)' }}>
+            <div className="maneuver-icon" style={{ fontSize: '2.5rem', color: 'var(--green-580)' }}>
               {getManeuverIcon(navData.steps[0].type, navData.steps[0].modifier)}
             </div>
             <div style={{ flex: 1 }}>
-              <div style={{ fontSize: '1.4rem', fontWeight: 800 }}>{navData.steps[0].instruction}</div>
+              <div className="h1-style" style={{ fontSize: '1.4rem', fontWeight: 800 }}>{navData.steps[0].instruction}</div>
               <div style={{ fontSize: '1rem', color: 'var(--text-380)' }}>In {Math.round(navData.steps[0].distance)} m</div>
             </div>
             {isOffline && (
@@ -422,6 +423,21 @@ export function NavigationPage() {
           border-left: 8px solid transparent;
           border-right: 8px solid transparent;
           border-bottom: 12px solid #17f702;
+        }
+        @media (max-width: 600px) {
+          .nav-hud-v2 {
+            top: 1rem !important;
+          }
+          .nav-hud-v2 > div {
+            padding: 0.75rem !important;
+            gap: 0.75rem !important;
+          }
+          .nav-hud-v2 h1, .nav-hud-v2 .h1-style {
+            font-size: 1.1rem !important;
+          }
+          .nav-hud-v2 .maneuver-icon {
+            font-size: 1.8rem !important;
+          }
         }
       `}</style>
     </div>

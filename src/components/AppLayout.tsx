@@ -12,6 +12,7 @@ import {
   FiX,
   FiDownload,
   FiCpu,
+  FiMap,
 } from 'react-icons/fi'
 import { usePWAInstall } from '../hooks/usePWAInstall'
 import { PWAInstallPopup } from '../components/PWAInstallPopup'
@@ -40,6 +41,7 @@ interface AuthStoreState {
 
 const primaryNavItems: NavItem[] = [
   { to: '/app', label: 'Home', Icon: FiHome, end: true },
+  { to: '/map', label: 'Safety Map', Icon: FiMap },
   { to: '/app/ai', label: 'AI Assistant', Icon: FiCpu },
 ]
 
@@ -598,6 +600,10 @@ export function AppLayout() {
           <NavLink to="/app" end className={({ isActive }) => isActive ? 'bottom-nav-link is-active' : 'bottom-nav-link'}>
             <FiHome aria-hidden="true" />
             <span>Home</span>
+          </NavLink>
+          <NavLink to="/map" className={({ isActive }) => isActive ? 'bottom-nav-link is-active' : 'bottom-nav-link'}>
+            <FiMap aria-hidden="true" />
+            <span>Map</span>
           </NavLink>
           {user && (
             <NavLink to="/app/ai" className={({ isActive }) => isActive ? 'bottom-nav-link is-active' : 'bottom-nav-link'}>

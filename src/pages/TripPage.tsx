@@ -215,16 +215,16 @@ function TimelineStopCard({ stop, isSelected, onSelect, canManage, onEdit, onRem
             <p className="eyebrow">Day {stop.startDay}{stop.startDay !== stop.endDay ? ` - ${stop.endDay}` : ''}</p>
             <h3 style={{ margin: '0.2rem 0' }}>{stop.startingPoint} → {stop.endPoint}</h3>
             <p style={{ fontSize: '0.85rem', color: 'var(--text-380)', marginBottom: stop.activities && stop.activities.length > 0 ? '1rem' : 0 }}>{stop.note}</p>
-            
+
             <div className="activities-dropdown-v2" style={{ marginTop: '0.8rem' }}>
               {(stop.activities && stop.activities.length > 0) ? (
                 <>
-                  <button 
-                    className="btn btn-ghost btn-sm" 
+                  <button
+                    className="btn btn-ghost btn-sm"
                     onClick={(e) => { e.stopPropagation(); setIsExpanded(!isExpanded); }}
-                    style={{ 
-                      gap: '0.5rem', 
-                      background: 'rgba(255,255,255,0.05)', 
+                    style={{
+                      gap: '0.5rem',
+                      background: 'rgba(255,255,255,0.05)',
                       border: '1px solid var(--line-soft)',
                       borderRadius: '8px',
                       padding: '0.4rem 0.8rem',
@@ -264,11 +264,11 @@ function TimelineStopCard({ stop, isSelected, onSelect, canManage, onEdit, onRem
                                   </span>
                                 )}
                                 {activity.link && (
-                                  <a 
-                                    href={activity.link.startsWith('http') ? activity.link : `https://${activity.link}`} 
-                                    target="_blank" 
-                                    rel="noopener noreferrer" 
-                                    style={{ fontSize: '0.75rem', color: 'var(--primary-400)', display: 'flex', alignItems: 'center', gap: '0.25rem', textDecoration: 'none' }} 
+                                  <a
+                                    href={activity.link.startsWith('http') ? activity.link : `https://${activity.link}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    style={{ fontSize: '0.75rem', color: 'var(--primary-400)', display: 'flex', alignItems: 'center', gap: '0.25rem', textDecoration: 'none' }}
                                     onClick={e => e.stopPropagation()}
                                   >
                                     <FiExternalLink size={12} /> View Details
@@ -830,7 +830,7 @@ function TripPageContent({ trip }: TripPageContentProps) {
       }
 
       setTripDetailsFeedback({ tone: 'success', message: 'Trip details updated.' })
-      
+
       // Update SW cache and IndexedDB
       const finalTrip = updatedTrip || { ...tripDetails, ...ownerTripDraft }
       updateCachedResponse(`api/trip/get-trip/${tripDetails.id}`, finalTrip)
@@ -930,15 +930,15 @@ function TripPageContent({ trip }: TripPageContentProps) {
       }
     } catch (err: any) {
       if (err?.queued) {
-        const updatedMembers = action === 'Accepted' 
+        const updatedMembers = action === 'Accepted'
           ? members.map(m => m.id === member.id ? { ...m, status: 'accepted' } : m)
           : members.filter(m => m.id !== member.id)
-          
+
         setMembers(updatedMembers)
-        
+
         // Sync cache
         updateCachedResponse(`api/trip/get-trip/${tripDetails.id}`, { ...tripDetails, members: updatedMembers })
-        
+
         setTripDetailsFeedback({ tone: 'success', message: `Response to ${member.username} will be processed later.` })
       } else {
         setTripDetailsFeedback({ tone: 'error', message: 'Failed to respond to request.' })
@@ -972,7 +972,6 @@ function TripPageContent({ trip }: TripPageContentProps) {
       }
     } catch (err: any) {
       if (err?.queued) {
-        // Optimistic update for join request
         setMembers((prev) => [
           ...prev,
           {
@@ -1123,10 +1122,10 @@ function TripPageContent({ trip }: TripPageContentProps) {
       .join('\n\n')
 
     const params = new URLSearchParams({
-      action:   'TEMPLATE',
-      text:     tripDetails.title,
-      dates:    `${format(tripDetails.startingDate)}/${format(tripDetails.endingDate)}`,
-      details:  details,
+      action: 'TEMPLATE',
+      text: tripDetails.title,
+      dates: `${format(tripDetails.startingDate)}/${format(tripDetails.endingDate)}`,
+      details: details,
       location: timelines[0]?.startingPoint ?? '',
     })
 
@@ -1298,9 +1297,9 @@ function TripPageContent({ trip }: TripPageContentProps) {
 
         <div className="timeline-flow-v2">
           {timelines.map((stop) => (
-            <TimelineStopCard 
-              key={stop.id} 
-              stop={stop} 
+            <TimelineStopCard
+              key={stop.id}
+              stop={stop}
               isSelected={selectedDay === stop.startDay}
               onSelect={() => setSelectedDay(stop.startDay)}
               canManage={canManageTimelines}

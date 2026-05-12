@@ -271,6 +271,22 @@ h3 {
     min-height: 380px !important;
     width: 100% !important;
   }
+
+  /* Optimized Map Overlays for Mobile */
+  .map-overlay-compact {
+    padding: 0.4rem 0.8rem !important;
+    gap: 0.5rem !important;
+    border-radius: 10px !important;
+  }
+
+  .map-overlay-compact span {
+    font-size: 0.75rem !important;
+  }
+
+  .map-overlay-compact svg {
+    width: 14px !important;
+    height: 14px !important;
+  }
 }
 
 /* ── Splash Screen ── */

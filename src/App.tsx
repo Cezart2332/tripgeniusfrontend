@@ -16,6 +16,7 @@ import { AiTripPlannerPage } from './pages/AiTripPlannerPage'
 import { NavigationPage } from './pages/NavigationPage'
 import { VerifyEmailPage } from './pages/VerifyEmailPage'
 import { ResetPasswordPage } from './pages/ResetPasswordPage'
+import { MapPage } from './pages/MapPage'
 import { isReallyOnline, flushQueue } from './data/api'
 
 function App() {
@@ -49,6 +50,7 @@ function App() {
       </Route>
 
       <Route path="/navigation/:tripId/:day" element={<NavigationPage />} />
+      <Route path="/map" element={<MapPage />} />
 
       <Route path="*" element={<Navigate replace to="/" />} />
     </Routes>

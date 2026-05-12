@@ -127,6 +127,7 @@ export function TripRouteMap({ timeline, selectedDay, showOverlay = true }: Trip
       center: selectedStop ? [selectedStop.toCoords[1], selectedStop.toCoords[0]] : [26.1025, 44.4268],
       zoom: 13,
       scrollZoom: true,
+      cooperativeGestures: true,
     })
 
     map.addControl(new maplibregl.NavigationControl(), 'top-right')
@@ -283,7 +284,10 @@ export function TripRouteMap({ timeline, selectedDay, showOverlay = true }: Trip
       {/* POI Controls */}
       {showOverlay && (
         <div style={{ position: 'absolute', top: '1rem', left: '1rem', zIndex: 10, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-          <div style={{ background: 'rgba(17, 34, 26, 0.85)', backdropFilter: 'blur(10px)', padding: '0.5rem 1rem', borderRadius: '12px', border: '1px solid rgba(65, 162, 56, 0.3)', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <div 
+            className="map-overlay-compact"
+            style={{ background: 'rgba(17, 34, 26, 0.85)', backdropFilter: 'blur(10px)', padding: '0.5rem 1rem', borderRadius: '12px', border: '1px solid rgba(65, 162, 56, 0.3)', display: 'flex', alignItems: 'center', gap: '0.75rem' }}
+          >
             <FiMapPin style={{ color: 'var(--green-500)' }} />
             <span style={{ color: 'var(--text-100)', fontSize: '0.85rem', fontWeight: 600 }}>Points of Interest</span>
           </div>
