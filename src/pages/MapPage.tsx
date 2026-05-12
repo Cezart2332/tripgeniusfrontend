@@ -5,6 +5,7 @@ import maplibregl from 'maplibre-gl'
 import { FeedbackToast } from "../components/FeedbackToast"
 import type { FeedbackToastState } from "../components/FeedbackToast"
 import { usePlaces } from "../hooks/usePlaces"
+import { subscribeForNotifications } from "../utils/notifications"
 
 const OSM_STYLE: any = {
     version: 8,
@@ -161,10 +162,8 @@ export function MapPage() {
     const downloadWorldwideBaseMap = async () => {
         if (isDownloading) return;
 
-        // Request notification permission
-        if (Notification.permission === 'default') {
-            await Notification.requestPermission();
-        }
+        // Request permission and subscribe to backend notifications
+        await subscribeForNotifications();
         
         setIsDownloading(true);
         setDownloadProgress(0);
