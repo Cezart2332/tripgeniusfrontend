@@ -34,7 +34,7 @@ export function DiscoveryPage() {
   const user = useSelector((state: AuthStoreState) => state.auth.user)
   const [trips, setTrips] = useState<Trip[]>([])
   const [showFilters, setShowFilters] = useState(true)
-  const [autoApplyPreferences, setAutoApplyPreferences] = useState(true)
+  const [autoApplyPreferences, setAutoApplyPreferences] = useState(false)
   const [search, setSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [selectedType, setSelectedType] = useState('all')
@@ -68,7 +68,7 @@ export function DiscoveryPage() {
             putAllTrips(res.data)
           }
         })
-        .catch(() => {})
+        .catch(() => { })
     }
   }, [user])
 
@@ -182,7 +182,7 @@ export function DiscoveryPage() {
         </div>
         <div className="discovery-header-actions" style={{ display: 'flex', gap: '1rem' }}>
           <Link className="btn btn-ghost" style={{ gap: '0.6rem', color: 'var(--green-580)', border: '1px solid rgba(154,198,148,0.2)' }} to="/app/ai-planner">
-             <FiZap /> Generate trip with AI
+            <FiZap /> Generate trip with AI
           </Link>
           <Link className="btn btn-primary" to="/app/create-trip">
             <FiPlusCircle aria-hidden="true" />
