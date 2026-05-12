@@ -2598,3 +2598,490 @@ h3 {
   gap: 0.6rem;
   margin-bottom: 0.5rem;
 }
+
+/* =============================================================================
+   MISSING CLASS DEFINITIONS — Builder, Trip, Discovery, Profile, AI Planner
+   These classes are used in TSX but were previously undefined.
+   ============================================================================= */
+
+/* ── Builder (CreateTripPage) ── */
+.builder-workspace-v2 {
+  display: grid;
+  gap: 2rem;
+  max-width: 840px;
+  margin-inline: auto;
+}
+
+.builder-header-v2 {
+  display: grid;
+  gap: 0.4rem;
+  text-align: center;
+}
+
+.builder-steps-v2 {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+}
+
+.step-indicator-v2 {
+  height: 4px;
+  width: 48px;
+  border-radius: 99px;
+  background: var(--line-soft);
+  transition: background 0.3s ease;
+}
+
+.step-indicator-v2.is-active {
+  background: var(--green-500);
+}
+
+.builder-form-v2 {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.builder-section-v2 {
+  background: linear-gradient(160deg, var(--surface-900), var(--surface-860));
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-lg);
+  padding: clamp(1rem, 2.5vw, 2rem);
+  display: grid;
+  gap: 0.75rem;
+}
+
+.builder-grid-v2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+/* ── Timeline flow (trip builder route step) ── */
+.timeline-flow-v2 {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.timeline-day-v2 {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 1rem;
+}
+
+.day-marker-v2 {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--green-500);
+  border: 2px solid var(--green-700);
+  margin-top: 1.4rem;
+  flex-shrink: 0;
+}
+
+/* ── Trip overview stats bar ── */
+.trip-stats-bar-v2 {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  padding: 1.2rem;
+  background: rgba(9, 18, 13, 0.5);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-md);
+}
+
+.trip-stat-v2 {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  flex: 1;
+  min-width: 100px;
+}
+
+.trip-stat-v2 label {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-380);
+  font-weight: 700;
+}
+
+.trip-stat-v2 span {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-100);
+}
+
+/* ── TripPage workspace ── */
+.trip-page-v2 {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.trip-workspace-v2 {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+  gap: 1.25rem;
+  align-items: start;
+}
+
+.trip-main-content {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.trip-sidebar-v2 {
+  display: grid;
+  gap: 1.25rem;
+  position: sticky;
+  top: 6rem;
+}
+
+/* ── Discovery ── */
+.discovery-page {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.discovery-header-v2 {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 1rem;
+}
+
+.discovery-toolbar-v2 {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.discovery-empty-state {
+  display: grid;
+  gap: 1rem;
+  text-align: center;
+  place-items: center;
+  padding: 3rem 1rem;
+  min-height: 40vh;
+}
+
+.discovery-trip-row {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.discovery-trip-info {
+  display: grid;
+  gap: 0.4rem;
+  flex: 1;
+}
+
+.discovery-trip-meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+/* ── Profile ── */
+.profile-section-v2 {
+  display: grid;
+  gap: 1rem;
+}
+
+.profile-tab-bar-v2 {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  border-bottom: 1px solid var(--line-soft);
+  padding-bottom: 0.75rem;
+}
+
+.profile-tab-btn-v2 {
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 0.5rem 1rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-380);
+  cursor: pointer;
+  transition: 0.2s all ease;
+}
+
+.profile-tab-btn-v2.is-active {
+  border-color: var(--line);
+  color: var(--green-500);
+  background: rgba(43, 83, 64, 0.36);
+}
+
+.profile-tab-btn-v2:hover:not(.is-active) {
+  color: var(--text-220);
+  border-color: var(--line-soft);
+}
+
+/* ── AI Planner ── */
+.ai-planner-page {
+  display: grid;
+  gap: 1.5rem;
+}
+
+/* =============================================================================
+   MOBILE RESPONSIVENESS — All missing classes + existing layout fixes
+   ============================================================================= */
+
+@media (max-width: 1080px) {
+  /* Trip workspace stacks on medium screens */
+  .trip-workspace-v2 {
+    grid-template-columns: 1fr;
+  }
+
+  .trip-sidebar-v2 {
+    position: static;
+  }
+
+  /* Builder grid goes single column at 1080px */
+  .builder-grid-v2 {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 850px) {
+  /* ── Builder ── */
+  .builder-workspace-v2 {
+    gap: 1.25rem;
+  }
+
+  .builder-header-v2 {
+    gap: 0.3rem;
+  }
+
+  .builder-header-v2 h1 {
+    font-size: 1.5rem !important;
+  }
+
+  .builder-section-v2 {
+    padding: 1rem;
+    border-radius: var(--radius-md);
+  }
+
+  .builder-form-v2 {
+    gap: 1rem;
+  }
+
+  .builder-grid-v2 {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+
+  .step-indicator-v2 {
+    width: 32px;
+  }
+
+  /* ── Timeline builder ── */
+  .timeline-day-v2 {
+    grid-template-columns: 1fr;
+  }
+
+  .day-marker-v2 {
+    display: none; /* Clean up on mobile - takes up horizontal space */
+  }
+
+  /* ── Trip stats bar ── */
+  .trip-stats-bar-v2 {
+    gap: 0.75rem;
+    padding: 0.85rem;
+  }
+
+  .trip-stat-v2 {
+    min-width: 80px;
+    text-align: center;
+    align-items: center;
+  }
+
+  /* ── Trip page ── */
+  .trip-workspace-v2 {
+    grid-template-columns: 1fr !important;
+    gap: 1rem;
+  }
+
+  .trip-sidebar-v2 {
+    order: -1; /* Show sidebar (join card, members) above main content on mobile */
+    position: static !important;
+  }
+
+  .trip-main-content {
+    gap: 1rem;
+  }
+
+  /* ── Discovery ── */
+  .discovery-header-v2 {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .discovery-header-v2 .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .discovery-toolbar-v2 {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+    gap: 0.6rem;
+  }
+
+  .discovery-toolbar-v2 .input,
+  .discovery-toolbar-v2 .btn {
+    width: 100%;
+  }
+
+  .discovery-trip-row {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .discovery-trip-meta-row {
+    justify-content: center;
+  }
+
+  /* ── Profile ── */
+  .profile-tab-bar-v2 {
+    gap: 0.4rem;
+    padding-bottom: 0.6rem;
+  }
+
+  .profile-tab-btn-v2 {
+    font-size: 0.78rem;
+    padding: 0.4rem 0.75rem;
+    flex: 1;
+    text-align: center;
+  }
+
+  /* ── AI Planner ── */
+  .ai-planner-page {
+    padding-top: 1rem !important;
+    max-width: 100% !important;
+  }
+
+  .ai-planner-page header {
+    margin-bottom: 1.5rem !important;
+  }
+
+  .ai-planner-page header .btn {
+    margin-left: 0 !important;
+  }
+
+  .ai-planner-page header > div:first-of-type {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .builder-section-v2[style] {
+    /* Override inline padding on the ai planner form card */
+    padding: 1.25rem !important;
+  }
+
+  /* Fix map height on trip page mobile */
+  .trip-page-v2 .map-wrapper {
+    height: 320px;
+    min-height: 320px;
+  }
+
+  .trip-page-v2 .map-wrapper > div {
+    height: 320px !important;
+    min-height: 320px !important;
+  }
+
+  /* Member row — stack role selector below name on mobile */
+  .member-row {
+    grid-template-columns: auto 1fr;
+    row-gap: 0.5rem;
+  }
+
+  .member-row .member-role-select,
+  .member-row .btn-danger {
+    grid-column: 1 / -1;
+  }
+
+  /* Settings grid single column */
+  .settings-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* Auth/register/profile/ai layout single column */
+  .auth-grid,
+  .register-layout,
+  .profile-layout,
+  .ai-layout {
+    grid-template-columns: 1fr;
+  }
+
+  /* Discovery empty state padding */
+  .discovery-empty-state {
+    padding: 2rem 0.75rem;
+    min-height: 30vh;
+  }
+
+  /* Profile section header stacks on mobile */
+  .profile-section-v2 {
+    gap: 0.75rem;
+  }
+
+  /* Notifications dropdown full-width on mobile */
+  .header-notification-dropdown {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    width: 100vw !important;
+    border-radius: 0 0 var(--radius-md) var(--radius-md) !important;
+    max-height: 60vh;
+    overflow-y: auto;
+  }
+}
+
+@media (max-width: 560px) {
+  /* Extra small: collapse trip stats to a 2-col grid */
+  .trip-stats-bar-v2 {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  /* Builder sections tighter */
+  .builder-section-v2 {
+    padding: 0.85rem;
+  }
+
+  /* Profile tabs scrollable row on tiny screens */
+  .profile-tab-bar-v2 {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .profile-tab-bar-v2::-webkit-scrollbar {
+    display: none;
+  }
+
+  .profile-tab-btn-v2 {
+    white-space: nowrap;
+    flex: none;
+  }
+
+  /* AI planner form tighter */
+  .builder-section-v2[style] {
+    padding: 1rem !important;
+  }
+
+  /* Discovery header just a stacked block */
+  .discovery-header-v2 {
+    gap: 0.5rem;
+  }
+}

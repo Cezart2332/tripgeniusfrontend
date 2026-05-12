@@ -151,27 +151,68 @@ window.addEventListener('online', async () => {
 })
 
 /**
- * Updates the browser's Cache Storage (api-cache) for a specific GET request.
- * Useful for optimistic UI updates when offline.
+ * Updates the browser's Cache Storage for a specific GET request.
+ * Writes to both 'api-cache' and 'individual-trip-cache' for trip endpoints,
+ * so offline fallback always finds the latest data.
  */
 export async function updateCachedResponse(url: string, data: any) {
     if (!('caches' in window)) return
 
+    const fullUrl = url.startsWith('http') ? url : `${baseURL}/${url.startsWith('/') ? url.slice(1) : url}`
+
+    const makeResponse = () => new Response(JSON.stringify(data), {
+        headers: { 'Content-Type': 'application/json' },
+        status: 200,
+        statusText: 'OK'
+    })
+
     try {
-        const cache = await caches.open('api-cache')
-        const fullUrl = url.startsWith('http') ? url : `${baseURL}/${url.startsWith('/') ? url.slice(1) : url}`
-        
-        // Construct a new response with the provided data
-        const response = new Response(JSON.stringify(data), {
-            headers: { 'Content-Type': 'application/json' },
-            status: 200,
-            statusText: 'OK'
-        })
-        
-        await cache.put(fullUrl, response)
+        // Always write to the general api-cache
+        const apiCache = await caches.open('api-cache')
+        await apiCache.put(fullUrl, makeResponse())
+
+        // Also write to the dedicated individual-trip-cache if applicable
+        if (url.includes('/api/trip/get-trip/')) {
+            const tripCache = await caches.open('individual-trip-cache')
+            await tripCache.put(fullUrl, makeResponse())
+        }
+
         console.log(`[Cache Sync] Updated ${fullUrl} with optimistic data.`)
     } catch (err) {
         console.error('[Cache Sync] Failed to update cache:', err)
+    }
+}
+
+/**
+ * Invalidates all cached trip list data in Cache Storage.
+ * Call this after creating, updating, or deleting a trip so the next
+ * online visit re-fetches fresh discovery data.
+ */
+export async function invalidateTripsCache() {
+    if (!('caches' in window)) return
+
+    try {
+        // Delete get-all-trips from all-trips-cache
+        const allTripsCache = await caches.open('all-trips-cache')
+        const allTripsKeys = await allTripsCache.keys()
+        await Promise.all(
+            allTripsKeys
+                .filter(req => req.url.includes('/api/trip/get-all-trips'))
+                .map(req => allTripsCache.delete(req))
+        )
+
+        // Also delete from api-cache in case it was cached there too
+        const apiCache = await caches.open('api-cache')
+        const apiKeys = await apiCache.keys()
+        await Promise.all(
+            apiKeys
+                .filter(req => req.url.includes('/api/trip/get-all-trips') || req.url.includes('/api/trip/get-trips'))
+                .map(req => apiCache.delete(req))
+        )
+
+        console.log('[Cache Sync] Invalidated trips list cache.')
+    } catch (err) {
+        console.error('[Cache Sync] Failed to invalidate trips cache:', err)
     }
 }
 

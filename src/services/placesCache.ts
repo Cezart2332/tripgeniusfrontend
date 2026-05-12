@@ -2,6 +2,8 @@ const DB_NAME = 'places-cache';
 const STORE_NAME = 'places';
 const DB_VERSION = 1;
 
+const TTL_MS = 1000 * 60 * 60 * 24 * 7; // 7 days — attractions don't change often
+
 function openDB(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
     const request = indexedDB.open(DB_NAME, DB_VERSION);
@@ -16,6 +18,11 @@ function openDB(): Promise<IDBDatabase> {
   });
 }
 
+/**
+ * Returns cached places for a bounding box.
+ * - Online: respects the 7-day TTL.
+ * - Offline: returns any cached data regardless of age (stale-while-offline).
+ */
 export async function getCached(bboxKey: string): Promise<any | null> {
   try {
     const db = await openDB();
@@ -27,8 +34,9 @@ export async function getCached(bboxKey: string): Promise<any | null> {
       request.onsuccess = () => {
         const result = request.result;
         if (result) {
-          const oneHour = 1000 * 60 * 60;
-          if (Date.now() - result.cachedAt < oneHour) {
+          const isStale = Date.now() - result.cachedAt > TTL_MS;
+          // Serve stale data when offline so the map still shows attractions
+          if (!isStale || !navigator.onLine) {
             resolve(result.data);
             return;
           }

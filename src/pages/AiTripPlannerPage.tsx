@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import { FiZap, FiX, FiArrowLeft } from 'react-icons/fi'
 import { useNavigate } from 'react-router-dom'
 import { useSelector } from 'react-redux'
-import api from '../data/api'
+import api, { invalidateTripsCache } from '../data/api'
 import type { User, AiTripPlannerRequest } from '../types/models'
 import { LocationAutocompleteField } from '../components/LocationAutocompleteField'
 import { FeedbackToast } from '../components/FeedbackToast'
@@ -53,6 +53,7 @@ export function AiTripPlannerPage() {
       console.log(form)
       await api.post('/api/ai/generate-trip', form)
       setToast({ id: Date.now(), message: 'Trip generated successfully!', tone: 'success' })
+      invalidateTripsCache()
       setTimeout(() => navigate('/app/discover'), 2000)
     } catch (err: any) {
       setToast({ id: Date.now(), message: err.response?.data?.message || 'AI generation failed.', tone: 'error' })

@@ -55,7 +55,7 @@ registerRoute(
     })
 )
 
-// ─── Pre-cache all trips for offline filtering ────────────────────────────────
+// ─── All-trips list — Stale While Revalidate (discovery + offline fallback) ───
 registerRoute(
     ({ url }) => url.pathname.includes('/api/trip/get-all-trips'),
     new StaleWhileRevalidate({
@@ -67,6 +67,37 @@ registerRoute(
     })
 )
 
+// ─── Individual trip — Network First (full data with timelines + members) ─────
+registerRoute(
+    ({ url, request }) =>
+        request.method === 'GET' &&
+        /\/api\/trip\/get-trip\//.test(url.pathname),
+    new NetworkFirst({
+        cacheName: 'individual-trip-cache',
+        networkTimeoutSeconds: 5,
+        plugins: [
+            new CacheableResponsePlugin({ statuses: [0, 200] }),
+            new ExpirationPlugin({ maxEntries: 100, maxAgeSeconds: 60 * 60 * 24 * 7 }) // 7 days
+        ]
+    })
+)
+
+// ─── Trip messages — Network First ───────────────────────────────────────────
+registerRoute(
+    ({ url, request }) =>
+        request.method === 'GET' &&
+        url.pathname.includes('/api/trip/get-messages/'),
+    new NetworkFirst({
+        cacheName: 'trip-messages-cache',
+        networkTimeoutSeconds: 5,
+        plugins: [
+            new CacheableResponsePlugin({ statuses: [0, 200] }),
+            new ExpirationPlugin({ maxEntries: 50, maxAgeSeconds: 60 * 60 * 24 }) // 24h
+        ]
+    })
+)
+
+// ─── General API GETs — Network First (catch-all for remaining /api/* GETs) ──
 registerRoute(
     ({ url, request }) => url.pathname.startsWith('/api') && request.method === 'GET',
     new NetworkFirst({
@@ -79,53 +110,90 @@ registerRoute(
     })
 )
 
-
+// ─── Images — Cache First ─────────────────────────────────────────────────────
 registerRoute(
     ({ request }) => request.destination === 'image',
     new CacheFirst({
         cacheName: 'images-cache',
         plugins: [
             new CacheableResponsePlugin({ statuses: [200] }),
-            new ExpirationPlugin({ maxEntries: 200, maxAgeSeconds: 60 * 60 * 24 * 30 }) // 30 zile
+            new ExpirationPlugin({ maxEntries: 200, maxAgeSeconds: 60 * 60 * 24 * 30 }) // 30 days
         ]
     })
 )
 
-// ─── Google Fonts — Stale While Revalidate ────────────────────────────────────
+// ─── Map Tiles (CartoDB dark theme) — Cache First ─────────────────────────────
+// Must be BEFORE the general-get-cache catch-all to use its own dedicated bucket
 registerRoute(
-    ({ url }) => url.origin === 'https://fonts.googleapis.com' || url.origin === 'https://fonts.gstatic.com',
-    new StaleWhileRevalidate({ cacheName: 'fonts-cache' })
-)
-
-// ─── Catch-all for other GET requests — Stale While Revalidate ────────────────
-registerRoute(
-    ({ request }) => request.method === 'GET',
-    new StaleWhileRevalidate({
-        cacheName: 'general-get-cache',
-        plugins: [
-            new CacheableResponsePlugin({ statuses: [200] }),
-            new ExpirationPlugin({ 
-                maxEntries: 100, 
-                maxAgeSeconds: 60 * 60 * 24 * 7 // 1 week
-            })
-        ]
-    })
-)
-
-// ─── Map Tiles (OSM & CartoDB) — Cache First ──────────────────────────────────
-registerRoute(
-    ({ url }) => url.origin === 'https://tile.openstreetmap.org' || url.origin === 'https://basemaps.cartocdn.com',
+    ({ url }) =>
+        url.origin === 'https://tile.openstreetmap.org' ||
+        url.hostname.endsWith('basemaps.cartocdn.com') ||
+        url.hostname.endsWith('cartocdn.com'),
     new CacheFirst({
         cacheName: 'map-tiles-cache',
         plugins: [
+            // status 0 = opaque response from cross-origin tile servers
             new CacheableResponsePlugin({ statuses: [0, 200] }),
-            new ExpirationPlugin({ 
-                maxEntries: 1000, 
-                maxAgeSeconds: 60 * 60 * 24 * 30 // 30 days
+            new ExpirationPlugin({
+                maxEntries: 2000,          // ≈ full city view worth of tiles
+                maxAgeSeconds: 60 * 60 * 24 * 30, // 30 days
+                purgeOnQuotaError: true,   // auto-evict if storage is full
             })
         ]
     })
 )
+
+// ─── OpenTripMap Attractions — Cache First (7 days) ───────────────────────────
+// The usePlaces hook + placesCache.ts already manage IndexedDB-level caching;
+// this SW route provides an additional HTTP-level cache layer so the network
+// request itself is cached and survives offline even if IndexedDB is cleared.
+registerRoute(
+    ({ url }) => url.hostname === 'api.opentripmap.com',
+    new CacheFirst({
+        cacheName: 'attractions-cache',
+        plugins: [
+            new CacheableResponsePlugin({ statuses: [0, 200] }),
+            new ExpirationPlugin({
+                maxEntries: 200,                      // 200 distinct bounding-box queries
+                maxAgeSeconds: 60 * 60 * 24 * 7,      // 7 days
+                purgeOnQuotaError: true,
+            })
+        ]
+    })
+)
+
+// ─── OSRM Routing — Network First with offline fallback ──────────────────────
+registerRoute(
+    ({ url }) => url.origin === 'https://router.project-osrm.org',
+    async ({ request }) => {
+        const cacheName = 'routes-cache-v1';
+
+        // Network-first: try to fetch and cache the fresh route
+        if (navigator.onLine) {
+            try {
+                const response = await fetch(request);
+                const cache = await caches.open(cacheName);
+                cache.put(request, response.clone());
+                return response;
+            } catch {
+                // fetch failed despite being online — fall through to cache
+            }
+        }
+
+        // Offline or failed: serve cached route if available
+        const cachedResponse = await caches.match(request);
+        if (cachedResponse) return cachedResponse;
+
+        // Nothing cached — graceful JSON error
+        return new Response(
+            JSON.stringify({
+                code: 'OFFLINE',
+                message: 'You are offline and no cached route exists for this destination.',
+            }),
+            { status: 503, headers: { 'Content-Type': 'application/json' } }
+        );
+    }
+);
 
 // ─── MapLibre GL Assets — Cache First ────────────────────────────────────────
 registerRoute(
@@ -138,44 +206,27 @@ registerRoute(
     })
 )
 
-// ─── OSRM Routing — Network First with custom fallback ────────────────────────
+// ─── Google Fonts — Stale While Revalidate ────────────────────────────────────
 registerRoute(
-    ({ url }) => url.origin === 'https://router.project-osrm.org',
-    async ({ request }) => {
-        const cacheName = 'routes-cache-v1';
-        
-        // Strategy: Network-first
-        if (navigator.onLine) {
-            try {
-                const response = await fetch(request);
-                const cache = await caches.open(cacheName);
-                cache.put(request, response.clone());
-                return response;
-            } catch (error) {
-                // If fetch fails but we're online (e.g. server down), try cache
-            }
-        }
+    ({ url }) => url.origin === 'https://fonts.googleapis.com' || url.origin === 'https://fonts.gstatic.com',
+    new StaleWhileRevalidate({ cacheName: 'fonts-cache' })
+)
 
-        // Fallback: try cache
-        const cachedResponse = await caches.match(request);
-        if (cachedResponse) {
-            return cachedResponse;
-        }
-
-        // Final fallback: JSON error
-        return new Response(
-            JSON.stringify({ 
-                code: 'OFFLINE', 
-                message: 'Ești offline și nu avem o rută cache-uită pentru această destinație.' 
-            }), 
-            { 
-                status: 503, 
-                headers: { 'Content-Type': 'application/json' } 
-            }
-        );
-    }
-);
-
+// ─── Catch-all for other GET requests — Stale While Revalidate ────────────────
+// Must stay LAST so all specific routes above are matched first
+registerRoute(
+    ({ request }) => request.method === 'GET',
+    new StaleWhileRevalidate({
+        cacheName: 'general-get-cache',
+        plugins: [
+            new CacheableResponsePlugin({ statuses: [200] }),
+            new ExpirationPlugin({
+                maxEntries: 100,
+                maxAgeSeconds: 60 * 60 * 24 * 7, // 1 week
+            })
+        ]
+    })
+)
 
 // ─── Push notifications ───────────────────────────────────────────────────────
 self.addEventListener('push', (event: PushEvent) => {

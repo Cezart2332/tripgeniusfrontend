@@ -35,6 +35,8 @@ export function TripRouteMap({ timeline, selectedDay, showOverlay = true }: Trip
   const containerRef = useRef<HTMLDivElement | null>(null)
   const mapRef = useRef<maplibregl.Map | null>(null)
   const [isNavOpen, setIsNavOpen] = useState(false)
+  // Track the live map instance so usePlaces() re-runs when the map becomes ready
+  const [mapInstance, setMapInstance] = useState<maplibregl.Map | null>(null)
 
   const selectedStop = useMemo(
     () => timeline.find((stop) => stop.startDay === selectedDay) ?? timeline[0] ?? null,
@@ -85,7 +87,9 @@ export function TripRouteMap({ timeline, selectedDay, showOverlay = true }: Trip
     return el;
   };
 
-  const { places, loading, zoomLevel } = usePlaces(mapRef.current)
+  // usePlaces receives the live mapInstance (null until map fires 'load')
+  // This ensures the hook properly re-registers move/zoom listeners
+  const { places, loading, zoomLevel } = usePlaces(mapInstance)
 
   // Sync POI markers
   useEffect(() => {
@@ -130,6 +134,7 @@ export function TripRouteMap({ timeline, selectedDay, showOverlay = true }: Trip
 
     map.on('load', () => {
       mapLoadedRef.current = true
+      setMapInstance(map)  // triggers usePlaces to initialize with the ready map
 
       // Add route source and layer
       map.addSource('nav-route', {
@@ -175,6 +180,7 @@ export function TripRouteMap({ timeline, selectedDay, showOverlay = true }: Trip
 
     return () => {
       ro.disconnect()
+      setMapInstance(null)  // clear so usePlaces stops
       map.remove()
       mapRef.current = null
       mapLoadedRef.current = false

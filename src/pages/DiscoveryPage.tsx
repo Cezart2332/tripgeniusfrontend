@@ -9,6 +9,7 @@ import { useSelector } from 'react-redux'
 import api from '../data/api'
 import { formatDisplayDate } from '../utils/dateDisplay'
 import { getTripStatusLabel } from '../utils/tripStatus'
+import { putAllTrips } from '../utils/tripCache'
 
 const revealTransition = {
   duration: 0.55,
@@ -58,10 +59,16 @@ export function DiscoveryPage() {
     }
   }, [handleSearch])
 
-  // Warm up the all-trips cache for offline use
+  // Warm up the all-trips cache for offline use + pre-populate per-trip IndexedDB
   useEffect(() => {
     if (user && navigator.onLine) {
-      api.get('api/trip/get-all-trips').catch(() => { })
+      api.get('api/trip/get-all-trips')
+        .then(res => {
+          if (Array.isArray(res.data) && res.data.length > 0) {
+            putAllTrips(res.data)
+          }
+        })
+        .catch(() => {})
     }
   }, [user])
 

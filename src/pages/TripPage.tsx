@@ -16,7 +16,9 @@ import {
   FiChevronUp,
   FiActivity,
   FiExternalLink,
-  FiDollarSign
+  FiDollarSign,
+  FiDownload,
+  FiCalendar
 } from 'react-icons/fi'
 import { SiGooglemaps, SiWaze, SiApple } from 'react-icons/si'
 import { useSelector } from 'react-redux'
@@ -25,7 +27,10 @@ import { TripRouteMap } from '../components/TripRouteMap'
 import { ActivityType, ActivityTypeLabels } from '../types/models'
 import type { ChatMessage, MemberRole, TimelineStop, Trip, TripMember, User } from '../types/models'
 import * as signalR from '@microsoft/signalr'
-import api, { updateCachedResponse } from '../data/api'
+import api, { updateCachedResponse, invalidateTripsCache } from '../data/api'
+import { putTrip, getTrip } from '../utils/tripCache'
+import { fetchPlacesInBBox } from '../services/placesService'
+import { setCache, getCached } from '../services/placesCache'
 import { AxiosError } from 'axios'
 import {
   formatDisplayDate,
@@ -339,20 +344,37 @@ export function TripPage() {
         console.log(nextTrip)
         setTrip(nextTrip)
         setFetchState('ready')
+        // Persist full trip to IndexedDB for offline access
+        putTrip(nextTrip)
       } catch (err: any) {
         if (!isMounted) {
           return
         }
 
-        // Offline Fallback: Try to find this trip in the 'get-all-trips' cache
+        // Offline Fallback: Check network error
         const isNetworkError = !err.response && err.code !== 'ERR_CANCELED'
         if (!navigator.onLine || isNetworkError) {
+          // 1st: Try the per-trip IndexedDB cache (full data with timelines + members)
+          try {
+            const cachedTrip = await getTrip(tripId)
+            if (cachedTrip && isMounted) {
+              console.log('[TripCache] Serving full trip from IndexedDB cache.')
+              setTrip(cachedTrip)
+              setFetchState('ready')
+              return
+            }
+          } catch (cacheErr) {
+            console.warn('[TripCache] Failed to read from IndexedDB:', cacheErr)
+          }
+
+          // 2nd: Fall back to scanning get-all-trips (summary only, may lack timelines)
           try {
             const allRes = await api.get('api/trip/get-all-trips')
             const allTrips: Trip[] = allRes.data
             const foundTrip = allTrips.find(t => String(t.id) === String(tripId))
 
-            if (foundTrip) {
+            if (foundTrip && isMounted) {
+              console.log('[TripCache] Serving trip summary from all-trips cache.')
               setTrip(foundTrip)
               setFetchState('ready')
               return
@@ -581,29 +603,46 @@ function TripPageContent({ trip }: TripPageContentProps) {
     }
   }, [trip.id, token, baseURL])
 
-  // Pre-fetch all routes for offline use
+  // Pre-fetch OSRM routes + OpenTripMap attractions for offline use
   useEffect(() => {
-    if (!timelines.length) return
+    if (!timelines.length || !navigator.onLine) return
 
-    const prefetchRoutes = async () => {
+    const ATTRACTION_KINDS = 'interesting_places,foods,amusements,sport,accomodations,tourist_facilities'
+    // Bounding box half-size in degrees — roughly covers a ~5 km radius around the stop
+    const BBOX_HALF = 0.05
+
+    const prefetchAll = async () => {
       for (const stop of timelines) {
         try {
-          const coordinateString = `${stop.fromCoords[1]},${stop.fromCoords[0]};${stop.toCoords[1]},${stop.toCoords[0]}`
+          // 1. OSRM driving preview route
+          const coordStr = `${stop.fromCoords[1]},${stop.fromCoords[0]};${stop.toCoords[1]},${stop.toCoords[0]}`
+          await fetch(`https://router.project-osrm.org/route/v1/driving/${coordStr}?overview=full&geometries=geojson`)
 
-          // 1. Preview Route
-          const previewUrl = `https://router.project-osrm.org/route/v1/driving/${coordinateString}?overview=full&geometries=geojson`
-          await fetch(previewUrl)
+          // 2. OSRM route with navigation steps
+          await fetch(`https://router.project-osrm.org/route/v1/driving/${coordStr}?overview=full&geometries=geojson&steps=true`)
 
-          // 2. Navigation Route (with steps)
-          const navUrl = `https://router.project-osrm.org/route/v1/driving/${coordinateString}?overview=full&geometries=geojson&steps=true`
-          await fetch(navUrl)
+          // 3. Attractions around the destination
+          const [destLat, destLon] = stop.toCoords
+          const lonMin = Number((destLon - BBOX_HALF).toFixed(4))
+          const latMin = Number((destLat - BBOX_HALF).toFixed(4))
+          const lonMax = Number((destLon + BBOX_HALF).toFixed(4))
+          const latMax = Number((destLat + BBOX_HALF).toFixed(4))
+          const bboxKey = `${lonMin},${latMin},${lonMax},${latMax}_${ATTRACTION_KINDS}`
 
-        } catch (e) {
-          // Ignore pre-fetch errors
+          // Only fetch if not already cached
+          const already = await getCached(bboxKey)
+          if (!already) {
+            const places = await fetchPlacesInBBox(lonMin, latMin, lonMax, latMax, ATTRACTION_KINDS)
+            if (places.length > 0) {
+              await setCache(bboxKey, places)
+            }
+          }
+        } catch {
+          // Ignore pre-fetch errors — non-critical background operation
         }
       }
     }
-    prefetchRoutes()
+    prefetchAll()
   }, [timelines])
 
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false)
@@ -792,8 +831,11 @@ function TripPageContent({ trip }: TripPageContentProps) {
 
       setTripDetailsFeedback({ tone: 'success', message: 'Trip details updated.' })
       
-      // Update cache
-      updateCachedResponse(`api/trip/get-trip/${tripDetails.id}`, updatedTrip || { ...tripDetails, ...ownerTripDraft })
+      // Update SW cache and IndexedDB
+      const finalTrip = updatedTrip || { ...tripDetails, ...ownerTripDraft }
+      updateCachedResponse(`api/trip/get-trip/${tripDetails.id}`, finalTrip)
+      putTrip({ ...tripDetails, ...finalTrip })
+      invalidateTripsCache()
     } catch (err: any) {
       if (err?.queued) {
         const optimisticTrip = {
@@ -808,6 +850,7 @@ function TripPageContent({ trip }: TripPageContentProps) {
         }
         setTripDetails(optimisticTrip)
         updateCachedResponse(`api/trip/get-trip/${tripDetails.id}`, optimisticTrip)
+        putTrip(optimisticTrip)
         setTripDetailsFeedback({ tone: 'success', message: 'Trip updates will be synced when you are back online.' })
       } else {
         setTripDetailsFeedback({ tone: 'error', message: 'Failed to update trip.' })
@@ -1016,6 +1059,9 @@ function TripPageContent({ trip }: TripPageContentProps) {
             setSelectedDay(next[0].startDay)
           }
 
+          // Sync updated timelines to IndexedDB
+          putTrip({ ...tripDetails, timelines: next, members })
+
           return next
         })
       }
@@ -1037,7 +1083,56 @@ function TripPageContent({ trip }: TripPageContentProps) {
     setNewMessage('')
   }
 
-  // Renderers
+  // ── Export: PDF costs report ──────────────────────────────────────────────
+  const [isExportingCosts, setIsExportingCosts] = useState(false)
+
+  const handleExportCosts = async () => {
+    if (isExportingCosts) return
+    setIsExportingCosts(true)
+    try {
+      const res = await api.get(`api/trip/export-costs/${trip.id}`, {
+        responseType: 'blob',
+      })
+      const url = URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }))
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `TripCosts_${trip.id}.pdf`
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      URL.revokeObjectURL(url)
+    } catch {
+      setTripDetailsFeedback({ tone: 'error', message: 'Failed to export costs PDF.' })
+    } finally {
+      setIsExportingCosts(false)
+    }
+  }
+
+  // ── Export: Google Calendar event ────────────────────────────────────────
+  const exportToGoogleCalendar = () => {
+    const format = (date: string) =>
+      new Date(date).toISOString().replace(/-|:|\.\d{3}/g, '').slice(0, 8)
+
+    const details = timelines
+      .map(tl =>
+        `📍 ${tl.startingPoint} → ${tl.endPoint}` +
+        (tl.activities && tl.activities.length > 0
+          ? '\n' + tl.activities.map(a => `  • ${a.name}${a.cost ? ` (${a.cost} RON)` : ''}`).join('\n')
+          : '')
+      )
+      .join('\n\n')
+
+    const params = new URLSearchParams({
+      action:   'TEMPLATE',
+      text:     tripDetails.title,
+      dates:    `${format(tripDetails.startingDate)}/${format(tripDetails.endingDate)}`,
+      details:  details,
+      location: timelines[0]?.startingPoint ?? '',
+    })
+
+    window.open(`https://calendar.google.com/calendar/render?${params}`, '_blank')
+  }
+
   const renderOverview = () => (
     <motion.div
       key="tab-overview"
@@ -1161,6 +1256,46 @@ function TripPageContent({ trip }: TripPageContentProps) {
       className="trip-workspace-v2"
     >
       <div className="trip-main-content">
+
+        {/* ── Export Action Strip ── */}
+        <div style={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: '0.75rem',
+          padding: '1rem 1.25rem',
+          background: 'linear-gradient(135deg, rgba(17,34,26,0.7), rgba(9,18,13,0.6))',
+          border: '1px solid var(--line-soft)',
+          borderRadius: 'var(--radius-md)',
+          alignItems: 'center',
+        }}>
+          <span style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-380)', letterSpacing: '0.08em', textTransform: 'uppercase', marginRight: 'auto' }}>
+            Export
+          </span>
+          <button
+            className="btn btn-ghost btn-sm"
+            style={{ gap: '0.5rem', border: '1px solid var(--line-soft)' }}
+            onClick={handleExportCosts}
+            disabled={isExportingCosts}
+            title="Download a PDF report of all activity costs"
+          >
+            {isExportingCosts ? (
+              <span className="inline-spinner" />
+            ) : (
+              <FiDownload size={15} />
+            )}
+            {isExportingCosts ? 'Exporting...' : 'Export Costs (PDF)'}
+          </button>
+          <button
+            className="btn btn-ghost btn-sm"
+            style={{ gap: '0.5rem', border: '1px solid var(--line-soft)' }}
+            onClick={exportToGoogleCalendar}
+            title="Add this trip to Google Calendar"
+          >
+            <FiCalendar size={15} style={{ color: '#4285F4' }} />
+            Add to Google Calendar
+          </button>
+        </div>
+
         <div className="timeline-flow-v2">
           {timelines.map((stop) => (
             <TimelineStopCard 
