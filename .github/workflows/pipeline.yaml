@@ -13,7 +13,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: '25'        
           cache: 'npm'
@@ -25,7 +25,7 @@ jobs:
   # ─── JOB 2: Build & Push ────────────────────────────────
   build:
     runs-on: ubuntu-latest
-    needs: test                     # ✅ Așteaptă testele
+    needs: test                   
 
     steps:
       - uses: actions/checkout@v5  
@@ -42,7 +42,7 @@ jobs:
           push: true
           tags: |
             cezarique/tripgenius:latest
-            cezarique/tripgenius:sha-${{ github.sha }}  # ✅ SHA tag
+            cezarique/tripgenius:sha-${{ github.sha }}  
           cache-from: type=registry,ref=cezarique/tripgenius:cache
           cache-to: type=registry,ref=cezarique/tripgenius:cache,mode=max
           build-args: |
@@ -64,7 +64,7 @@ jobs:
       security-events: write
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - uses: docker/login-action@v3
         with:
@@ -74,7 +74,7 @@ jobs:
       - name: Start app container
         run: |
           docker run -d --name react-app -p 8080:80 \
-            cezarique/tripgenius:sha-${{ github.sha }}  # ✅ SHA exact, nu latest
+            cezarique/tripgenius:sha-${{ github.sha }}
 
           for i in {1..30}; do
             if curl -sf http://localhost:8080 > /dev/null; then
@@ -106,7 +106,7 @@ jobs:
         uses: github/codeql-action/upload-sarif@v3
         if: always()
         with:
-          sarif_file: zap-results.sarif   # ✅ Numele corect generat de ZAP
+          sarif_file: zap-results.sarif   
           category: zap-security-scan
 
       - name: Cleanup
@@ -117,7 +117,7 @@ jobs:
   deploy:
     name: Deploy
     runs-on: ubuntu-latest
-    needs: [build, zap-scan]        # ✅ Ambele trebuie să treacă
+    needs: [build, zap-scan]        
 
     steps:
       - name: Trigger Coolify deploy
