@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axios, { type AxiosError } from 'axios';
 import { store } from "./store";
 import { setToken, logout } from './authSlice'
 
@@ -31,11 +31,20 @@ function serializeData(data: unknown): unknown {
     
     return data
 }
+interface SerializedFormData {
+    __formData: true
+    fields: Record<string, string>
+}
+
+function isSerializedFormData(data: unknown): data is SerializedFormData {
+    return typeof data === 'object' && data !== null && '__formData' in data
+}
+
 function deserializeData(data: unknown): unknown {
-    if (data && typeof data === 'object' && '__formData' in (data as any)) {
+    if (isSerializedFormData(data)) {
         const fd = new FormData()
-        Object.entries((data as any).fields).forEach(([key, value]) => {
-            fd.append(key, value as string)
+        Object.entries(data.fields).forEach(([key, value]) => {
+            fd.append(key, value)
         })
         return fd
     }
@@ -120,13 +129,13 @@ export async function flushQueue() {
                     url: item.url,
                     method: item.method,
                     data: deserializeData(item.data),
-                    // Marcăm cererea ca fiind din queue pentru a nu o re-adăuga în caz de eroare de rețea
-                    ...({ _fromQueue: true } as any)
+                    _fromQueue: true,
                 })
                 // Ștergem din queue DOAR dacă cererea a ajuns la server și a fost procesată (succes sau eroare 4xx/5xx)
                 await dequeueRequest(item.id)
-            } catch (error: any) {
-                const isNetworkError = !error.response && error.code !== 'ERR_CANCELED'
+            } catch (error: unknown) {
+                const axiosError = error as AxiosError
+                const isNetworkError = !axiosError.response && axiosError.code !== 'ERR_CANCELED'
                 
                 if (isNetworkError) {
                     // Dacă e eroare de rețea, oprim procesarea cozii (încă suntem offline)
@@ -155,7 +164,7 @@ window.addEventListener('online', async () => {
  * Writes to both 'api-cache' and 'individual-trip-cache' for trip endpoints,
  * so offline fallback always finds the latest data.
  */
-export async function updateCachedResponse(url: string, data: any) {
+export async function updateCachedResponse(url: string, data: unknown) {
     if (!('caches' in window)) return
 
     const fullUrl = url.startsWith('http') ? url : `${baseURL}/${url.startsWith('/') ? url.slice(1) : url}`
@@ -307,7 +316,7 @@ api.interceptors.response.use(
                 try {
                     await axios.post(`${baseURL}/api/auth/logout`, {}, { withCredentials: true });
                 } catch {
-
+                    // ignore logout failure while clearing session
                 }
 
                 return Promise.reject(err);

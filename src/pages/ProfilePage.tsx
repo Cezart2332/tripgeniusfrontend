@@ -10,6 +10,7 @@ import type { Trip, User } from '../types/models'
 import api, { updateCachedResponse } from '../data/api'
 import { setUser } from '../data/authSlice'
 import { AxiosError } from 'axios'
+import { isQueuedRequestError } from '../utils/errorMessage'
 import { FeedbackToast } from '../components/FeedbackToast'
 import type { FeedbackToastState, FeedbackToastTone } from '../components/FeedbackToast'
 import waitForBackendButtonUnlock from '../utils/interactionDelay'
@@ -62,7 +63,7 @@ const revealTransition = {
 const DEFAULT_PROFILE_DESCRIPTION = ''
 
 
-const profileTabs: Array<{ key: ProfileTab; label: string; icon: any }> = [
+const profileTabs: Array<{ key: ProfileTab; label: string; icon: React.ComponentType<{ className?: string; size?: number }> }> = [
   { key: 'identity', label: 'Identity', icon: FiUser },
   { key: 'invites', label: 'Invites', icon: FiMail },
   { key: 'history', label: 'History', icon: FiZap },
@@ -202,6 +203,7 @@ export function ProfilePage() {
     if (nextTab !== activeTab) {
       setActiveTab(nextTab)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- sync tab from URL only
   }, [searchParams])
 
   const [avatarUrl, setAvatarUrl] = useState(getAvatarUrl(user?.username, user?.profileUrl))
@@ -484,8 +486,8 @@ export function ProfilePage() {
 
       return updatedUser
     }
-    catch (err: any) {
-      if (err?.queued) {
+    catch (err: unknown) {
+      if (isQueuedRequestError(err)) {
         showToast('Profile and preferences will be updated successfully.', 'success')
       }
       else {
@@ -540,8 +542,8 @@ export function ProfilePage() {
         showToast('Profile and preferences updated successfully.', 'success')
       }
     }
-    catch (err: any) {
-      if (err?.queued) {
+    catch (err: unknown) {
+      if (isQueuedRequestError(err)) {
         showToast('Profile and preferences will be updated successfully.', 'success')
       }
       else {
@@ -684,7 +686,7 @@ export function ProfilePage() {
           const updatedTrips = user.trips.map(trip => {
             if (String(trip.id) === String(tripId)) {
               const updatedMembers = trip.members?.map(m => {
-                if (String((m as any).id) === String(user.id)) {
+                if (String(m.id) === String(user.id)) {
                   return { ...m, status: action === 'Accepted' ? 'accepted' : 'declined' }
                 }
                 return m
@@ -700,14 +702,14 @@ export function ProfilePage() {
       const userRes = await api.get('api/user/me')
       dispatch(setUser({ user: userRes.data }))
 
-    } catch (err: any) {
-      if (err?.queued) {
+    } catch (err: unknown) {
+      if (isQueuedRequestError(err)) {
         // Optimistic Update: Remove from local list so user sees it "worked"
         if (user) {
           const updatedTrips = user.trips.map(trip => {
             if (String(trip.id) === String(tripId)) {
               const updatedMembers = trip.members?.map(m => {
-                if (String((m as any).id) === String(user.id)) {
+                if (String(m.id) === String(user.id)) {
                   return { ...m, status: action === 'Accepted' ? 'accepted' : 'declined' }
                 }
                 return m

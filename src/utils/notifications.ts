@@ -47,11 +47,15 @@ export async function subscribeForNotifications() {
 
         await api.post('/api/user/subscribe-to-notifications', { endpoint: subscription.endpoint, p256dh: arrayBufferToBase64(subscription.getKey("p256dh") as ArrayBuffer | null), auth: arrayBufferToBase64(subscription.getKey("auth") as ArrayBuffer | null) });
         console.log('Successfully subscribed to notifications.');
-    } catch (error: any) {
-        console.error('Push subscribe error:', {
-            name: error.name,
-            message: error.message,
-            stack: error.stack
-        })
+    } catch (error: unknown) {
+        if (error instanceof Error) {
+            console.error('Push subscribe error:', {
+                name: error.name,
+                message: error.message,
+                stack: error.stack,
+            })
+        } else {
+            console.error('Push subscribe error:', error)
+        }
     }
 }

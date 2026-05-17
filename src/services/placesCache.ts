@@ -1,3 +1,5 @@
+import type { Place } from './placesService';
+
 const DB_NAME = 'places-cache';
 const STORE_NAME = 'places';
 const DB_VERSION = 1;
@@ -23,7 +25,7 @@ function openDB(): Promise<IDBDatabase> {
  * - Online: respects the 7-day TTL.
  * - Offline: returns any cached data regardless of age (stale-while-offline).
  */
-export async function getCached(bboxKey: string): Promise<any | null> {
+export async function getCached(bboxKey: string): Promise<Place[] | null> {
   try {
     const db = await openDB();
     return new Promise((resolve, reject) => {
@@ -50,7 +52,7 @@ export async function getCached(bboxKey: string): Promise<any | null> {
   }
 }
 
-export async function setCache(bboxKey: string, data: any): Promise<void> {
+export async function setCache(bboxKey: string, data: Place[]): Promise<void> {
   try {
     const db = await openDB();
     return new Promise((resolve, reject) => {

@@ -33,6 +33,7 @@ import { fetchPlacesInBBox } from '../services/placesService'
 import { setCache, getCached } from '../services/placesCache'
 import { prefetchAroundPoint, prefetchBounds, corridorBounds } from '../utils/mapTileCache'
 import { AxiosError } from 'axios'
+import { isNetworkError, isQueuedRequestError } from '../utils/errorMessage'
 import {
   formatDisplayDate,
   formatDisplayDateRange,
@@ -48,7 +49,7 @@ type TripWorkspaceTab = 'overview' | 'map' | 'members' | 'chat' | 'settings' | '
 interface TripTabItem {
   key: TripWorkspaceTab
   label: string
-  Icon: any
+  Icon: React.ComponentType<{ className?: string; size?: number }>
 }
 
 interface AuthStoreState {
@@ -347,14 +348,14 @@ export function TripPage() {
         setFetchState('ready')
         // Persist full trip to IndexedDB for offline access
         putTrip(nextTrip)
-      } catch (err: any) {
+      } catch (err: unknown) {
         if (!isMounted) {
           return
         }
 
         // Offline Fallback: Check network error
-        const isNetworkError = !err.response && err.code !== 'ERR_CANCELED'
-        if (!navigator.onLine || isNetworkError) {
+        const networkError = isNetworkError(err)
+        if (!navigator.onLine || networkError) {
           // 1st: Try the per-trip IndexedDB cache (full data with timelines + members)
           try {
             const cachedTrip = await getTrip(tripId)
@@ -512,6 +513,7 @@ function TripPageContent({ trip }: TripPageContentProps) {
     if (nextTab !== activeTab) {
       setActiveTab(nextTab)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- sync tab from URL only
   }, [searchParams])
   const [ownerTripDraft, setOwnerTripDraft] = useState<OwnerTripEditState>(
     createOwnerTripEditState(trip),
@@ -534,6 +536,7 @@ function TripPageContent({ trip }: TripPageContentProps) {
   // Subsequent updates are handled locally in member action handlers
   useEffect(() => {
     setMembers(trip.members);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- reset members when switching trips only
   }, [trip.id]);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([])
   const [newMessage, setNewMessage] = useState('')
@@ -856,8 +859,8 @@ function TripPageContent({ trip }: TripPageContentProps) {
       updateCachedResponse(`api/trip/get-trip/${tripDetails.id}`, finalTrip)
       putTrip({ ...tripDetails, ...finalTrip })
       invalidateTripsCache()
-    } catch (err: any) {
-      if (err?.queued) {
+    } catch (err: unknown) {
+      if (isQueuedRequestError(err)) {
         const optimisticTrip = {
           ...tripDetails,
           title: ownerTripDraft.title,
@@ -917,8 +920,8 @@ function TripPageContent({ trip }: TripPageContentProps) {
           status: 'invited',
         },
       ])
-    } catch (err: any) {
-      if (err?.queued) {
+    } catch (err: unknown) {
+      if (isQueuedRequestError(err)) {
         setInviteFeedback({ tone: 'success', message: `Invite for ${candidate.username} will be sent when online.` })
       } else {
         setInviteFeedback({ tone: 'error', message: 'Failed to send invite.' })
@@ -948,8 +951,8 @@ function TripPageContent({ trip }: TripPageContentProps) {
           setMembers(prev => prev.filter(m => m.id !== member.id))
         }
       }
-    } catch (err: any) {
-      if (err?.queued) {
+    } catch (err: unknown) {
+      if (isQueuedRequestError(err)) {
         const updatedMembers = action === 'Accepted'
           ? members.map(m => m.id === member.id ? { ...m, status: 'accepted' } : m)
           : members.filter(m => m.id !== member.id)
@@ -990,8 +993,8 @@ function TripPageContent({ trip }: TripPageContentProps) {
           },
         ])
       }
-    } catch (err: any) {
-      if (err?.queued) {
+    } catch (err: unknown) {
+      if (isQueuedRequestError(err)) {
         setMembers((prev) => [
           ...prev,
           {
@@ -1020,8 +1023,8 @@ function TripPageContent({ trip }: TripPageContentProps) {
     try {
       await api.patch('api/trip/change-role', { id: userId, tripId: trip.id, role: newRole })
       setMembers(prev => prev.map(m => m.id === userId ? { ...m, role: newRole } : m))
-    } catch (err: any) {
-      if (err?.queued) {
+    } catch (err: unknown) {
+      if (isQueuedRequestError(err)) {
         setMembers(prev => prev.map(m => m.id === userId ? { ...m, role: newRole } : m))
         setTripDetailsFeedback({ tone: 'success', message: 'Role change will be synced.' })
       } else {
@@ -1043,8 +1046,8 @@ function TripPageContent({ trip }: TripPageContentProps) {
     try {
       await api.delete(`api/trip/remove-member/${tripDetails.id}/${userId}`)
       setMembers(prev => prev.filter(m => m.id !== userId))
-    } catch (err: any) {
-      if (err?.queued) {
+    } catch (err: unknown) {
+      if (isQueuedRequestError(err)) {
         setMembers(prev => prev.filter(m => m.id !== userId))
         setTripDetailsFeedback({ tone: 'success', message: 'Traveler removal will be synced.' })
       } else {

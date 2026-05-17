@@ -7,6 +7,7 @@ import type { TimelineStop } from '../types/models'
 import api from '../data/api'
 import { FeedbackToast } from '../components/FeedbackToast'
 import type { FeedbackToastState } from '../components/FeedbackToast'
+import { isQueuedRequestError } from '../utils/errorMessage'
 
 interface LocationSelection {
   name: string
@@ -168,8 +169,8 @@ export function AddTimelinePage() {
         }
       }
     }
-    catch (err: any) {
-      if (err?.queued) {
+    catch (err: unknown) {
+      if (isQueuedRequestError(err)) {
         setToast({ id: Date.now(), message: 'Timeline stop will be added when online!', tone: 'success' })
         setTimeout(() => navigate(`/app/trip/${tripId}?view=map`), 2000)
       } else {

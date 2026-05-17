@@ -24,6 +24,25 @@ interface RouteData {
   steps?: NavigationStep[]
 }
 
+interface OsrmManeuver {
+  type: string
+  modifier?: string
+  location: [number, number]
+}
+
+interface OsrmStep {
+  distance: number
+  name?: string
+  maneuver: OsrmManeuver
+}
+
+interface OsrmRoute {
+  geometry: { type: 'LineString'; coordinates: [number, number][] }
+  duration: number
+  distance: number
+  legs: Array<{ steps: OsrmStep[] }>
+}
+
 const translateManeuver = (type: string, modifier?: string, name?: string): string => {
   const base = name && name !== '' ? name : ''
   
@@ -192,6 +211,7 @@ export function NavigationPage() {
       window.removeEventListener('online', handleOnline)
       window.removeEventListener('offline', handleOffline)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- geolocation watch; updateRoute invoked inline
   }, [selectedStop, lastCacheLocation])
 
   const loadRecentRoutes = async () => {
@@ -235,15 +255,15 @@ export function NavigationPage() {
   const handleOfflineFallback = async (lat: number, lng: number) => {
     const cached = await getNearestCachedRoute(lat, lng)
     if (cached) {
-      processRouteData(cached.routeData)
+      processRouteData(cached.routeData as OsrmRoute)
       setOfflineWarning("Route may be inaccurate — reconnect to recalculate")
     }
   }
 
-  const processRouteData = (firstRoute: any) => {
+  const processRouteData = (firstRoute: OsrmRoute) => {
     if (!mapRef.current) return
 
-    const steps: NavigationStep[] = firstRoute.legs[0].steps.map((s: any) => ({
+    const steps: NavigationStep[] = firstRoute.legs[0].steps.map((s) => ({
       instruction: translateManeuver(s.maneuver.type, s.maneuver.modifier, s.name),
       distance: s.distance,
       location: s.maneuver.location,
@@ -276,6 +296,7 @@ export function NavigationPage() {
     updateRoute()
     const interval = setInterval(() => updateRoute(), 10000)
     return () => clearInterval(interval)
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- updateRoute is stable for location/stop changes
   }, [userLocation, selectedStop])
 
   if (isLoading) return <div className="nav-page-loading">Loading navigation system...</div>
@@ -357,7 +378,7 @@ export function NavigationPage() {
               <button 
                 key={r.id} 
                 onClick={() => {
-                  processRouteData(r.routeData)
+                  processRouteData(r.routeData as OsrmRoute)
                   setOfflineWarning("Route may be inaccurate — reconnect to recalculate")
                 }}
                 className="btn btn-ghost"

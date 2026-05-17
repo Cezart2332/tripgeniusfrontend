@@ -4,7 +4,8 @@ import { FiArrowLeft, FiMapPin, FiCalendar, FiActivity, FiPlusCircle, FiTrash2 }
 import { useNavigate, useParams } from 'react-router-dom'
 import api from '../data/api'
 import { ActivityType } from '../types/models'
-import type { TimelineStop } from '../types/models'
+import type { TimelineStop, TripActivity } from '../types/models'
+import { isQueuedRequestError } from '../utils/errorMessage'
 import { FeedbackToast } from '../components/FeedbackToast'
 import type { FeedbackToastState } from '../components/FeedbackToast'
 
@@ -78,7 +79,7 @@ export function EditTimelinePage() {
       fromCoords?: number[]
       toCoords?: number[]
       note?: string
-      activities?: any[]
+      activities?: TripActivity[]
     }
 
     const fetchTimeline = async () => {
@@ -229,8 +230,8 @@ export function EditTimelinePage() {
           return
         }
       }
-    } catch (err: any) {
-      if (err?.queued) {
+    } catch (err: unknown) {
+      if (isQueuedRequestError(err)) {
         setToast({ id: Date.now(), message: 'Timeline changes will be synced when online!', tone: 'success' })
         setTimeout(() => navigate(`/app/trip/${tripId}?view=map`), 2000)
       } else {

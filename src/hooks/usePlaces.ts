@@ -43,8 +43,8 @@ export function usePlaces(map: maplibregl.Map | null, kind: string = 'interestin
       const data = await fetchPlacesInBBox(lonMin, latMin, lonMax, latMax, kind);
       await setCache(bboxKey, data);
       setPlaces(data);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to load places');
     } finally {
       setLoading(false);
     }

@@ -72,5 +72,14 @@ export default defineConfig({
       }
     },
     chunkSizeWarningLimit: 2500,
+  },
+  test: {
+    environment: 'jsdom',
+    setupFiles: ['src/test/setup.ts'],
+    css: true,
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'html', 'lcov'],
+    },
   }
 })

@@ -23,6 +23,7 @@ import type { FeedbackToastState, FeedbackToastTone } from '../components/Feedba
 import waitForBackendButtonUnlock from '../utils/interactionDelay'
 
 import { AxiosError } from 'axios'
+import { isQueuedRequestError } from '../utils/errorMessage'
 
 interface AuthStoreState {
   auth: {
@@ -33,7 +34,7 @@ interface AuthStoreState {
 
 type SettingsTab = 'account' | 'security' | 'support' | 'danger'
 
-const settingsTabs: Array<{ key: SettingsTab; label: string; Icon: any }> = [
+const settingsTabs: Array<{ key: SettingsTab; label: string; Icon: React.ComponentType<{ className?: string; size?: number }> }> = [
   { key: 'account', label: 'Account', Icon: FiUser },
   { key: 'security', label: 'Security', Icon: FiShield },
   { key: 'support', label: 'Support', Icon: FiHelpCircle },
@@ -195,9 +196,9 @@ export function SettingsPage() {
       await changeEmail(email)
       showToast('Email updated successfully.', 'success')
     }
-    catch(err : any)
+    catch (err: unknown)
     {
-      if (err?.queued) {
+      if (isQueuedRequestError(err)) {
         showToast('Email update will be synchronized when online.', 'success')
       }
       else if(err instanceof AxiosError)
@@ -238,9 +239,9 @@ export function SettingsPage() {
       setCurrentPassword('')
       setNextPassword('')
     }
-    catch(err : any)
+    catch (err: unknown)
     {
-      if (err?.queued) {
+      if (isQueuedRequestError(err)) {
         showToast('Password change will be synchronized when online.', 'success')
         setCurrentPassword('')
         setNextPassword('')
@@ -275,9 +276,9 @@ export function SettingsPage() {
       showToast('Bug report received. Thank you for helping improve TripGenius.', 'info')
       setBugReport('')
     }
-    catch(err : any)
+    catch (err: unknown)
     {
-      if (err?.queued) {
+      if (isQueuedRequestError(err)) {
         showToast('Bug report will be sent when online.', 'success')
         setBugReport('')
       }
@@ -309,9 +310,9 @@ export function SettingsPage() {
       showToast('Account deleted. Redirecting to login...', 'success')
       shouldNavigate = true
     }
-    catch(err : any)
+    catch (err: unknown)
     {
-      if (err?.queued) {
+      if (isQueuedRequestError(err)) {
         showToast('Account deletion will be processed when online.', 'success')
       }
       else if(err instanceof AxiosError)

@@ -2,7 +2,7 @@ export interface CachedRoute {
   id: string; // "startLat,startLng-endLat,endLng"
   start: { lat: number; lng: number };
   end: { lat: number; lng: number };
-  routeData: any;
+  routeData: unknown;
   timestamp: number;
 }
 
@@ -30,7 +30,7 @@ function openDB(): Promise<IDBDatabase> {
 export async function saveRouteToIndexedDB(
   start: { lat: number; lng: number },
   end: { lat: number; lng: number },
-  routeData: any
+  routeData: unknown
 ): Promise<void> {
   const db = await openDB();
   const id = `${start.lat},${start.lng}-${end.lat},${end.lng}`;

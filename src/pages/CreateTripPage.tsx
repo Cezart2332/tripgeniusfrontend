@@ -18,6 +18,7 @@ import { useSelector } from 'react-redux'
 import type { TripStatus, User } from '../types/models'
 import api from '../data/api'
 import { FeedbackToast } from '../components/FeedbackToast'
+import { getErrorMessage, isQueuedRequestError } from '../utils/errorMessage'
 import type { FeedbackToastState } from '../components/FeedbackToast'
 import { ModalSurface } from '../components/ModalSurface'
 import { LocationAutocompleteField } from '../components/LocationAutocompleteField'
@@ -250,6 +251,7 @@ export function CreateTripPage() {
         { timeout: 10000 }
       )
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- run once on mount for geolocation seed only
   }, [])
 
   const handleCreate = async (e: React.FormEvent | React.MouseEvent) => {
@@ -302,12 +304,12 @@ export function CreateTripPage() {
       await api.post('/api/trip/create-trip', formData)
       setToast({ id: Date.now(), message: 'Trip saved!', tone: 'success' })
       setTimeout(() => navigate('/app/discover'), 2000)
-    } catch (err: any) {
-      if (err?.queued) {
+    } catch (err: unknown) {
+      if (isQueuedRequestError(err)) {
         setToast({ id: Date.now(), message: 'Trip creation will be saved when online!', tone: 'success' })
         setTimeout(() => navigate('/app/discover'), 2000)
       } else {
-        setError(err.response?.data?.message || 'Synchronization failed.')
+        setError(getErrorMessage(err, 'Synchronization failed.'))
       }
     } finally {
       await waitForBackendButtonUnlock()

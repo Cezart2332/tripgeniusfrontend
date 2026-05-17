@@ -125,6 +125,7 @@ export function TripRouteMap({ timeline, selectedDay, showOverlay = true }: Trip
       mapRef.current = null
       mapLoadedRef.current = false
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- map init once; selectedStop handled in separate effect
   }, [])
 
   useEffect(() => {

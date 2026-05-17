@@ -6,7 +6,7 @@ import { CacheableResponsePlugin } from 'workbox-cacheable-response'
 import { ExpirationPlugin } from 'workbox-expiration'
 
 declare const self: ServiceWorkerGlobalScope & {
-    __WB_MANIFEST: Array<any>
+    __WB_MANIFEST: Array<{ url: string; revision: string | null }>
 }
 
 const PERSISTENT_CACHE_NAMES = new Set([
@@ -74,7 +74,7 @@ registerRoute(
         try {
             const res = await navigationHandler.handle(params)
             if (res) return res
-        } catch (e) {
+        } catch {
             // offline or error
         }
         
@@ -85,7 +85,7 @@ registerRoute(
         // Last resort fallback via createHandlerBoundToURL
         try {
             return await createHandlerBoundToURL('index.html')(params)
-        } catch (e) {
+        } catch {
             return Response.error()
         }
     })

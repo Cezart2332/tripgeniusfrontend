@@ -28,7 +28,7 @@ interface ParsedMessage {
   trips: TripCard[]
 }
 
-function parseAiMessage(raw: string): ParsedMessage {
+export function parseAiMessage(raw: string): ParsedMessage {
   // Găsește tot ce e între [TRIPS: și ultimul ]
   const tripMatch = raw.match(/\[TRIPS:(.*?)\]+\s*$/)
 
@@ -41,7 +41,7 @@ function parseAiMessage(raw: string): ParsedMessage {
 
   try {
     // Curăță acolade/brackets în plus înainte să parsezi
-    let jsonStr = tripMatch[1].trim().replace(/}+\]$/, '}]').replace(/\}+$/, '}')
+    const jsonStr = tripMatch[1].trim().replace(/}+\]$/, '}]').replace(/\}+$/, '}')
     const parsed = JSON.parse(jsonStr)
     const text = raw.replace(/\[TRIPS:.*$/s, '').trim()
     return { text, trips: parsed.trips || [] }
@@ -56,7 +56,7 @@ interface LinkCard {
   url: string
 }
 
-function parseAiLinks(raw: string): { text: string; links: LinkCard[] } {
+export function parseAiLinks(raw: string): { text: string; links: LinkCard[] } {
   const linkMatch = raw.match(/\[LINKS:(.*?)\]+\s*$/s)
 
   const partialTagIndex = raw.indexOf('[LINKS:')
@@ -129,6 +129,7 @@ export function AiAdvisorPage() {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const initialScrollDone = useRef(false);
   const [showScrollButton, setShowScrollButton] = useState(false);
+  const threadRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
     const handleOnline = () => setIsOffline(false)
@@ -148,12 +149,6 @@ export function AiAdvisorPage() {
       textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
     }
   }, [prompt]);
-
-  if (isOffline) {
-    return <OfflineAiState />
-  }
-
-  const threadRef = useRef<HTMLDivElement | null>(null)
 
   const fetchChatHistory = async () => {
     try {
@@ -180,6 +175,7 @@ export function AiAdvisorPage() {
     }
   }
 
+  /* eslint-disable react-hooks/set-state-in-effect -- reset chat UI when SignalR connection (re)mounts */
   useEffect(() => {
     if (!threadRef.current) {
       return
@@ -296,7 +292,8 @@ export function AiAdvisorPage() {
       stop()
       connectionRef.current = null;
     }
-  }, [token, baseURL, dispatch])
+  }, [token, baseURL, dispatch, navigate])
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   useEffect(() => {
     if (!token) {
@@ -326,6 +323,7 @@ export function AiAdvisorPage() {
     }
   };
 
+  /* eslint-disable react-hooks/set-state-in-effect -- scroll position sync after message stream updates */
   useEffect(() => {
     const thread = threadRef.current;
     if (thread && messages.length > 0) {
@@ -343,6 +341,7 @@ export function AiAdvisorPage() {
       handleScroll();
     }
   }, [messages, isTyping])
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const handleSubmit = async (e?: FormEvent) => {
     if (e) e.preventDefault();
@@ -372,6 +371,10 @@ export function AiAdvisorPage() {
       e.preventDefault();
       handleSubmit();
     }
+  }
+
+  if (isOffline) {
+    return <OfflineAiState />
   }
 
   return (

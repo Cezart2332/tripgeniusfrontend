@@ -54,7 +54,7 @@ export function LocationAutocompleteField({ id, label, placeholder, value, onVal
         
         nominatimCache[trimmed] = results
         setSuggestions(results)
-      } catch (err: any) {
+      } catch (err: unknown) {
         if (!axios.isCancel(err)) {
           console.error('Location search failed:', err)
         }

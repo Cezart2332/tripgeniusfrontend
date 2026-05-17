@@ -8,6 +8,7 @@ import type { User, AiTripPlannerRequest } from '../types/models'
 import { LocationAutocompleteField } from '../components/LocationAutocompleteField'
 import { FeedbackToast } from '../components/FeedbackToast'
 import type { FeedbackToastState } from '../components/FeedbackToast'
+import { getErrorMessage } from '../utils/errorMessage'
 
 const revealTransition = {
   duration: 0.55,
@@ -55,8 +56,8 @@ export function AiTripPlannerPage() {
       setToast({ id: Date.now(), message: 'Trip generated successfully!', tone: 'success' })
       invalidateTripsCache()
       setTimeout(() => navigate('/app/discover'), 2000)
-    } catch (err: any) {
-      setToast({ id: Date.now(), message: err.response?.data?.message || 'AI generation failed.', tone: 'error' })
+    } catch (err: unknown) {
+      setToast({ id: Date.now(), message: getErrorMessage(err, 'AI generation failed.'), tone: 'error' })
     } finally {
       setIsGenerating(false)
     }

@@ -1,3 +1,7 @@
+import type { Trip } from '../types/models'
+
+type CachedTrip = Trip & { _cachedAt?: number }
+
 /**
  * tripCache.ts
  * Per-trip IndexedDB store for full Trip objects (including timelines + members).
@@ -24,7 +28,7 @@ function openDB(): Promise<IDBDatabase> {
 }
 
 /** Persist a single trip (full object with timelines + members). */
-export async function putTrip(trip: any): Promise<void> {
+export async function putTrip(trip: Trip): Promise<void> {
     try {
         const db = await openDB()
         const tx = db.transaction(STORE_NAME, 'readwrite')
@@ -35,7 +39,7 @@ export async function putTrip(trip: any): Promise<void> {
 }
 
 /** Retrieve a single trip by ID. Returns undefined if not found. */
-export async function getTrip(id: string | number): Promise<any | undefined> {
+export async function getTrip(id: string | number): Promise<CachedTrip | undefined> {
     try {
         const db = await openDB()
         return await new Promise((resolve, reject) => {
@@ -51,7 +55,7 @@ export async function getTrip(id: string | number): Promise<any | undefined> {
 }
 
 /** Retrieve all cached trips. */
-export async function getAllCachedTrips(): Promise<any[]> {
+export async function getAllCachedTrips(): Promise<CachedTrip[]> {
     try {
         const db = await openDB()
         return await new Promise((resolve, reject) => {
@@ -72,7 +76,7 @@ export async function getAllCachedTrips(): Promise<any[]> {
  * timeline/member data, it won't be overwritten by a summary-only object
  * unless the summary has timelines.
  */
-export async function putAllTrips(trips: any[]): Promise<void> {
+export async function putAllTrips(trips: Trip[]): Promise<void> {
     if (!trips.length) return
     try {
         const db = await openDB()
@@ -82,7 +86,7 @@ export async function putAllTrips(trips: any[]): Promise<void> {
         for (const trip of trips) {
             const key = String(trip.id)
             // Check if we already have a richer version (has timelines array with items)
-            const existing: any = await new Promise((resolve) => {
+            const existing = await new Promise<CachedTrip | undefined>((resolve) => {
                 const r = store.get(key)
                 r.onsuccess = () => resolve(r.result)
                 r.onerror = () => resolve(undefined)

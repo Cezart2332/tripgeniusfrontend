@@ -10,6 +10,7 @@ import api from '../data/api'
 import { formatDisplayDate } from '../utils/dateDisplay'
 import { getTripStatusLabel } from '../utils/tripStatus'
 import { putAllTrips } from '../utils/tripCache'
+import { isNetworkError as isNetworkErrorUtil } from '../utils/errorMessage'
 
 const revealTransition = {
   duration: 0.55,
@@ -96,13 +97,13 @@ export function DiscoveryPage() {
         }
 
         setTrips(res.data)
-      } catch (err: any) {
+      } catch (err: unknown) {
         if (!isActive) {
           return
         }
 
         // Offline Fallback: Trigger if offline OR if the network request just failed
-        const isNetworkError = !err.response && err.code !== 'ERR_CANCELED'
+        const isNetworkError = isNetworkErrorUtil(err)
         if (!navigator.onLine || isNetworkError) {
           try {
             const allRes = await api.get('api/trip/get-all-trips')
