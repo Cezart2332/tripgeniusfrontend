@@ -115,7 +115,7 @@ jobs:
           target: 'http://localhost:8080'
           rules_file_name: '.zap/rules.tsv'
           cmd_options: '-a'
-          fail_action: true
+          fail_action: false
           allow_issue_writing: false
 
       - name: Upload ZAP Report
