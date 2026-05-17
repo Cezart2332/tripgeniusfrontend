@@ -82,7 +82,7 @@ export async function isReallyOnline(): Promise<boolean> {
         const controller = new AbortController()
         const timeoutId = setTimeout(() => controller.abort(), 3000)
         
-        await fetch(`${import.meta.env.VITE_BASE_URL}/api/auth/health`, {
+        await fetch(`${import.meta.env.VITE_BASE_URL}/health`, {
             method: 'GET',
             cache: 'no-store',
             signal: controller.signal
