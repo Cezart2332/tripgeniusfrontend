@@ -1,12 +1,9 @@
-name: CI Pipeline
+name: CI/CD Pipeline
 
 on:
   push:
     branches: [main]
 
-# ─────────────────────────────
-# SECURITATE: Restrângem permisiunile token-ului GITHUB_TOKEN la minimum necesar global
-# ─────────────────────────────
 permissions:
   contents: read
 
@@ -33,12 +30,39 @@ jobs:
 
 
 # ─────────────────────────────
-# 2. BUILD & PUSH DOCKER IMAGE
+# 2. SEMGREP SAST
+# ─────────────────────────────
+  semgrep:
+    name: Semgrep SAST
+    runs-on: ubuntu-latest
+    needs: test
+
+    permissions:
+      contents: read
+      security-events: write
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Run Semgrep
+        uses: semgrep/semgrep-action@v1
+        with:
+          config: >
+            p/typescript
+            p/react
+            p/secrets
+            p/owasp-top-ten
+        env:
+          SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
+
+
+# ─────────────────────────────
+# 3. BUILD & PUSH DOCKER IMAGE
 # ─────────────────────────────
   build:
     name: Build & Push Docker
     runs-on: ubuntu-latest
-    needs: test
+    needs: [test, semgrep]        
 
     steps:
       - uses: actions/checkout@v5
@@ -66,14 +90,13 @@ jobs:
 
 
 # ─────────────────────────────
-# 3. TRIVY SECURITY GATE (CU SARIF)
+# 4. TRIVY SECURITY GATE
 # ─────────────────────────────
   trivy:
     name: Trivy Security Scan
     runs-on: ubuntu-latest
     needs: build
 
-    # Permisiune extra necesară pentru a uploada în tab-ul Security
     permissions:
       contents: read
       security-events: write
@@ -87,22 +110,21 @@ jobs:
           output: 'trivy-results.sarif'
           severity: 'HIGH,CRITICAL'
 
-      - name: Upload Trivy scan results to GitHub Security
+      - name: Upload Trivy results to GitHub Security
         uses: github/codeql-action/upload-sarif@v3
-        if: always() # Uploadează raportul chiar dacă Trivy dă fail la scanare
+        if: always()
         with:
           sarif_file: 'trivy-results.sarif'
 
 
 # ─────────────────────────────
-# 4. OWASP ZAP (CU GITHUB ISSUES INTEGRATION)
+# 5. OWASP ZAP
 # ─────────────────────────────
   zap:
     name: OWASP ZAP Scan
     runs-on: ubuntu-latest
     needs: build
 
-    # Permisiune extra necesară pentru ca ZAP să poată crea/închide Issues
     permissions:
       contents: read
       issues: write
@@ -125,9 +147,9 @@ jobs:
           target: 'http://localhost:8080'
           cmd_options: '-a'
           fail_action: false
-          allow_issue_writing: true # Activăm scrierea de Issues
+          allow_issue_writing: true
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Oferim token-ul acțiunii pentru a crea Issues
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Cleanup
         if: always()
@@ -135,7 +157,7 @@ jobs:
 
 
 # ─────────────────────────────
-# 5. DEPLOY (ONLY IF ALL OK)
+# 6. DEPLOY (ONLY IF ALL OK)
 # ─────────────────────────────
   deploy:
     name: Deploy to Coolify
