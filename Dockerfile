@@ -25,16 +25,11 @@ RUN npm run build
 # ─────────────────────────────
 FROM nginx:stable-alpine AS production
 
-# 1. Ștergem absolut orice configurație default a Nginx-ului
+# 1. Ștergem absolut orice configurație default a Nginx-ului pentru a evita conflictele
 RUN rm -rf /etc/nginx/conf.d/*
 
-# 2. Copiem fișierul tău de configurare și îl redenumim explicit în default.conf
-# NOTĂ: Dacă în repo-ul tău fișierul de Nginx se află direct în folderul "nginx" 
-# și se numește "nginx.conf", folosește linia de mai jos:
-COPY --from=build /usr/src/app/nginx/nginx.conf /etc/nginx/conf.d/default.conf
-
-# (Alternativă: dacă fișierul tău din repo se numește doar "nginx" fără extensie,
-# comanda ar fi: COPY --from=build /usr/src/app/nginx /etc/nginx/conf.d/default.conf)
+# 2. Copiem fișierul tău "nginx" din rădăcina proiectului și îl redenumim în "default.conf"
+COPY --from=build /usr/src/app/nginx /etc/nginx/conf.d/default.conf
 
 # 3. Copiem fișierele de frontend din etapa de build
 COPY --from=build /usr/src/app/dist /usr/share/nginx/html
