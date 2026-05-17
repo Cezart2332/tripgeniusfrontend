@@ -30,7 +30,12 @@ jobs:
             cezarique/tripgenius:latest
           cache-from: type=registry,ref=cezarique/tripgenius:cache
           cache-to: type=registry,ref=cezarique/tripgenius:cache,mode=max
-          
+          build-args: |
+            VITE_BASE_URL=${{ secrets.VITE_BASE_URL }}
+            VITE_GOOGLE_CLIENT_ID=${{ secrets.VITE_GOOGLE_CLIENT_ID }}
+            VITE_OPEN_TRIP_MAP=${{ secrets.VITE_OPEN_TRIP_MAP }}
+            VITE_VAPID_PUBLIC_KEY=${{ secrets.VITE_VAPID_PUBLIC_KEY }}
+
       - name: Trigger Coolify deploy
         env:
           COOLIFY_URL: ${{ secrets.COOLIFY_DOMAIN }}   
@@ -41,6 +46,3 @@ jobs:
             -H "Authorization: Bearer $COOLIFY_TOKEN" \
             -H "Content-Type: application/json" \
             -d "{\"uuid\":\"$COOLIFY_UUID\",\"force\":true}"
-
-
-

@@ -1,0 +1,14 @@
+version: "3.9"
+
+services:
+  tripgenius-frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        VITE_BASE_URL: ${VITE_BASE_URL}
+        VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID}
+        VITE_OPEN_TRIP_MAP: ${VITE_OPEN_TRIP_MAP}
+        VITE_VAPID_PUBLIC_KEY: ${VITE_VAPID_PUBLIC_KEY}
+    ports:
+      - "8080:80"

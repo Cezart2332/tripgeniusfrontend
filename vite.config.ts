@@ -1,9 +1,12 @@
-import { defineConfig } from 'vite'
+import { defineConfig, type UserConfig } from 'vite'
+import type { InlineConfig } from 'vitest'
 import react, { reactCompilerPreset } from '@vitejs/plugin-react'
 import babel from '@rolldown/plugin-babel'
 import { VitePWA } from 'vite-plugin-pwa'
 
 // https://vite.dev/config/
+type VitestConfig = UserConfig & { test: InlineConfig }
+
 export default defineConfig({
   plugins: [
     react(),
@@ -82,4 +85,4 @@ export default defineConfig({
       reporter: ['text', 'html', 'lcov'],
     },
   }
-})
+} as VitestConfig)

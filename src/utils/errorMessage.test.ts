@@ -1,4 +1,4 @@
-import { AxiosError } from 'axios'
+import { AxiosError, type AxiosResponse, type InternalAxiosRequestConfig } from 'axios'
 import { describe, expect, it } from 'vitest'
 import {
   asAxiosError,
@@ -9,28 +9,30 @@ import {
 
 describe('errorMessage', () => {
   it('extracts message from Axios error responses', () => {
+    const config = { headers: {} } as InternalAxiosRequestConfig
     const response = {
       data: { message: 'Bad request' },
       status: 400,
       statusText: 'Bad Request',
       headers: {},
-      config: {},
-    }
-    const error = new AxiosError('Request failed', 'ERR_BAD_REQUEST', {}, {}, response)
+      config,
+    } as AxiosResponse
+    const error = new AxiosError('Request failed', 'ERR_BAD_REQUEST', config, {}, response)
 
     expect(getErrorMessage(error)).toBe('Bad request')
     expect(asAxiosError(error)).toBe(error)
   })
 
   it('handles string response payloads and fallback values', () => {
+    const config = { headers: {} } as InternalAxiosRequestConfig
     const response = {
       data: 'Plain failure',
       status: 500,
       statusText: 'Server Error',
       headers: {},
-      config: {},
-    }
-    const error = new AxiosError('Boom', 'ERR_BAD_RESPONSE', {}, {}, response)
+      config,
+    } as AxiosResponse
+    const error = new AxiosError('Boom', 'ERR_BAD_RESPONSE', config, {}, response)
 
     expect(getErrorMessage(error)).toBe('Plain failure')
   })
