@@ -237,9 +237,6 @@ export async function isWorldMapCached(): Promise<boolean> {
     const keys = await cache.keys()
     const globalTiles = keys.filter((r) => r.url.includes('/dark_all/'))
     const complete = globalTiles.length >= WORLD_TILE_COUNT_Z0_TO_5 * 0.95
-    // #region agent log
-    fetch('http://127.0.0.1:7729/ingest/f5497c44-4c25-478d-bea5-0f2b4c8bf112',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'18f2f6'},body:JSON.stringify({sessionId:'18f2f6',location:'mapTileCache.ts:isWorldMapCached',message:'cache probe',data:{globalTileCount:globalTiles.length,complete,expected:WORLD_TILE_COUNT_Z0_TO_5},timestamp:Date.now(),hypothesisId:'D'})}).catch(()=>{});
-    // #endregion
     if (complete) markWorldMapCached()
     return complete
   } catch {

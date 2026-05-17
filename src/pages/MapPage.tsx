@@ -30,12 +30,7 @@ export function MapPage() {
     const [worldMapCached, setWorldMapCached] = useState(false)
 
     useEffect(() => {
-        void isWorldMapCached().then((cached) => {
-            // #region agent log
-            fetch('http://127.0.0.1:7729/ingest/f5497c44-4c25-478d-bea5-0f2b4c8bf112',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'18f2f6'},body:JSON.stringify({sessionId:'18f2f6',location:'MapPage.tsx:mount',message:'world map cache check on mount',data:{cached},timestamp:Date.now(),hypothesisId:'D'})}).catch(()=>{});
-            // #endregion
-            setWorldMapCached(cached)
-        })
+        void isWorldMapCached().then(setWorldMapCached)
     }, [])
 
     useEffect(() => {
@@ -123,9 +118,6 @@ export function MapPage() {
     };
 
     const downloadWorldwideBaseMap = async () => {
-        // #region agent log
-        fetch('http://127.0.0.1:7729/ingest/f5497c44-4c25-478d-bea5-0f2b4c8bf112',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'18f2f6'},body:JSON.stringify({sessionId:'18f2f6',location:'MapPage.tsx:downloadWorldwideBaseMap',message:'download handler invoked',data:{isDownloading,worldMapCached},timestamp:Date.now(),hypothesisId:'A,B'})}).catch(()=>{});
-        // #endregion
         if (isDownloading || worldMapCached) return;
 
         await subscribeForNotifications();
@@ -134,14 +126,11 @@ export function MapPage() {
         setDownloadProgress(0);
 
         try {
-            const result = await prefetchWorldBase(5, {
+            await prefetchWorldBase(5, {
                 onProgress: (done, total) => {
                     setDownloadProgress(Math.round((done / total) * 100));
                 },
             });
-            // #region agent log
-            fetch('http://127.0.0.1:7729/ingest/f5497c44-4c25-478d-bea5-0f2b4c8bf112',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'18f2f6'},body:JSON.stringify({sessionId:'18f2f6',location:'MapPage.tsx:downloadWorldwideBaseMap:done',message:'prefetchWorldBase finished',data:result,timestamp:Date.now(),hypothesisId:'C,E'})}).catch(()=>{});
-            // #endregion
 
             if (Notification.permission === 'granted') {
                 new Notification("TripGenius Maps", {
