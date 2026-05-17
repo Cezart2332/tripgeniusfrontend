@@ -6,6 +6,7 @@ import api from '../data/api'
 import type { Trip } from '../types/models'
 import { saveRouteToIndexedDB, getNearestCachedRoute, getAllRoutes } from '../utils/db'
 import type { CachedRoute } from '../utils/db'
+import { OSM_STYLE } from '../map/osmStyle'
 
 // Reuse OSRM logic
 interface NavigationStep {
@@ -21,25 +22,6 @@ interface RouteData {
   durationSeconds: number | null
   distanceMeters: number | null
   steps?: NavigationStep[]
-}
-
-const OSM_STYLE: any = {
-  version: 8,
-  sources: {
-    osm: {
-      type: 'raster',
-      tiles: ['https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'],
-      tileSize: 256,
-      attribution: '© OpenStreetMap contributors, © CARTO',
-    },
-  },
-  layers: [
-    {
-      id: 'osm',
-      type: 'raster',
-      source: 'osm',
-    },
-  ],
 }
 
 const translateManeuver = (type: string, modifier?: string, name?: string): string => {

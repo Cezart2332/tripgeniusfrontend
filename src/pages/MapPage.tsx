@@ -5,58 +5,11 @@ import maplibregl from 'maplibre-gl'
 import { FeedbackToast } from "../components/FeedbackToast"
 import type { FeedbackToastState } from "../components/FeedbackToast"
 import { usePlaces } from "../hooks/usePlaces"
+import { useMapTilePrefetch } from "../hooks/useMapTilePrefetch"
 import { subscribeForNotifications } from "../utils/notifications"
-
-const OSM_STYLE: any = {
-    version: 8,
-    sources: {
-        osm: {
-            type: 'raster',
-            tiles: ['https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'],
-            tileSize: 256,
-            attribution: '© OpenStreetMap contributors, © CARTO',
-        },
-    },
-    layers: [
-        {
-            id: 'osm',
-            type: 'raster',
-            source: 'osm',
-        },
-    ],
-}
-
-// Map Marker logic
-const getPoiColor = (kinds: string) => {
-    if (kinds.includes('foods')) return '#d97706'; 
-    if (kinds.includes('accomodations')) return '#3b82f6';
-    if (kinds.includes('amusements')) return '#ec4899';
-    if (kinds.includes('sport')) return '#06b6d4';
-    if (kinds.includes('tourist_facilities')) return '#f59e0b';
-    if (kinds.includes('historic') || kinds.includes('architecture')) return '#8b5cf6';
-    return '#41a238';
-}
-
-const getMarkerIcon = (kinds: string) => {
-    if (kinds.includes('foods')) return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8V21M2 21V19C2 15.6863 4.68629 13 8 13V13C11.3137 13 14 15.6863 14 19V21M16 8C16 3.58172 19.5817 0 24 0V8H16Z"/></svg>';
-    if (kinds.includes('accomodations')) return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>';
-    if (kinds.includes('amusements')) return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>';
-    if (kinds.includes('sport')) return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>';
-    if (kinds.includes('tourist_facilities')) return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>';
-    if (kinds.includes('historic') || kinds.includes('architecture')) return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M3 10h18M5 10V7a3 3 0 0 1 3-3h8a3 3 0 0 1 3 3v3M7 10v4M11 10v4M15 10v4M19 10v4M3 14h18M5 14v7M19 14v7"></path></svg>';
-    return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>';
-}
-
-const createMarkerElement = (color: string, kinds: string) => {
-    const el = document.createElement('div');
-    el.className = 'custom-marker-wrapper';
-    el.innerHTML = `
-      <div class="custom-map-marker" style="background-color: ${color}">
-        <div class="marker-icon-inner">${getMarkerIcon(kinds)}</div>
-      </div>
-    `;
-    return el;
-};
+import { OSM_STYLE } from "../map/osmStyle"
+import { createMarkerElement, getPoiColor } from "../utils/mapMarkers"
+import { prefetchWorldBase } from "../utils/mapTileCache"
 
 export function MapPage() {
     const [userLocation, setUserLocation] = useState<[number, number] | null>(null)
@@ -73,6 +26,7 @@ export function MapPage() {
     const hasAutoCentered = useRef(false);
 
     const { places, loading: placesLoading } = usePlaces(mapInstance)
+    const { isPrefetching } = useMapTilePrefetch(mapInstance)
 
     useEffect(() => {
         if (!mapContainer.current) return;
@@ -106,7 +60,6 @@ export function MapPage() {
                 if (!hasAutoCentered.current) {
                     map.current.flyTo({ center: coords, zoom: 15 });
                     hasAutoCentered.current = true;
-                    // Attempt reverse geocoding
                     fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${position.coords.latitude}&lon=${position.coords.longitude}`)
                         .then(res => res.json())
                         .then(data => {
@@ -162,44 +115,17 @@ export function MapPage() {
     const downloadWorldwideBaseMap = async () => {
         if (isDownloading) return;
 
-        // Request permission and subscribe to backend notifications
         await subscribeForNotifications();
         
         setIsDownloading(true);
         setDownloadProgress(0);
 
         try {
-            const cache = await caches.open('map-tiles-cache');
-            const tileUrls: string[] = [];
-
-            // Z0 to Z5 covers the whole world in ~1365 tiles
-            for (let z = 0; z <= 5; z++) {
-                const maxCoord = Math.pow(2, z) - 1;
-                for (let x = 0; x <= maxCoord; x++) {
-                    for (let y = 0; y <= maxCoord; y++) {
-                        tileUrls.push(`https://basemaps.cartocdn.com/dark_all/${z}/${x}/${y}.png`);
-                    }
-                }
-            }
-
-            let downloaded = 0;
-            const batchSize = 10;
-            
-            for (let i = 0; i < tileUrls.length; i += batchSize) {
-                const batch = tileUrls.slice(i, i + batchSize);
-                await Promise.all(batch.map(async (url) => {
-                    try {
-                        const response = await fetch(url, { mode: 'cors' });
-                        if (response.ok) {
-                            await cache.put(url, response);
-                        }
-                    } catch (e) {
-                        // Silent skip for individual tiles
-                    }
-                }));
-                downloaded += batch.length;
-                setDownloadProgress(Math.round((downloaded / tileUrls.length) * 100));
-            }
+            await prefetchWorldBase(5, {
+                onProgress: (done, total) => {
+                    setDownloadProgress(Math.round((done / total) * 100));
+                },
+            });
 
             if (Notification.permission === 'granted') {
                 new Notification("TripGenius Maps", {
@@ -213,7 +139,7 @@ export function MapPage() {
                 message: `Success! Global base map cached for offline use.`,
                 tone: 'success'
             });
-        } catch (err) {
+        } catch {
             setToast({
                 id: Date.now(),
                 message: 'Failed to download global map. Please try again.',
@@ -248,6 +174,12 @@ export function MapPage() {
                                 <span className="chip" style={{ background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                                     <FiLoader className="spin" size={14} />
                                     Loading places...
+                                </span>
+                            )}
+                            {isPrefetching && !isDownloading && (
+                                <span className="chip" style={{ background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                    <FiLoader className="spin" size={14} />
+                                    Caching map…
                                 </span>
                             )}
                             <button 

@@ -9,7 +9,54 @@ declare const self: ServiceWorkerGlobalScope & {
     __WB_MANIFEST: Array<any>
 }
 
-cleanupOutdatedCaches()
+const PERSISTENT_CACHE_NAMES = new Set([
+    'map-tiles-cache',
+    'map-tiles-global',
+    'all-trips-cache',
+    'individual-trip-cache',
+    'trip-messages-cache',
+    'api-cache',
+    'attractions-cache',
+    'routes-cache-v1',
+    'images-cache',
+])
+
+const APP_SHELL_CACHES = [
+    'assets-cache',
+    'navigation',
+    'maplibre-assets-cache',
+    'fonts-cache',
+    'general-get-cache',
+]
+
+self.addEventListener('install', (event) => {
+    event.waitUntil(self.skipWaiting())
+})
+
+self.addEventListener('activate', (event) => {
+    event.waitUntil(
+        (async () => {
+            await cleanupOutdatedCaches()
+            const keys = await caches.keys()
+            await Promise.all(
+                keys.map((key) => {
+                    if (PERSISTENT_CACHE_NAMES.has(key)) return Promise.resolve(false)
+                    if (key.startsWith('workbox-precache')) return Promise.resolve(false)
+                    if (APP_SHELL_CACHES.includes(key)) return caches.delete(key)
+                    return Promise.resolve(false)
+                }),
+            )
+            await self.clients.claim()
+        })(),
+    )
+})
+
+self.addEventListener('message', (event) => {
+    if (event.data?.type === 'SKIP_WAITING') {
+        self.skipWaiting()
+    }
+})
+
 precacheAndRoute(self.__WB_MANIFEST)
 
 // Navigation Route — serve index.html for all navigation requests (SPA support)
@@ -41,17 +88,6 @@ registerRoute(
         } catch (e) {
             return Response.error()
         }
-    })
-)
-
-// ─── Assets (CSS/JS) — Cache First ───────────────────────────────────────────
-registerRoute(
-    ({ request }) => request.destination === 'style' || request.destination === 'script',
-    new CacheFirst({
-        cacheName: 'assets-cache',
-        plugins: [
-            new CacheableResponsePlugin({ statuses: [200] }),
-        ]
     })
 )
 
@@ -123,24 +159,60 @@ registerRoute(
 )
 
 // ─── Map Tiles (CartoDB dark theme) — Cache First ─────────────────────────────
-// Must be BEFORE the general-get-cache catch-all to use its own dedicated bucket
-registerRoute(
-    ({ url }) =>
+// z0–5 → global base cache; z6+ → regional/viewport cache (higher entry limit)
+function isMapTileRequest(url: URL): boolean {
+    return (
         url.origin === 'https://tile.openstreetmap.org' ||
         url.hostname.endsWith('basemaps.cartocdn.com') ||
-        url.hostname.endsWith('cartocdn.com'),
+        url.hostname.endsWith('cartocdn.com')
+    )
+}
+
+function parseCartoTileZoom(url: URL): number | null {
+    const match = url.pathname.match(/\/dark_all\/(\d+)\//)
+    return match ? parseInt(match[1], 10) : null
+}
+
+const mapTileCachePlugins = [
+    new CacheableResponsePlugin({ statuses: [0, 200] }),
+]
+
+registerRoute(
+    ({ url }) => {
+        if (!isMapTileRequest(url)) return false
+        const z = parseCartoTileZoom(url)
+        return z !== null && z <= 5
+    },
+    new CacheFirst({
+        cacheName: 'map-tiles-global',
+        plugins: [
+            ...mapTileCachePlugins,
+            new ExpirationPlugin({
+                maxEntries: 2000,
+                maxAgeSeconds: 60 * 60 * 24 * 90, // 90 days
+                purgeOnQuotaError: true,
+            }),
+        ],
+    }),
+)
+
+registerRoute(
+    ({ url }) => {
+        if (!isMapTileRequest(url)) return false
+        const z = parseCartoTileZoom(url)
+        return z === null || z > 5
+    },
     new CacheFirst({
         cacheName: 'map-tiles-cache',
         plugins: [
-            // status 0 = opaque response from cross-origin tile servers
-            new CacheableResponsePlugin({ statuses: [0, 200] }),
+            ...mapTileCachePlugins,
             new ExpirationPlugin({
-                maxEntries: 2000,          // ≈ full city view worth of tiles
+                maxEntries: 18000,
                 maxAgeSeconds: 60 * 60 * 24 * 30, // 30 days
-                purgeOnQuotaError: true,   // auto-evict if storage is full
-            })
-        ]
-    })
+                purgeOnQuotaError: true,
+            }),
+        ],
+    }),
 )
 
 // ─── OpenTripMap Attractions — Cache First (7 days) ───────────────────────────

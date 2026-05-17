@@ -187,7 +187,7 @@ export function AiAdvisorPage() {
     const refreshToken = async () => {
       if (!navigator.onLine) return;
       try {
-        const res = await api.post('/api/auth/refresh');
+        const res = await api.post('api/auth/refresh');
         dispatch(setToken({ token: res.data.token }))
       } catch {
         navigate('/login', { replace: true })
@@ -203,6 +203,8 @@ export function AiAdvisorPage() {
     setIsTyping(false);
     setActiveAiMessageId(null);
     aiMessageIdRef.current = null;
+
+    if (!token) return;
 
     const connection = new signalR.HubConnectionBuilder()
       .withUrl(`${baseURL}/hubs/ai-chat?access_token=${token}`)

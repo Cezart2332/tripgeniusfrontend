@@ -273,7 +273,7 @@ api.interceptors.response.use(
             return Promise.reject({ queued: true, originalRequest })
         }
 
-        const isRefreshCall = originalRequest?.url?.includes('/auth/refresh');
+        const isRefreshCall = originalRequest?.url?.includes('auth/refresh');
 
         if (error.response?.status === 401 && !isRefreshCall && !originalRequest._retry) {
 
@@ -291,7 +291,7 @@ api.interceptors.response.use(
             isRefreshing = true;
 
             try {
-                const res = await api.post('/api/auth/refresh');
+                const res = await api.post('api/auth/refresh');
                 const newToken = res.data.token;
 
                 store.dispatch(setToken({ token: newToken }));

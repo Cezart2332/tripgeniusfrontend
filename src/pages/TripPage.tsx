@@ -31,6 +31,7 @@ import api, { updateCachedResponse, invalidateTripsCache } from '../data/api'
 import { putTrip, getTrip } from '../utils/tripCache'
 import { fetchPlacesInBBox } from '../services/placesService'
 import { setCache, getCached } from '../services/placesCache'
+import { prefetchAroundPoint, prefetchBounds, corridorBounds } from '../utils/mapTileCache'
 import { AxiosError } from 'axios'
 import {
   formatDisplayDate,
@@ -637,6 +638,25 @@ function TripPageContent({ trip }: TripPageContentProps) {
               await setCache(bboxKey, places)
             }
           }
+
+          // 4. Basemap tiles around destination (z12–16)
+          await prefetchAroundPoint(
+            stop.toCoords[1],
+            stop.toCoords[0],
+            BBOX_HALF,
+            12,
+            16,
+          )
+
+          // 5. Route corridor tiles (z12–14)
+          const corridor = corridorBounds(
+            stop.fromCoords[1],
+            stop.fromCoords[0],
+            stop.toCoords[1],
+            stop.toCoords[0],
+            BBOX_HALF,
+          )
+          await prefetchBounds(corridor, 12, 14)
         } catch {
           // Ignore pre-fetch errors — non-critical background operation
         }
