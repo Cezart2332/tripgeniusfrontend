@@ -62,6 +62,17 @@ export default defineConfig({
     })
   ],
   build: {
+    // Use terser to ensure comments (including license headers) are removed
+    // and to enable additional compression options.
+    minify: 'terser',
+    terserOptions: {
+      format: {
+        comments: false,
+      },
+      compress: {
+        drop_console: true,
+      },
+    },
     rollupOptions: {
       output: {
         manualChunks: (id) => {

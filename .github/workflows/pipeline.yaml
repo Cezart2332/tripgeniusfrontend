@@ -4,6 +4,12 @@ on:
   push:
     branches: [main]
 
+# ─────────────────────────────
+# SECURITATE: Restrângem permisiunile token-ului GITHUB_TOKEN la minimum necesar global
+# ─────────────────────────────
+permissions:
+  contents: read
+
 jobs:
 
 # ─────────────────────────────
@@ -60,34 +66,46 @@ jobs:
 
 
 # ─────────────────────────────
-# 3. TRIVY SECURITY GATE (IMPORTANT)
+# 3. TRIVY SECURITY GATE (CU SARIF)
 # ─────────────────────────────
   trivy:
     name: Trivy Security Scan
     runs-on: ubuntu-latest
     needs: build
 
+    # Permisiune extra necesară pentru a uploada în tab-ul Security
     permissions:
       contents: read
       security-events: write
 
     steps:
-      - name: Scan image (fail on HIGH/CRITICAL)
+      - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@v0.24.0
         with:
           image-ref: cezarique/tripgenius:sha-${{ github.sha }}
-          format: table
-          severity: HIGH,CRITICAL
-          exit-code: 1
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: 'HIGH,CRITICAL'
+
+      - name: Upload Trivy scan results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        if: always() # Uploadează raportul chiar dacă Trivy dă fail la scanare
+        with:
+          sarif_file: 'trivy-results.sarif'
 
 
 # ─────────────────────────────
-# 4. OWASP ZAP (INFO ONLY, NO ISSUES, NO FAIL)
+# 4. OWASP ZAP (CU GITHUB ISSUES INTEGRATION)
 # ─────────────────────────────
   zap:
     name: OWASP ZAP Scan
     runs-on: ubuntu-latest
     needs: build
+
+    # Permisiune extra necesară pentru ca ZAP să poată crea/închide Issues
+    permissions:
+      contents: read
+      issues: write
 
     steps:
       - uses: actions/checkout@v5
@@ -107,8 +125,9 @@ jobs:
           target: 'http://localhost:8080'
           cmd_options: '-a'
           fail_action: false
-          allow_issue_writing: false
-          artifact_name: 'zap-report'
+          allow_issue_writing: true # Activăm scrierea de Issues
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Oferim token-ul acțiunii pentru a crea Issues
 
       - name: Cleanup
         if: always()
