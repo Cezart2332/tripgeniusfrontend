@@ -50,7 +50,6 @@ const vitestBin = require.resolve('vitest/vitest.mjs')
 const result = spawnSync(process.execPath, [vitestBin, ...vitestArgs], { stdio: 'inherit' })
 
 if (result.error) {
-  // eslint-disable-next-line no-console
   console.error(result.error)
 }
 

@@ -8,6 +8,7 @@ import * as signalR from '@microsoft/signalr'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import api from '../data/api'
+import { parseAiLinks, parseAiMessage } from './aiAdvisorParsing'
 
 interface AuthStoreState {
   auth: {
@@ -17,65 +18,6 @@ interface AuthStoreState {
 }
 import { getAvatarUrl } from '../utils/userUtils'
 import type { User } from '../types/models'
-
-interface TripCard {
-  title: string
-  id: number
-}
-
-interface ParsedMessage {
-  text: string
-  trips: TripCard[]
-}
-
-export function parseAiMessage(raw: string): ParsedMessage {
-  // Găsește tot ce e între [TRIPS: și ultimul ]
-  const tripMatch = raw.match(/\[TRIPS:(.*?)\]+\s*$/)
-
-  const partialTagIndex = raw.indexOf('[TRIPS:')
-  if (partialTagIndex !== -1 && !tripMatch) {
-    return { text: raw.slice(0, partialTagIndex).trim(), trips: [] }
-  }
-
-  if (!tripMatch) return { text: raw, trips: [] }
-
-  try {
-    // Curăță acolade/brackets în plus înainte să parsezi
-    const jsonStr = tripMatch[1].trim().replace(/}+\]$/, '}]').replace(/\}+$/, '}')
-    const parsed = JSON.parse(jsonStr)
-    const text = raw.replace(/\[TRIPS:.*$/s, '').trim()
-    return { text, trips: parsed.trips || [] }
-  } catch {
-    const text = raw.replace(/\[TRIPS:.*$/s, '').trim()
-    return { text, trips: [] }
-  }
-}
-
-interface LinkCard {
-  title: string
-  url: string
-}
-
-export function parseAiLinks(raw: string): { text: string; links: LinkCard[] } {
-  const linkMatch = raw.match(/\[LINKS:(.*?)\]+\s*$/s)
-
-  const partialTagIndex = raw.indexOf('[LINKS:')
-  if (partialTagIndex !== -1 && !linkMatch) {
-    return { text: raw.slice(0, partialTagIndex).trim(), links: [] }
-  }
-
-  if (!linkMatch) return { text: raw, links: [] }
-
-  try {
-    const jsonStr = linkMatch[1].trim()
-    const parsed = JSON.parse(jsonStr)
-    const text = raw.replace(/\[LINKS:.*$/s, '').trim()
-    return { text, links: parsed.links || [] }
-  } catch {
-    const text = raw.replace(/\[LINKS:.*$/s, '').trim()
-    return { text, links: [] }
-  }
-}
 
 interface Message {
   id: string,

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { parseAiLinks, parseAiMessage } from './AiAdvisorPage'
+import { parseAiLinks, parseAiMessage } from './aiAdvisorParsing'
 
 describe('AiAdvisorPage parsing helpers', () => {
   it('parses trip payloads from AI messages', () => {
