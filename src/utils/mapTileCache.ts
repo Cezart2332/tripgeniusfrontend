@@ -4,6 +4,10 @@ export const TILE_BASE = 'https://basemaps.cartocdn.com/dark_all'
 export const REGIONAL_CACHE_NAME = 'map-tiles-cache'
 export const GLOBAL_CACHE_NAME = 'map-tiles-global'
 
+const WORLD_MAP_STORAGE_KEY = 'tripgenius-world-map-v1'
+/** z0–5 worldwide ≈ 1365 tiles at 256px */
+const WORLD_TILE_COUNT_Z0_TO_5 = 1365
+
 export const MAX_PREFETCH_ZOOM = 17
 const DEFAULT_CONCURRENCY = 10
 const MIN_FREE_BYTES = 50 * 1024 * 1024 // skip prefetch if < 50 MB free
@@ -214,16 +218,49 @@ export async function prefetchAroundPoint(
   return prefetchBounds(boundsFromCenter(lng, lat, radiusDeg), minZoom, maxZoom, options)
 }
 
+export function markWorldMapCached(): void {
+  try {
+    localStorage.setItem(WORLD_MAP_STORAGE_KEY, String(Date.now()))
+  } catch {
+    // ignore quota errors
+  }
+}
+
+/** True if user completed a world download and global tile cache still has data. */
+export async function isWorldMapCached(): Promise<boolean> {
+  try {
+    const cache = await caches.open(GLOBAL_CACHE_NAME)
+    const probe = await cache.match(buildTileUrl(0, 0, 0, false))
+    if (!probe?.ok) {
+      return false
+    }
+    const keys = await cache.keys()
+    const globalTiles = keys.filter((r) => r.url.includes('/dark_all/'))
+    const complete = globalTiles.length >= WORLD_TILE_COUNT_Z0_TO_5 * 0.95
+    // #region agent log
+    fetch('http://127.0.0.1:7729/ingest/f5497c44-4c25-478d-bea5-0f2b4c8bf112',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'18f2f6'},body:JSON.stringify({sessionId:'18f2f6',location:'mapTileCache.ts:isWorldMapCached',message:'cache probe',data:{globalTileCount:globalTiles.length,complete,expected:WORLD_TILE_COUNT_Z0_TO_5},timestamp:Date.now(),hypothesisId:'D'})}).catch(()=>{});
+    // #endregion
+    if (complete) markWorldMapCached()
+    return complete
+  } catch {
+    return false
+  }
+}
+
 export async function prefetchWorldBase(
   maxZoom = 5,
   options?: PrefetchOptions,
 ): Promise<{ cached: number; skipped: number }> {
   const bounds: MapBounds = { west: -180, south: -85, east: 180, north: 85 }
-  return prefetchBounds(bounds, 0, maxZoom, {
+  const result = await prefetchBounds(bounds, 0, maxZoom, {
     ...options,
     cacheName: GLOBAL_CACHE_NAME,
     includeRetina: false,
   })
+  if (result.cached > 0 || result.skipped >= WORLD_TILE_COUNT_Z0_TO_5 * 0.95) {
+    markWorldMapCached()
+  }
+  return result
 }
 
 export async function prefetchViewport(

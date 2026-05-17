@@ -9,7 +9,7 @@ import { useMapTilePrefetch } from "../hooks/useMapTilePrefetch"
 import { subscribeForNotifications } from "../utils/notifications"
 import { OSM_STYLE } from "../map/osmStyle"
 import { createMarkerElement, getPoiColor } from "../utils/mapMarkers"
-import { prefetchWorldBase } from "../utils/mapTileCache"
+import { prefetchWorldBase, isWorldMapCached } from "../utils/mapTileCache"
 
 export function MapPage() {
     const [userLocation, setUserLocation] = useState<[number, number] | null>(null)
@@ -27,6 +27,16 @@ export function MapPage() {
 
     const { places, loading: placesLoading } = usePlaces(mapInstance)
     const { isPrefetching } = useMapTilePrefetch(mapInstance)
+    const [worldMapCached, setWorldMapCached] = useState(false)
+
+    useEffect(() => {
+        void isWorldMapCached().then((cached) => {
+            // #region agent log
+            fetch('http://127.0.0.1:7729/ingest/f5497c44-4c25-478d-bea5-0f2b4c8bf112',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'18f2f6'},body:JSON.stringify({sessionId:'18f2f6',location:'MapPage.tsx:mount',message:'world map cache check on mount',data:{cached},timestamp:Date.now(),hypothesisId:'D'})}).catch(()=>{});
+            // #endregion
+            setWorldMapCached(cached)
+        })
+    }, [])
 
     useEffect(() => {
         if (!mapContainer.current) return;
@@ -113,7 +123,10 @@ export function MapPage() {
     };
 
     const downloadWorldwideBaseMap = async () => {
-        if (isDownloading) return;
+        // #region agent log
+        fetch('http://127.0.0.1:7729/ingest/f5497c44-4c25-478d-bea5-0f2b4c8bf112',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'18f2f6'},body:JSON.stringify({sessionId:'18f2f6',location:'MapPage.tsx:downloadWorldwideBaseMap',message:'download handler invoked',data:{isDownloading,worldMapCached},timestamp:Date.now(),hypothesisId:'A,B'})}).catch(()=>{});
+        // #endregion
+        if (isDownloading || worldMapCached) return;
 
         await subscribeForNotifications();
         
@@ -121,11 +134,14 @@ export function MapPage() {
         setDownloadProgress(0);
 
         try {
-            await prefetchWorldBase(5, {
+            const result = await prefetchWorldBase(5, {
                 onProgress: (done, total) => {
                     setDownloadProgress(Math.round((done / total) * 100));
                 },
             });
+            // #region agent log
+            fetch('http://127.0.0.1:7729/ingest/f5497c44-4c25-478d-bea5-0f2b4c8bf112',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'18f2f6'},body:JSON.stringify({sessionId:'18f2f6',location:'MapPage.tsx:downloadWorldwideBaseMap:done',message:'prefetchWorldBase finished',data:result,timestamp:Date.now(),hypothesisId:'C,E'})}).catch(()=>{});
+            // #endregion
 
             if (Notification.permission === 'granted') {
                 new Notification("TripGenius Maps", {
@@ -134,6 +150,8 @@ export function MapPage() {
                 });
             }
 
+            const cachedNow = await isWorldMapCached()
+            setWorldMapCached(cachedNow)
             setToast({
                 id: Date.now(),
                 message: `Success! Global base map cached for offline use.`,
@@ -182,6 +200,7 @@ export function MapPage() {
                                     Caching map…
                                 </span>
                             )}
+                            {!worldMapCached && (
                             <button 
                                 onClick={downloadWorldwideBaseMap}
                                 disabled={isDownloading}
@@ -207,6 +226,12 @@ export function MapPage() {
                                     </>
                                 )}
                             </button>
+                            )}
+                            {worldMapCached && (
+                                <span className="chip" style={{ background: 'rgba(23, 247, 2, 0.15)', border: '1px solid var(--green-580)', color: 'var(--green-500)' }}>
+                                    World map cached offline
+                                </span>
+                            )}
                         </div>
                     </div>
                 </div>
