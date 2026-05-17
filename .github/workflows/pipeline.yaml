@@ -51,7 +51,33 @@ jobs:
             VITE_OPEN_TRIP_MAP=${{ secrets.VITE_OPEN_TRIP_MAP }}
             VITE_VAPID_PUBLIC_KEY=${{ secrets.VITE_VAPID_PUBLIC_KEY }}
 
-  # ─── JOB 3: ZAP Scan ────────────────────────────────────
+
+  # ─── JOB 3: Trivy Scan ──────────────────────────────────
+  trivy-scan:
+    name: 🔍 Trivy Security Scan
+    runs-on: ubuntu-latest
+    needs: build
+
+    permissions:
+      contents: read
+      security-events: write
+
+    steps:
+      - name: Run Trivy Scan
+        uses: aquasecurity/trivy-action@v0.24.0
+        with:
+          image-ref: cezarique/tripgenius:sha-${{ github.sha }}
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+
+      - name: Upload Trivy SARIF
+        uses: github/codeql-action/upload-sarif@v4
+        if: always()
+        with:
+          sarif_file: trivy-results.sarif
+          category: trivy-security-scan
+
+  # ─── JOB 4: ZAP Scan ────────────────────────────────────
   zap-scan:
     name: 🔍 OWASP ZAP Security Scan
     runs-on: ubuntu-latest
@@ -96,7 +122,7 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: zap-report
+          name: zapreport
           path: |
             report_html.html
             report_json.json
@@ -114,11 +140,11 @@ jobs:
         if: always()
         run: docker rm -f react-app
 
-  # ─── JOB 4: Deploy ──────────────────────────────────────
+  # ─── JOB 5: Deploy ──────────────────────────────────────
   deploy:
     name: Deploy
     runs-on: ubuntu-latest
-    needs: [build, zap-scan]        
+    needs: [build, trivy-scan, zap-scan]        
 
     steps:
       - name: Trigger Coolify deploy
