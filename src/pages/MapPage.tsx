@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react"
-import { FiArrowLeft, FiTarget, FiDownloadCloud, FiLoader } from "react-icons/fi"
-import { useNavigate } from "react-router-dom"
+import { FiArrowLeft, FiTarget, FiDownloadCloud, FiLoader, FiAlertTriangle, FiHome, FiMap, FiCpu, FiSettings } from "react-icons/fi"
+import { Link, NavLink, useNavigate } from "react-router-dom"
+import { useSelector } from "react-redux"
 import maplibregl from 'maplibre-gl'
 import { FeedbackToast } from "../components/FeedbackToast"
 import type { FeedbackToastState } from "../components/FeedbackToast"
@@ -10,8 +11,18 @@ import { subscribeForNotifications } from "../utils/notifications"
 import { OSM_STYLE } from "../map/osmStyle"
 import { createMarkerElement, getPoiColor } from "../utils/mapMarkers"
 import { prefetchWorldBase, isWorldMapCached } from "../utils/mapTileCache"
+import type { User } from "../types/models"
+import { getAvatarUrl } from "../utils/userUtils"
+
+interface AuthStoreState {
+    auth: {
+        user: User | null
+        token: string | null
+    }
+}
 
 export function MapPage() {
+    const user = useSelector((state: AuthStoreState) => state.auth.user)
     const [userLocation, setUserLocation] = useState<[number, number] | null>(null)
     const [isDownloading, setIsDownloading] = useState(false)
     const [downloadProgress, setDownloadProgress] = useState(0)
@@ -29,12 +40,36 @@ export function MapPage() {
     const { isPrefetching } = useMapTilePrefetch(mapInstance)
     const [worldMapCached, setWorldMapCached] = useState(false)
 
+    const shouldRedirectToLogin = !user
+
+    // Redirect unauthenticated users in 2 seconds
     useEffect(() => {
-        void isWorldMapCached().then(setWorldMapCached)
-    }, [])
+        if (!shouldRedirectToLogin) {
+            return
+        }
+
+        setToast({
+            id: Date.now(),
+            message: 'You must be logged in to view the map. Redirecting to login...',
+            tone: 'info',
+        })
+
+        const timeoutId = window.setTimeout(() => {
+            navigate('/login', { replace: true })
+        }, 2000)
+
+        return () => {
+            window.clearTimeout(timeoutId)
+        }
+    }, [shouldRedirectToLogin, navigate])
 
     useEffect(() => {
-        if (!mapContainer.current) return;
+        if (!user) return
+        void isWorldMapCached().then(setWorldMapCached)
+    }, [user])
+
+    useEffect(() => {
+        if (!user || !mapContainer.current) return;
 
         map.current = new maplibregl.Map({
             container: mapContainer.current,
@@ -82,10 +117,10 @@ export function MapPage() {
             navigator.geolocation.clearWatch(watchId);
             map.current?.remove();
         };
-    }, []);
+    }, [user]);
 
     useEffect(() => {
-        if (!mapInstance) return;
+        if (!user || !mapInstance) return;
 
         poiMarkersRef.current.forEach(m => m.remove());
         poiMarkersRef.current = [];
@@ -106,7 +141,7 @@ export function MapPage() {
 
             poiMarkersRef.current.push(marker);
         });
-    }, [places, mapInstance]);
+    }, [user, places, mapInstance]);
 
     const centerOnUser = () => {
         if (userLocation && map.current) {
@@ -157,25 +192,46 @@ export function MapPage() {
         }
     };
 
+    // If user is not logged in, render the clean, premium unauthenticated screen
+    if (!user) {
+        return (
+            <section className="page container" style={{ minHeight: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <FeedbackToast toast={toast} clearToast={() => setToast(null)} />
+                <div className="discovery-empty-state" style={{ textCombineUpright: 'none' }}>
+                    <img src="/newstickers/sticker5.png" alt="" className="discovery-empty-sticker" style={{ width: '120px', marginBottom: '1.5rem', display: 'block', marginInline: 'auto' }} />
+                    <h1 style={{ color: 'var(--text-100)', marginBottom: '0.75rem', fontSize: '1.8rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
+                        <FiAlertTriangle style={{ color: 'var(--danger-500)' }} /> You are not logged in
+                    </h1>
+                    <p style={{ color: 'var(--text-380)', marginBottom: '1.5rem', maxWidth: '400px', marginInline: 'auto', lineHeight: 1.5 }}>
+                        Please log in to access the interactive safety map, explore locations, and download offline cached maps.
+                    </p>
+                    <Link className="btn btn-primary" to="/login">
+                        Go to login
+                    </Link>
+                </div>
+            </section>
+        )
+    }
+
     return (
         <section className="page full-map-page" id="map-page" style={{ height: '100dvh', position: 'relative', overflow: 'hidden' }}>
             <FeedbackToast toast={toast} clearToast={() => setToast(null)} />
             
             <div className="map-overlay" style={{ pointerEvents: 'none', zIndex: 10 }}>
-                <div className="map-header-bar" style={{ paddingTop: '2rem', pointerEvents: 'none' }}>
+                <div className="map-header-bar" style={{ paddingTop: 'calc(0.75rem + env(safe-area-inset-top))', pointerEvents: 'none' }}>
                     <div style={{ display: 'flex', flexDirection: 'column', width: '100%', pointerEvents: 'none' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', marginBottom: '0.5rem', pointerEvents: 'auto' }}>
-                            <button onClick={() => navigate(-1)} className="btn btn-ghost btn-sm" style={{ marginRight: '1rem', color: 'var(--text-100)', background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(10px)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', marginBottom: '0.5rem', pointerEvents: 'auto', paddingLeft: '1rem', paddingRight: '1rem' }}>
+                            <button onClick={() => navigate(-1)} className="btn btn-ghost btn-sm" style={{ marginRight: '0.75rem', color: 'var(--text-100)', background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(10px)', width: '40px', height: '40px', padding: 0, minWidth: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                 <FiArrowLeft size={24} />
                             </button>
-                            <div className="input-group" style={{ flexGrow: 1, maxWidth: '600px' }}>
-                                <span className="input-prefix" style={{ left: '1rem', top: '50%', transform: 'translateY(-50%)', position: 'absolute', color: 'var(--text-380)' }}>
-                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                            <div className="input-group" style={{ flexGrow: 1, maxWidth: '600px', position: 'relative' }}>
+                                <span className="input-prefix" style={{ left: '0.85rem', top: '50%', transform: 'translateY(-50%)', position: 'absolute', color: 'var(--text-380)', display: 'flex', alignItems: 'center' }}>
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
                                 </span>
-                                <input type="text" value={currentAddress} readOnly className="input" placeholder="Where to?" style={{ fontSize: '1rem', paddingLeft: '2.8rem', background: 'rgba(17, 34, 26, 0.85)', backdropFilter: 'blur(10px)', border: '1px solid var(--line-soft)' }} />
+                                <input type="text" value={currentAddress} readOnly className="input" placeholder="Where to?" style={{ fontSize: '0.9rem', paddingLeft: '2.4rem', background: 'rgba(17, 34, 26, 0.85)', backdropFilter: 'blur(10px)', border: '1px solid var(--line-soft)', height: '40px', borderRadius: '12px' }} />
                             </div>
                         </div>
-                        <div className="chip-row" style={{ paddingLeft: '0.5rem', gap: '0.5rem', flexWrap: 'nowrap', overflowX: 'auto', paddingRight: '2rem', pointerEvents: 'auto' }}>
+                        <div className="chip-row" style={{ paddingLeft: '1rem', gap: '0.5rem', flexWrap: 'nowrap', overflowX: 'auto', paddingRight: '1.5rem', pointerEvents: 'auto' }}>
                             <span className="chip" style={{ background: 'rgba(23, 247, 2, 0.2)', border: '1px solid var(--green-500)', color: 'var(--green-500)' }}>🔍 Exploring {currentAddress.split(',')[0]}</span>
                             {placesLoading && (
                                 <span className="chip" style={{ background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
@@ -230,16 +286,13 @@ export function MapPage() {
 
             <button 
                 onClick={centerOnUser}
+                className="center-user-btn"
                 style={{
-                    position: 'absolute',
-                    bottom: '4rem',
-                    right: '1.5rem',
-                    zIndex: 20,
-                    width: '50px',
-                    height: '50px',
-                    borderRadius: '50%',
                     background: 'var(--green-580)',
                     color: '#fff',
+                    borderRadius: '50%',
+                    width: '50px',
+                    height: '50px',
                     border: 'none',
                     display: 'flex',
                     alignItems: 'center',
@@ -250,6 +303,36 @@ export function MapPage() {
             >
                 <FiTarget size={24} />
             </button>
+
+            {/* Mobile Bottom Navigation (mirrors AppLayout.tsx for full tab integration) */}
+            <nav className="bottom-nav" aria-label="Mobile navigation">
+                <NavLink to="/app" end className={({ isActive }) => isActive ? 'bottom-nav-link is-active' : 'bottom-nav-link'}>
+                    <FiHome aria-hidden="true" />
+                    <span>Home</span>
+                </NavLink>
+                <NavLink to="/map" className={({ isActive }) => isActive ? 'bottom-nav-link is-active' : 'bottom-nav-link'}>
+                    <FiMap aria-hidden="true" />
+                    <span>Map</span>
+                </NavLink>
+                {user && (
+                    <NavLink to="/app/ai" className={({ isActive }) => isActive ? 'bottom-nav-link is-active' : 'bottom-nav-link'}>
+                        <FiCpu aria-hidden="true" />
+                        <span>AI</span>
+                    </NavLink>
+                )}
+                <NavLink to="/app/profile" className={({ isActive }) => isActive ? 'bottom-nav-link is-active' : 'bottom-nav-link'}>
+                    <img
+                        src={getAvatarUrl(user.username, user.profileUrl)}
+                        alt=""
+                        style={{ width: '22px', height: '22px', borderRadius: '50%', objectFit: 'cover' }}
+                    />
+                    <span>Profile</span>
+                </NavLink>
+                <NavLink to="/app/settings" className={({ isActive }) => isActive ? 'bottom-nav-link is-active' : 'bottom-nav-link'}>
+                    <FiSettings aria-hidden="true" />
+                    <span>Settings</span>
+                </NavLink>
+            </nav>
 
             <style>{`
                 .user-dot-marker {
@@ -276,6 +359,33 @@ export function MapPage() {
                 @keyframes spin {
                     from { transform: rotate(0deg); }
                     to { transform: rotate(360deg); }
+                }
+                .center-user-btn {
+                    position: absolute;
+                    bottom: 2rem;
+                    right: 1.5rem;
+                    z-index: 20;
+                    transition: transform 0.2s ease, bottom 0.3s ease;
+                }
+                .center-user-btn:hover {
+                    transform: scale(1.05);
+                }
+                .full-map-page .chip-row::-webkit-scrollbar {
+                    display: none;
+                }
+                .full-map-page .chip-row {
+                    -ms-overflow-style: none;
+                    scrollbar-width: none;
+                }
+                @media (max-width: 850px) {
+                    .center-user-btn {
+                        bottom: calc(75px + env(safe-area-inset-bottom)) !important;
+                        right: 1rem !important;
+                    }
+                    .full-map-page .maplibregl-ctrl-bottom-right {
+                        bottom: calc(70px + env(safe-area-inset-bottom)) !important;
+                        right: 1rem !important;
+                    }
                 }
             `}</style>
         </section>
