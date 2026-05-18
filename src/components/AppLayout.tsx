@@ -41,7 +41,7 @@ interface AuthStoreState {
 
 const primaryNavItems: NavItem[] = [
   { to: '/app', label: 'Home', Icon: FiHome, end: true },
-  { to: '/map', label: 'Safety Map', Icon: FiMap },
+  { to: '/map', label: 'Map', Icon: FiMap },
   { to: '/app/ai', label: 'AI Assistant', Icon: FiCpu },
 ]
 
@@ -450,9 +450,9 @@ export function AppLayout() {
                           <p className="eyebrow">Notifications</p>
                           <div style={{ display: 'flex', gap: '0.8rem', alignItems: 'center' }}>
                             {unreadNotifications.length > 0 && (
-                              <button 
-                                type="button" 
-                                className="header-notification-see-more" 
+                              <button
+                                type="button"
+                                className="header-notification-see-more"
                                 style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 0 }}
                                 onClick={markAllAsRead}
                               >
