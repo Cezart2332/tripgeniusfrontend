@@ -17,6 +17,11 @@ import { NavigationPage } from './pages/NavigationPage'
 import { VerifyEmailPage } from './pages/VerifyEmailPage'
 import { ResetPasswordPage } from './pages/ResetPasswordPage'
 import { MapPage } from './pages/MapPage'
+import { OffroadDiscoveryPage } from './pages/OffroadDiscoveryPage'
+import { CreateOffroadTripPage } from './pages/CreateOffroadTripPage'
+import { OffroadTripPage } from './pages/OffroadTripPage'
+import { OffroadRouteEditorPage } from './pages/OffroadRouteEditorPage'
+import { AiOffroadPlannerPage } from './pages/AiOffroadPlannerPage'
 import { isReallyOnline, flushQueue } from './data/api'
 
 function App() {
@@ -47,6 +52,12 @@ function App() {
         <Route path="trip/:tripId" element={<TripPage />} />
         <Route path="ai" element={<AiAdvisorPage />} />
         <Route path="settings" element={<SettingsPage />} />
+        <Route path="offroad" element={<OffroadDiscoveryPage />} />
+        <Route path="offroad/ai-planner" element={<AiOffroadPlannerPage />} />
+        <Route path="offroad/create" element={<CreateOffroadTripPage />} />
+        <Route path="offroad/:tripId" element={<OffroadTripPage />} />
+        <Route path="offroad/:tripId/route/new" element={<OffroadRouteEditorPage />} />
+        <Route path="offroad/:tripId/route/:routeId/edit" element={<OffroadRouteEditorPage />} />
       </Route>
 
       <Route path="/navigation/:tripId/:day" element={<NavigationPage />} />

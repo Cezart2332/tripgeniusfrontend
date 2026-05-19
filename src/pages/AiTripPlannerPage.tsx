@@ -51,11 +51,9 @@ export function AiTripPlannerPage() {
     if (isGenerating) return
     setIsGenerating(true)
     try {
-      console.log(form)
-      await api.post('/api/ai/generate-trip', form)
-      setToast({ id: Date.now(), message: 'Trip generated successfully!', tone: 'success' })
+      const { data } = await api.post<{ tripId: number }>('/api/ai/generate-trip', form)
       invalidateTripsCache()
-      setTimeout(() => navigate('/app/discover'), 2000)
+      navigate(`/app/trip/${data.tripId}`)
     } catch (err: unknown) {
       setToast({ id: Date.now(), message: getErrorMessage(err, 'AI generation failed.'), tone: 'error' })
     } finally {

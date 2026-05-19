@@ -1,6 +1,7 @@
 export interface TripCard {
   title: string
   id: number
+  type?: 'trip' | 'offroad'
 }
 
 export interface ParsedMessage {
@@ -50,7 +51,12 @@ export function parseAiLinks(raw: string): { text: string; links: LinkCard[] } {
     const jsonStr = linkMatch[1].trim()
     const parsed = JSON.parse(jsonStr)
     const text = raw.replace(/\[LINKS:.*$/s, '').trim()
-    return { text, links: parsed.links || [] }
+    // Normalize casing — AI may return Title/Url or title/url
+    const links = (parsed.links || []).map((l: Record<string, string>) => ({
+      title: l.title || l.Title || '',
+      url: l.url || l.Url || ''
+    })).filter((l: LinkCard) => l.title && l.url)
+    return { text, links }
   } catch {
     const text = raw.replace(/\[LINKS:.*$/s, '').trim()
     return { text, links: [] }

@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion'
 import { useEffect, useState } from 'react'
 import { FiPlusCircle, FiSliders, FiZap } from 'react-icons/fi'
-import { Link, useLocation } from 'react-router-dom'
+import { Link, NavLink, useLocation } from 'react-router-dom'
 import { useDebouncedCallback } from 'use-debounce'
 import { tripTypeOptions } from '../data/tripTypeOptions'
 import type { Trip, User } from '../types/models'
@@ -17,7 +17,6 @@ const revealTransition = {
   ease: [0.22, 1, 0.36, 1] as const,
 }
 
-
 interface AuthStoreState {
   auth: {
     user: User | null
@@ -29,10 +28,34 @@ interface DiscoveryNavigationState {
   createdTripTitle?: string
 }
 
+function DiscoveryModeTabs() {
+  return (
+    <nav className="discovery-mode-tabs" aria-label="Trip discovery mode">
+      <NavLink
+        to="/app"
+        end
+        className={({ isActive }) =>
+          `discovery-mode-tab discovery-mode-tab--classic ${isActive ? 'is-active' : ''}`
+        }
+      >
+        Classic
+      </NavLink>
+      <NavLink
+        to="/app/offroad"
+        className={({ isActive }) => `discovery-mode-tab ${isActive ? 'is-active' : ''}`}
+      >
+        Offroad
+      </NavLink>
+    </nav>
+  )
+}
+
 export function DiscoveryPage() {
   const location = useLocation()
   const navigationState = location.state as DiscoveryNavigationState | null
   const user = useSelector((state: AuthStoreState) => state.auth.user)
+
+  // Classic trips state
   const [trips, setTrips] = useState<Trip[]>([])
   const [showFilters, setShowFilters] = useState(true)
   const [autoApplyPreferences, setAutoApplyPreferences] = useState(false)
@@ -60,7 +83,7 @@ export function DiscoveryPage() {
     }
   }, [handleSearch])
 
-  // Warm up the all-trips cache for offline use + pre-populate per-trip IndexedDB
+  // Warm up the all-trips cache for offline use
   useEffect(() => {
     if (user && navigator.onLine) {
       api.get('api/trip/get-all-trips')
@@ -73,6 +96,7 @@ export function DiscoveryPage() {
     }
   }, [user])
 
+  // Fetch classic trips
   useEffect(() => {
     if (!user) {
       setIsFetchingTrips(false)
@@ -137,7 +161,6 @@ export function DiscoveryPage() {
     }
   }, [autoApplyPreferences, selectedType, debouncedSearch, maxBudget, user])
 
-
   if (user == null) {
     return (
       <section className="page discovery-page">
@@ -167,6 +190,7 @@ export function DiscoveryPage() {
 
   return (
     <section className="page discovery-page-v2">
+      <DiscoveryModeTabs />
       {/* ── Header row ── */}
       <motion.header
         className="discovery-header-v2"
@@ -185,7 +209,7 @@ export function DiscoveryPage() {
           <Link className="btn btn-ghost" style={{ gap: '0.6rem', color: 'var(--green-580)', border: '1px solid rgba(154,198,148,0.2)' }} to="/app/ai-planner">
             <FiZap /> Generate trip with AI
           </Link>
-          <Link className="btn btn-primary" to="/app/create-trip">
+          <Link className="btn btn-primary" to='/app/create-trip'>
             <FiPlusCircle aria-hidden="true" />
             Create trip
           </Link>

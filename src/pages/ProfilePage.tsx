@@ -1,12 +1,12 @@
 import { AnimatePresence, motion } from 'framer-motion'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { ChangeEvent, FormEvent, KeyboardEvent } from 'react'
-import { FiBell, FiChevronDown, FiCompass, FiMail, FiUploadCloud, FiZap, FiUser } from 'react-icons/fi'
+import { FiBell, FiChevronDown, FiCompass, FiMail, FiUploadCloud, FiZap, FiUser, FiUsers, FiCalendar, FiClock } from 'react-icons/fi'
 import { useDispatch, useSelector } from 'react-redux'
 
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { tripTypeOptions } from '../data/tripTypeOptions'
-import type { Trip, User } from '../types/models'
+import type { OffroadTrip, Trip, User } from '../types/models'
 import api, { updateCachedResponse } from '../data/api'
 import { setUser } from '../data/authSlice'
 import { AxiosError } from 'axios'
@@ -30,6 +30,8 @@ interface AuthStoreState {
 }
 
 type ProfileTab = 'identity' | 'invites' | 'history' | 'matches' | 'notifications'
+
+type TripWithType = (Trip | OffroadTrip) & { tripType: 'classic' | 'offroad' }
 
 interface PersonalizedTripCard {
   id: string
@@ -61,6 +63,50 @@ const revealTransition = {
 }
 
 const DEFAULT_PROFILE_DESCRIPTION = ''
+
+/**
+ * Determines if a trip is currently active (happening now)
+ * A trip is active when: startDate <= today <= endDate
+ */
+const isActiveTrip = (trip: TripWithType): boolean => {
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+
+  const startDate = new Date(trip.startingDate)
+  startDate.setHours(0, 0, 0, 0)
+
+  const endDate = new Date(trip.endingDate)
+  endDate.setHours(0, 0, 0, 0)
+
+  return startDate <= today && today <= endDate
+}
+
+/**
+ * Determines if a trip is upcoming (future start date)
+ */
+const isUpcomingTrip = (trip: TripWithType): boolean => {
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+
+  const startDate = new Date(trip.startingDate)
+  startDate.setHours(0, 0, 0, 0)
+
+  return startDate > today
+}
+
+/**
+ * Determines if a trip is past (ended before today)
+ */
+const isPastTrip = (trip: TripWithType): boolean => {
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+
+  const endDate = new Date(trip.endingDate)
+  endDate.setHours(0, 0, 0, 0)
+
+  return endDate < today
+}
+
 
 
 const profileTabs: Array<{ key: ProfileTab; label: string; icon: React.ComponentType<{ className?: string; size?: number }> }> = [
@@ -225,6 +271,8 @@ export function ProfilePage() {
   const [inviteResponseAction, setInviteResponseAction] = useState<'Accepted' | 'Declined' | null>(null)
   const [allTrips, setAllTrips] = useState<Trip[]>([])
   const [isFetchingAllTrips, setIsFetchingAllTrips] = useState(false)
+  const [offroadTrips, setOffroadTrips] = useState<OffroadTrip[]>([])
+  const [isFetchingOffroadTrips, setIsFetchingOffroadTrips] = useState(false)
   const objectUrlRef = useRef<string | null>(null)
   const tabListRef = useRef<HTMLElement | null>(null)
 
@@ -329,27 +377,60 @@ export function ProfilePage() {
       }
     }
 
+    const fetchOffroadTrips = async () => {
+      setIsFetchingOffroadTrips(true)
+      try {
+        const res = await api.get('api/OffroadTrip/get-all-offroad-trips')
+        setOffroadTrips(res.data || [])
+      } catch (err) {
+        console.error('Failed to fetch offroad trips:', err)
+      } finally {
+        setIsFetchingOffroadTrips(false)
+      }
+    }
+
     fetchAll()
+    fetchOffroadTrips()
   }, [user])
 
-  const pastTrips = useMemo(
-    () => (user?.trips ?? []).filter((trip: Trip) => isFinishedTripStatus(trip.status)),
-    [user?.trips],
+  const memberOffroadTrips = useMemo(
+    () => offroadTrips.filter((t) => t.isUserMember),
+    [offroadTrips]
   )
+
+  // Combine classic trips and offroad trips for history (membership only)
+  const allUserTrips = useMemo<TripWithType[]>(() => {
+    const classicTrips = (user?.trips ?? []).map(t => ({ ...t, tripType: 'classic' as const }))
+    const userOffroadTrips = memberOffroadTrips.map(t => ({ ...t, tripType: 'offroad' as const }))
+    return [...classicTrips, ...userOffroadTrips]
+  }, [user?.trips, memberOffroadTrips])
+
+  // Categorize trips by date: active, upcoming, past
+  const categorizedTrips = useMemo(() => {
+    const active = allUserTrips.filter(isActiveTrip)
+    const upcoming = allUserTrips.filter(isUpcomingTrip)
+    const past = allUserTrips.filter(isPastTrip)
+
+    // Sort each category by date
+    const sortByDate = (a: TripWithType, b: TripWithType) =>
+      new Date(a.startingDate).getTime() - new Date(b.startingDate).getTime()
+
+    return {
+      active: active.sort(sortByDate),
+      upcoming: upcoming.sort(sortByDate),
+      past: past.sort((a, b) => new Date(b.endingDate).getTime() - new Date(a.endingDate).getTime()), // Most recent first
+    }
+  }, [allUserTrips])
 
   const effectiveMaxGroupSize = typeof maxGroupSize === 'number' ? maxGroupSize : null
-
-  const futureTrips = useMemo(
-    () => (user?.trips ?? []).filter((trip: Trip) => isUpcomingTripStatus(trip.status)),
-    [user?.trips],
-  )
 
   const discoveryTrips = useMemo<PersonalizedTripCard[]>(() => {
     // We filter ALL trips from the platform, excluding those the user is already in
     const userTripIds = new Set((user?.trips ?? []).map(t => String(t.id)))
+    const userOffroadTripIds = new Set(memberOffroadTrips.map(t => String(t.id)))
 
     return allTrips
-      .filter(trip => !userTripIds.has(String(trip.id)))
+      .filter(trip => !userTripIds.has(String(trip.id)) && !userOffroadTripIds.has(String(trip.id)))
       .map((trip: Trip) => {
         const tagsSafe = trip.tags ?? []
         const matchingTags = tagsSafe.filter((tag: string) => tripTypes.includes(tag))
@@ -404,7 +485,7 @@ export function ProfilePage() {
       })
       .filter(card => card.matchScore >= 50) // ONLY high matches
       .sort((first, second) => second.matchScore - first.matchScore)
-  }, [allTrips, user?.trips, tripTypes, effectiveMaxGroupSize])
+  }, [allTrips, user?.trips, memberOffroadTrips, tripTypes, effectiveMaxGroupSize])
 
   const visibleNotifications = useMemo(
     () =>
@@ -963,35 +1044,180 @@ export function ProfilePage() {
                 <img src="/newstickers/sticker3.png" alt="" style={{ width: '80px' }} className="header-sticker-v2" />
               </div>
 
-              <div className="profile-history-grid">
-                <div className="history-list-v2">
-                  <h4>Upcoming</h4>
-                  {futureTrips?.length === 0 && <p className="empty-note">No upcoming trips planned.</p>}
-                  {futureTrips?.map((trip) => (
-                    <Link key={trip.id} className="history-row-v2" to={`/app/trip/${trip.id}`}>
-                      <img src={trip.imageUrl} alt="" className="history-thumb-v2" />
-                      <div className="history-info-v2">
-                        <h4>{trip.title}</h4>
-                        <p>{formatDisplayDateRange(trip.startingDate, trip.endingDate)}</p>
+              <div className="profile-history-categories">
+                {/* Active Trips Section */}
+                <div className="history-category-section">
+                  <div className="history-category-header">
+                    <div className="history-category-title">
+                      <FiClock className="category-icon" />
+                      <h4>Active Trips</h4>
+                      <span className="history-category-count">{categorizedTrips.active.length}</span>
+                    </div>
+                  </div>
+                  <div className="history-category-content">
+                    {isFetchingOffroadTrips && categorizedTrips.active.length === 0 ? (
+                      <div className="history-loading-state">
+                        <div className="history-skeleton-row" />
+                        <div className="history-skeleton-row" />
                       </div>
-                      <FiChevronDown style={{ transform: 'rotate(-90deg)', opacity: 0.4 }} />
-                    </Link>
-                  ))}
+                    ) : categorizedTrips.active.length === 0 ? (
+                      <div className="history-empty-state">
+                        <img src="/newstickers/sticker3.png" alt="" className="history-empty-sticker" />
+                        <p className="empty-note">No active trips at the moment.</p>
+                      </div>
+                    ) : (
+                      <div className="history-list-v2">
+                        {categorizedTrips.active.map((trip) => (
+                          <Link
+                            key={`${trip.tripType}-${trip.id}`}
+                            className="history-row-v2 history-row-active"
+                            to={trip.tripType === 'offroad' ? `/app/offroad/${trip.id}` : `/app/trip/${trip.id}`}
+                          >
+                            <img src={trip.imageUrl} alt="" className="history-thumb-v2" />
+                            <div className="history-info-v2">
+                              <h4>
+                                {trip.title}
+                                {trip.tripType === 'offroad' && (
+                                  <span className="history-badge-offroad">Offroad</span>
+                                )}
+                                <span className="history-badge-active">Active</span>
+                              </h4>
+                              <div className="history-meta-row">
+                                <span className="history-meta-item">
+                                  <FiCalendar size={12} />
+                                  {formatDisplayDateRange(trip.startingDate, trip.endingDate)}
+                                </span>
+                                <span className="history-meta-item">
+                                  <FiUsers size={12} />
+                                  {trip.currentMembers}/{trip.maxParticipants} members
+                                </span>
+                              </div>
+                            </div>
+                            <FiChevronDown style={{ transform: 'rotate(-90deg)', opacity: 0.4 }} />
+                          </Link>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
 
-                <div className="history-list-v2">
-                  <h4>Completed</h4>
-                  {pastTrips?.length === 0 && <p className="empty-note">Your history is currently a blank map.</p>}
-                  {pastTrips?.map((trip) => (
-                    <Link key={trip.id} className="history-row-v2" to={`/app/trip/${trip.id}`}>
-                      <img src={trip.imageUrl} alt="" className="history-thumb-v2" />
-                      <div className="history-info-v2">
-                        <h4>{trip.title}</h4>
-                        <p>{formatDisplayDateRange(trip.startingDate, trip.endingDate)}</p>
+                {/* Upcoming Trips Section */}
+                <div className="history-category-section">
+                  <div className="history-category-header">
+                    <div className="history-category-title">
+                      <FiCalendar className="category-icon" />
+                      <h4>Upcoming Trips</h4>
+                      <span className="history-category-count">{categorizedTrips.upcoming.length}</span>
+                    </div>
+                  </div>
+                  <div className="history-category-content">
+                    {isFetchingOffroadTrips && categorizedTrips.upcoming.length === 0 ? (
+                      <div className="history-loading-state">
+                        <div className="history-skeleton-row" />
+                        <div className="history-skeleton-row" />
                       </div>
-                      <FiChevronDown style={{ transform: 'rotate(-90deg)', opacity: 0.4 }} />
-                    </Link>
-                  ))}
+                    ) : categorizedTrips.upcoming.length === 0 ? (
+                      <div className="history-empty-state">
+                        <img src="/newstickers/sticker1.png" alt="" className="history-empty-sticker" />
+                        <p className="empty-note">No upcoming trips planned. Start exploring!</p>
+                        <Link to="/app/discover" className="btn btn-primary btn-sm" style={{ marginTop: '1rem' }}>
+                          <FiCompass /> Discover Trips
+                        </Link>
+                      </div>
+                    ) : (
+                      <div className="history-list-v2">
+                        {categorizedTrips.upcoming.map((trip) => (
+                          <Link
+                            key={`${trip.tripType}-${trip.id}`}
+                            className="history-row-v2"
+                            to={trip.tripType === 'offroad' ? `/app/offroad/${trip.id}` : `/app/trip/${trip.id}`}
+                          >
+                            <img src={trip.imageUrl} alt="" className="history-thumb-v2" />
+                            <div className="history-info-v2">
+                              <h4>
+                                {trip.title}
+                                {trip.tripType === 'offroad' && (
+                                  <span className="history-badge-offroad">Offroad</span>
+                                )}
+                                <span className={`history-badge-status ${isUpcomingTripStatus(trip.status) ? 'status-upcoming' : ''}`}>
+                                  {getTripStatusLabel(trip.status)}
+                                </span>
+                              </h4>
+                              <div className="history-meta-row">
+                                <span className="history-meta-item">
+                                  <FiCalendar size={12} />
+                                  {formatDisplayDateRange(trip.startingDate, trip.endingDate)}
+                                </span>
+                                <span className="history-meta-item">
+                                  <FiUsers size={12} />
+                                  {trip.currentMembers}/{trip.maxParticipants} members
+                                </span>
+                              </div>
+                            </div>
+                            <FiChevronDown style={{ transform: 'rotate(-90deg)', opacity: 0.4 }} />
+                          </Link>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Past Trips Section */}
+                <div className="history-category-section">
+                  <div className="history-category-header">
+                    <div className="history-category-title">
+                      <FiZap className="category-icon" />
+                      <h4>Past Trips</h4>
+                      <span className="history-category-count">{categorizedTrips.past.length}</span>
+                    </div>
+                  </div>
+                  <div className="history-category-content">
+                    {isFetchingOffroadTrips && categorizedTrips.past.length === 0 ? (
+                      <div className="history-loading-state">
+                        <div className="history-skeleton-row" />
+                        <div className="history-skeleton-row" />
+                      </div>
+                    ) : categorizedTrips.past.length === 0 ? (
+                      <div className="history-empty-state">
+                        <img src="/newstickers/sticker4.png" alt="" className="history-empty-sticker" />
+                        <p className="empty-note">Your history is currently a blank map.</p>
+                      </div>
+                    ) : (
+                      <div className="history-list-v2">
+                        {categorizedTrips.past.map((trip) => (
+                          <Link
+                            key={`${trip.tripType}-${trip.id}`}
+                            className="history-row-v2 history-row-past"
+                            to={trip.tripType === 'offroad' ? `/app/offroad/${trip.id}` : `/app/trip/${trip.id}`}
+                          >
+                            <img src={trip.imageUrl} alt="" className="history-thumb-v2" />
+                            <div className="history-info-v2">
+                              <h4>
+                                {trip.title}
+                                {trip.tripType === 'offroad' && (
+                                  <span className="history-badge-offroad">Offroad</span>
+                                )}
+                                <span className={`history-badge-status ${isFinishedTripStatus(trip.status) ? 'status-past' : ''}`}>
+                                  {getTripStatusLabel(trip.status)}
+                                </span>
+                              </h4>
+                              <div className="history-meta-row">
+                                <span className="history-meta-item">
+                                  <FiCalendar size={12} />
+                                  {formatDisplayDateRange(trip.startingDate, trip.endingDate)}
+                                </span>
+                                <span className="history-meta-item">
+                                  <FiUsers size={12} />
+                                  {trip.currentMembers}/{trip.maxParticipants} members
+                                </span>
+                              </div>
+                            </div>
+                            <FiChevronDown style={{ transform: 'rotate(-90deg)', opacity: 0.4 }} />
+                          </Link>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>

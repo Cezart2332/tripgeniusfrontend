@@ -163,14 +163,18 @@ registerRoute(
 function isMapTileRequest(url: URL): boolean {
     return (
         url.origin === 'https://tile.openstreetmap.org' ||
+        url.hostname.endsWith('opentopomap.org') ||
         url.hostname.endsWith('basemaps.cartocdn.com') ||
         url.hostname.endsWith('cartocdn.com')
     )
 }
 
-function parseCartoTileZoom(url: URL): number | null {
-    const match = url.pathname.match(/\/dark_all\/(\d+)\//)
-    return match ? parseInt(match[1], 10) : null
+function parseMapTileZoom(url: URL): number | null {
+    const carto = url.pathname.match(/\/dark_all\/(\d+)\//)
+    if (carto) return parseInt(carto[1], 10)
+    const topo = url.pathname.match(/^\/(\d+)\/\d+\/\d+\.png$/)
+    if (topo) return parseInt(topo[1], 10)
+    return null
 }
 
 const mapTileCachePlugins = [
@@ -180,7 +184,7 @@ const mapTileCachePlugins = [
 registerRoute(
     ({ url }) => {
         if (!isMapTileRequest(url)) return false
-        const z = parseCartoTileZoom(url)
+        const z = parseMapTileZoom(url)
         return z !== null && z <= 5
     },
     new CacheFirst({
@@ -199,7 +203,7 @@ registerRoute(
 registerRoute(
     ({ url }) => {
         if (!isMapTileRequest(url)) return false
-        const z = parseCartoTileZoom(url)
+        const z = parseMapTileZoom(url)
         return z === null || z > 5
     },
     new CacheFirst({
@@ -304,12 +308,18 @@ registerRoute(
 self.addEventListener('push', (event: PushEvent) => {
     const data = event.data?.json() ?? {}
     event.waitUntil(
-        self.registration.showNotification(data.title ?? 'TripGenius', {
-            body: data.body,
-            icon: '/pwa-192x192.png',
-            badge: '/pwa-192x192.png',
-            data: { url: data.url ?? '/app' },
-        })
+        (async () => {
+            await self.registration.showNotification(data.title ?? 'TripGenius', {
+                body: data.body,
+                icon: '/pwa-192x192.png',
+                badge: '/pwa-192x192.png',
+                data: { url: data.url ?? '/app' },
+            })
+            const clients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true })
+            for (const client of clients) {
+                client.postMessage({ type: 'tripgenius:refresh-user' })
+            }
+        })()
     )
 })
 

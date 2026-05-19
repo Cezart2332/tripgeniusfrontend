@@ -3,7 +3,6 @@ import Lenis from '@studio-freight/lenis'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
   FiBell,
-  FiHome,
   FiLogIn,
   FiLogOut,
   FiMenu,
@@ -13,9 +12,12 @@ import {
   FiDownload,
   FiCpu,
   FiMap,
+  FiNavigation,
+  FiHome,
 } from 'react-icons/fi'
 import { usePWAInstall } from '../hooks/usePWAInstall'
 import { PWAInstallPopup } from '../components/PWAInstallPopup'
+import { MobileBottomNav } from './MobileBottomNav'
 import type { IconType } from 'react-icons'
 import { useDispatch, useSelector } from 'react-redux'
 import { Link, NavLink, useLocation, useNavigate, useOutlet } from 'react-router-dom'
@@ -42,6 +44,7 @@ interface AuthStoreState {
 const primaryNavItems: NavItem[] = [
   { to: '/app', label: 'Home', Icon: FiHome, end: true },
   { to: '/map', label: 'Map', Icon: FiMap },
+  { to: '/app/offroad', label: 'Offroad', Icon: FiNavigation },
   { to: '/app/ai', label: 'AI Assistant', Icon: FiCpu },
 ]
 
@@ -236,6 +239,14 @@ export function AppLayout() {
   }
 
   useEffect(() => {
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    const isCoarsePointer = window.matchMedia('(pointer: coarse)').matches
+    const isNarrowViewport = window.matchMedia('(max-width: 850px)').matches
+
+    if (prefersReducedMotion || isCoarsePointer || isNarrowViewport) {
+      return
+    }
+
     const lenis = new Lenis({
       lerp: 0.12,
       smoothWheel: true,
@@ -288,9 +299,14 @@ export function AppLayout() {
         return
       }
 
-      if (!notificationMenuRef.current?.contains(target)) {
-        setIsNotificationOpen(false)
+      const shells = document.querySelectorAll('.nav-notification-shell')
+      for (const shell of shells) {
+        if (shell.contains(target)) {
+          return
+        }
       }
+
+      setIsNotificationOpen(false)
     }
 
     const closeOnEscape = (event: KeyboardEvent) => {
@@ -328,6 +344,23 @@ export function AppLayout() {
     }
   }, [user])
 
+  useEffect(() => {
+    if (!user || !('serviceWorker' in navigator)) {
+      return
+    }
+
+    const onServiceWorkerMessage = (event: MessageEvent) => {
+      if (event.data?.type === 'tripgenius:refresh-user') {
+        void syncUserFromProfileFetch()
+      }
+    }
+
+    navigator.serviceWorker.addEventListener('message', onServiceWorkerMessage)
+    return () => {
+      navigator.serviceWorker.removeEventListener('message', onServiceWorkerMessage)
+    }
+  }, [user, syncUserFromProfileFetch])
+
   // Reset window scroll to 0 when location changes
   useEffect(() => {
     window.scrollTo(0, 0)
@@ -344,6 +377,34 @@ export function AppLayout() {
           <span className="orb orb-two" />
           <span className="orb orb-three" />
         </div>
+
+        <header className="mobile-topbar" aria-label="App header">
+          <Link className="mobile-brand" to="/app" aria-label="TripGenius home">
+            <img className="mobile-brand-logo" src="/fulllogo.svg" alt="" />
+          </Link>
+
+          {!user ? (
+            <motion.div
+              className="mobile-topbar-actions"
+              animate={{ y: hideHeader ? -60 : 0, opacity: hideHeader ? 0 : 1 }}
+              transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+            >
+              {deferredPrompt ? (
+                <button
+                  type="button"
+                  className="mobile-icon-btn"
+                  onClick={handleInstallClick}
+                  aria-label="Install app"
+                >
+                  <FiDownload aria-hidden="true" />
+                </button>
+              ) : null}
+              <Link className="mobile-icon-btn" to="/login" aria-label="Login">
+                <FiLogIn aria-hidden="true" />
+              </Link>
+            </motion.div>
+          ) : null}
+        </header>
 
         <motion.header
           className="topbar"
@@ -596,43 +657,7 @@ export function AppLayout() {
         </motion.main>
 
 
-        <nav className="bottom-nav" aria-label="Mobile navigation">
-          <NavLink to="/app" end className={({ isActive }) => isActive ? 'bottom-nav-link is-active' : 'bottom-nav-link'}>
-            <FiHome aria-hidden="true" />
-            <span>Home</span>
-          </NavLink>
-          <NavLink to="/map" className={({ isActive }) => isActive ? 'bottom-nav-link is-active' : 'bottom-nav-link'}>
-            <FiMap aria-hidden="true" />
-            <span>Map</span>
-          </NavLink>
-          {user && (
-            <NavLink to="/app/ai" className={({ isActive }) => isActive ? 'bottom-nav-link is-active' : 'bottom-nav-link'}>
-              <FiCpu aria-hidden="true" />
-              <span>AI</span>
-            </NavLink>
-          )}
-          {user ? (
-            <>
-              <NavLink to="/app/profile" className={({ isActive }) => isActive ? 'bottom-nav-link is-active' : 'bottom-nav-link'}>
-                <img
-                  src={getAvatarUrl(user.username, user.profileUrl)}
-                  alt=""
-                  style={{ width: '22px', height: '22px', borderRadius: '50%', objectFit: 'cover' }}
-                />
-                <span>Profile</span>
-              </NavLink>
-              <NavLink to="/app/settings" className={({ isActive }) => isActive ? 'bottom-nav-link is-active' : 'bottom-nav-link'}>
-                <FiSettings aria-hidden="true" />
-                <span>Settings</span>
-              </NavLink>
-            </>
-          ) : (
-            <NavLink to="/login" className={({ isActive }) => isActive ? 'bottom-nav-link is-active' : 'bottom-nav-link'}>
-              <FiLogIn aria-hidden="true" />
-              <span>Login</span>
-            </NavLink>
-          )}
-        </nav>
+        <MobileBottomNav />
       </div>
       <PWAInstallPopup
         show={showInstallPopup}

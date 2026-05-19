@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react"
-import { FiArrowLeft, FiTarget, FiDownloadCloud, FiLoader, FiAlertTriangle, FiHome, FiMap, FiCpu, FiSettings } from "react-icons/fi"
-import { Link, NavLink, useNavigate } from "react-router-dom"
+import { FiArrowLeft, FiTarget, FiDownloadCloud, FiLoader, FiAlertTriangle } from "react-icons/fi"
+import { Link, useNavigate } from "react-router-dom"
 import { useSelector } from "react-redux"
 import maplibregl from 'maplibre-gl'
 import { FeedbackToast } from "../components/FeedbackToast"
@@ -12,7 +12,7 @@ import { OSM_STYLE } from "../map/osmStyle"
 import { createMarkerElement, getPoiColor } from "../utils/mapMarkers"
 import { prefetchWorldBase, isWorldMapCached } from "../utils/mapTileCache"
 import type { User } from "../types/models"
-import { getAvatarUrl } from "../utils/userUtils"
+import { MobileBottomNav } from "../components/MobileBottomNav"
 
 interface AuthStoreState {
     auth: {
@@ -304,35 +304,7 @@ export function MapPage() {
                 <FiTarget size={24} />
             </button>
 
-            {/* Mobile Bottom Navigation (mirrors AppLayout.tsx for full tab integration) */}
-            <nav className="bottom-nav" aria-label="Mobile navigation">
-                <NavLink to="/app" end className={({ isActive }) => isActive ? 'bottom-nav-link is-active' : 'bottom-nav-link'}>
-                    <FiHome aria-hidden="true" />
-                    <span>Home</span>
-                </NavLink>
-                <NavLink to="/map" className={({ isActive }) => isActive ? 'bottom-nav-link is-active' : 'bottom-nav-link'}>
-                    <FiMap aria-hidden="true" />
-                    <span>Map</span>
-                </NavLink>
-                {user && (
-                    <NavLink to="/app/ai" className={({ isActive }) => isActive ? 'bottom-nav-link is-active' : 'bottom-nav-link'}>
-                        <FiCpu aria-hidden="true" />
-                        <span>AI</span>
-                    </NavLink>
-                )}
-                <NavLink to="/app/profile" className={({ isActive }) => isActive ? 'bottom-nav-link is-active' : 'bottom-nav-link'}>
-                    <img
-                        src={getAvatarUrl(user.username, user.profileUrl)}
-                        alt=""
-                        style={{ width: '22px', height: '22px', borderRadius: '50%', objectFit: 'cover' }}
-                    />
-                    <span>Profile</span>
-                </NavLink>
-                <NavLink to="/app/settings" className={({ isActive }) => isActive ? 'bottom-nav-link is-active' : 'bottom-nav-link'}>
-                    <FiSettings aria-hidden="true" />
-                    <span>Settings</span>
-                </NavLink>
-            </nav>
+            <MobileBottomNav />
 
             <style>{`
                 .user-dot-marker {

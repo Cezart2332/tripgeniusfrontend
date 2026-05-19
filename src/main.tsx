@@ -17,6 +17,7 @@ import { BrowserRouter } from 'react-router-dom'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import './index.css'
 import './adventure.css'
+import './offroad.css'
 import App from './App.tsx'
 import { persistor, store } from './data/store'
 

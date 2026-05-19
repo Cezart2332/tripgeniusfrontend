@@ -94,6 +94,17 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html', 'lcov'],
+      include: ['src/**/*.{ts,tsx}'],
+      exclude: [
+        'src/test/**',
+        '**/*.test.{ts,tsx}',
+        '**/*.d.ts',
+        'src/main.tsx',
+        'src/sw.ts',
+        'src/types/**',
+      ],
+      // Report all src files in include, not dev-dist/workbox/scratch
+      all: true,
     },
   }
 } as VitestConfig)

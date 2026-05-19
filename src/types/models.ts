@@ -105,6 +105,43 @@ export interface Trip {
   isUserMember: boolean
 }
 
+export type RouteSource = 'Imported' | 'Drawn' | 'AiGenerated'
+
+export interface GeoJsonLineString {
+  type: 'LineString'
+  coordinates: [number, number, number?][]
+}
+
+export interface OffroadRoute {
+  id: number
+  startDay: number
+  endDay: number
+  name: string
+  note: string
+  trackGeoJson: string
+  source: RouteSource | string
+  distanceMeters: number
+  elevationGainMeters: number
+}
+
+export interface OffroadTrip {
+  id: string
+  title: string
+  description: string
+  imageUrl: string
+  status: TripStatus
+  startingDate: string
+  endingDate: string
+  price: number
+  currentMembers: number
+  maxParticipants: number
+  tags: string[]
+  routes: OffroadRoute[]
+  members: TripMember[]
+  history: TripHistory[]
+  isUserMember: boolean
+}
+
 
 export interface ChatMessage {
   id: string
@@ -136,4 +173,14 @@ export interface AiTripPlannerRequest {
   budget: number
   startingPoint: string
   maxParticipants: number
+}
+
+export interface AiOffroadPlannerRequest {
+  description: string
+  durationDays: number
+  interests: string[]
+  budget: number
+  region: string
+  maxParticipants: number
+  difficultyLevel: 'Easy' | 'Moderate' | 'Hard' | 'Expert'
 }

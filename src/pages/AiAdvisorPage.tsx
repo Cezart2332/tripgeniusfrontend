@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
-import { FiSend, FiMapPin, FiExternalLink, FiMessageCircle, FiArrowLeft, FiArrowDown, FiLink } from 'react-icons/fi'
+import { FiSend, FiMapPin, FiExternalLink, FiMessageCircle, FiArrowLeft, FiArrowDown, FiLink, FiSearch, FiCpu, FiEdit3 } from 'react-icons/fi'
 import { useSelector, useDispatch } from 'react-redux'
 import { Link, useNavigate } from 'react-router-dom'
 import { setToken } from '../data/authSlice'
@@ -19,11 +19,14 @@ interface AuthStoreState {
 import { getAvatarUrl } from '../utils/userUtils'
 import type { User } from '../types/models'
 
+type AiStatus = 'analyzing' | 'thinking' | 'searching_web' | 'writing' | null;
+
 interface Message {
   id: string,
   text: string;
   sender: 'user' | 'assistant';
   isComplete?: boolean;
+  status?: AiStatus;
 }
 
 interface AiChatResponse {
@@ -63,6 +66,13 @@ export function AiAdvisorPage() {
   const baseURL = import.meta.env.VITE_BASE_URL;
   const [preferProfile, setPreferProfile] = useState(true)
   const [isTyping, setIsTyping] = useState(false)
+  const [aiStatus, setAiStatus] = useState<AiStatus>(null)
+  const statusLabelMap: Record<Exclude<AiStatus, null>, { icon: React.ReactNode; label: string }> = {
+    analyzing: { icon: <FiCpu size={12} />, label: 'Analyzing your profile...' },
+    thinking: { icon: <FiCpu size={12} />, label: 'Thinking...' },
+    searching_web: { icon: <FiSearch size={12} />, label: 'Searching the internet...' },
+    writing: { icon: <FiEdit3 size={12} />, label: 'Writing response...' },
+  };
   const [activeAiMessageId, setActiveAiMessageId] = useState<string | null>(null)
   const connectionRef = useRef<signalR.HubConnection | null>(null);
   const aiMessageIdRef = useRef<string | null>(null);
@@ -172,6 +182,33 @@ export function AiAdvisorPage() {
       })
     })
 
+    connection.on("StatusUpdate", (status: AiStatus) => {
+      setAiStatus(status);
+      const id = aiMessageIdRef.current;
+      if (id) {
+        setMessages(prev => {
+          const index = prev.findIndex(m => m.id === id);
+          if (index === -1) return prev;
+          const updated = [...prev];
+          updated[index] = { ...updated[index], status };
+          return updated;
+        });
+      }
+    })
+
+    // FinalizeAiMessage: replace streamed text with server-validated message (links fixed)
+    connection.on("FinalizeAiMessage", (finalText: string) => {
+      const id = aiMessageIdRef.current;
+      if (!id) return;
+      setMessages(prev => {
+        const index = prev.findIndex(m => m.id === id);
+        if (index === -1) return prev;
+        const updated = [...prev];
+        updated[index] = { ...updated[index], text: finalText };
+        return updated;
+      });
+    })
+
     connection.on("EndAiMessage", () => {
       const id = aiMessageIdRef.current;
       setMessages(prev => {
@@ -184,12 +221,14 @@ export function AiAdvisorPage() {
       aiMessageIdRef.current = null;
       setActiveAiMessageId(null)
       setIsTyping(false);
+      setAiStatus(null);
     });
     
     connection.onreconnecting((error) => {
       console.warn("SignalR Reconnecting:", error);
       setIsTyping(false); // Clear typing state if connection is unstable
       setActiveAiMessageId(null);
+      setAiStatus(null);
     });
 
     connection.onreconnected((connectionId) => {
@@ -200,6 +239,7 @@ export function AiAdvisorPage() {
       console.error("SignalR Connection Closed:", error);
       setIsTyping(false);
       setActiveAiMessageId(null);
+      setAiStatus(null);
     });
 
     connectionRef.current = connection
@@ -404,12 +444,22 @@ export function AiAdvisorPage() {
                         return (
                           <>
                             <StreamingMessage text={parsed.text} isStreaming={!message.isComplete && activeAiMessageId === message.id} />
+                            {!message.isComplete && message.status && statusLabelMap[message.status] && (
+                              <div className="ai-stream-status-v3">
+                                <span className="ai-stream-status-icon-v3">{statusLabelMap[message.status].icon}</span>
+                                <span className="ai-stream-status-label-v3">{statusLabelMap[message.status].label}</span>
+                              </div>
+                            )}
                             {parsed.trips && parsed.trips.length > 0 && (
                               <div className="ai-trips-grid-v3">
                                 {parsed.trips.map((trip) => (
-                                  <Link key={trip.id} to={`/app/trip/${trip.id}`} className="ai-trip-card-v3">
+                                  <Link
+                                    key={trip.id}
+                                    to={trip.type === 'offroad' ? `/app/offroad/${trip.id}` : `/app/trip/${trip.id}`}
+                                    className="ai-trip-card-v3"
+                                  >
                                     <div className="recommendation-badge">
-                                      <FiMapPin size={12} /> AI Match
+                                      <FiMapPin size={12} /> {trip.type === 'offroad' ? 'Offroad' : 'AI Match'}
                                     </div>
                                     <h4>{trip.title}</h4>
                                     <div className="explore-btn">
@@ -422,7 +472,10 @@ export function AiAdvisorPage() {
                             )}
                             {links.length > 0 && (
                               <div className="ai-links-grid-v3">
-                                {links.map((link, i) => (
+                                {links.filter(link => {
+                                  try { return !!link.url && !!new URL(link.url).hostname; }
+                                  catch { return false; }
+                                }).map((link, i) => (
                                   <a
                                     key={i}
                                     href={link.url}
@@ -453,7 +506,7 @@ export function AiAdvisorPage() {
                   </div>
                 </div>
               ))}
-              {isTyping && (
+              {isTyping && !activeAiMessageId && (
                 <div className="ai-message-row-v3 assistant">
                   <div className="message-inner-v3 ai-thinking-v3">
                     <header className="message-header-v3">
@@ -466,7 +519,11 @@ export function AiAdvisorPage() {
                         <span />
                         <span />
                       </div>
-                      <span className="ai-thinking-label-v3">AI is thinking</span>
+                      <span className="ai-thinking-label-v3">
+                        {aiStatus && statusLabelMap[aiStatus]
+                          ? <span className="ai-status-label-v3">{statusLabelMap[aiStatus].icon} {statusLabelMap[aiStatus].label}</span>
+                          : 'AI is thinking'}
+                      </span>
                     </div>
                   </div>
                 </div>

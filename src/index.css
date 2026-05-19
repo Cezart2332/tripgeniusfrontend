@@ -119,6 +119,8 @@ h3 {
   width: min(1260px, 100% - 2.5rem);
   margin: 1.25rem auto 2.4rem;
   position: relative;
+  overflow-x: clip;
+  max-width: 100%;
 }
 
 /* Mobile-first: always account for bottom nav on small screens */
@@ -153,7 +155,12 @@ h3 {
   h3 { font-size: 1.1rem !important; }
 
   .app-shell {
-    padding: calc(0.35rem + env(safe-area-inset-top)) 0.5rem calc(65px + env(safe-area-inset-bottom)) 0.5rem;
+    padding: calc(52px + env(safe-area-inset-top)) 0.65rem calc(68px + env(safe-area-inset-bottom)) 0.65rem;
+  }
+
+  .main-content {
+    overflow-x: clip;
+    -webkit-overflow-scrolling: touch;
   }
 
   body {
@@ -190,10 +197,48 @@ h3 {
     font-size: 0.7rem;
   }
 
-  h1, h2, h3, p, .eyebrow, .field-label {
+  .discovery-trip-tags .chip.chip-sm {
+    padding: 0.1rem 0.32rem;
+    font-size: 0.58rem;
+  }
+
+  .discovery-header-v2,
+  .discovery-empty-state,
+  .builder-header-v2,
+  .trip-hero-overlay-v2,
+  .auth-form-header,
+  .offroad-create-hero {
     text-align: center;
   }
-  
+
+  .discovery-header-v2 h1,
+  .discovery-header-v2 .lead,
+  .builder-header-v2 h1,
+  .builder-header-v2 .lead,
+  .trip-hero-overlay-v2 h1,
+  .auth-form-header h1,
+  .offroad-create-hero h1 {
+    text-align: center;
+  }
+
+  .auth-form-side,
+  .auth-form-fields,
+  .offroad-form-panel,
+  .builder-form-v2,
+  .builder-section-v2,
+  .discovery-trip-info,
+  .offroad-trip-hero-overlay-v2,
+  .offroad-trip-header-bar,
+  .modal-card,
+  .modal-body,
+  label,
+  .field-label,
+  .input,
+  textarea,
+  select {
+    text-align: left;
+  }
+
   .lead {
     margin-inline: auto;
     font-size: 0.85rem;
@@ -201,6 +246,14 @@ h3 {
 
   .btn, .icon-link, .chip, .choice-card {
     justify-content: center;
+    min-height: 44px;
+  }
+
+  .input,
+  .input-area,
+  select {
+    font-size: 16px;
+    min-height: 44px;
   }
 
   .discovery-header-v2,
@@ -416,6 +469,10 @@ h3 {
   .topbar {
     /* On mobile, hide the desktop navbar entirely — bottom nav takes over */
     display: none !important;
+  }
+
+  .topbar .nav-notification-shell {
+    display: none;
   }
 }
 
@@ -2214,12 +2271,16 @@ h3 {
   }
 
   .modal-scrim {
-    padding: 0.62rem;
+    padding: max(0.62rem, env(safe-area-inset-top)) max(0.62rem, env(safe-area-inset-right)) max(0.62rem, env(safe-area-inset-bottom)) max(0.62rem, env(safe-area-inset-left));
+    align-items: flex-end;
   }
 
   .modal-card {
     border-radius: 16px;
     padding: 0.72rem;
+    max-height: min(85dvh, calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 1.5rem));
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
   .calendar-day,
@@ -2422,6 +2483,10 @@ h3 {
     border-bottom: 1px solid var(--line-soft);
   }
 
+  .mobile-topbar:not(:has(.mobile-topbar-actions)) {
+    justify-content: center;
+  }
+
   .mobile-brand {
     display: block;
     text-decoration: none;
@@ -2443,8 +2508,10 @@ h3 {
   .mobile-icon-btn {
     display: inline-grid;
     place-items: center;
-    width: 38px;
-    height: 38px;
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
     border-radius: 12px;
     border: 1px solid var(--line-soft);
     background: rgba(18, 34, 25, 0.52);
@@ -2472,6 +2539,42 @@ h3 {
     border-radius: 50%;
     background: var(--green-500);
     border: 1.5px solid var(--bg-980);
+  }
+
+  .mobile-topbar-avatar {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    object-fit: cover;
+  }
+
+  .mobile-notification-shell {
+    position: relative;
+  }
+
+  .header-notification-item {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid rgba(243, 255, 241, 0.1);
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .header-notification-text {
+    margin: 0;
+    color: #f3fff1;
+    font-size: 0.875rem;
+    font-weight: 500;
+    line-height: 1.4;
+    text-align: left;
+  }
+
+  .header-notification-time {
+    margin: 0;
+    color: rgba(243, 255, 241, 0.6);
+    font-size: 0.75rem;
+    line-height: 1.2;
+    text-align: left;
   }
 }
 
@@ -2509,21 +2612,39 @@ h3 {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 0.3rem;
+    justify-content: center;
+    gap: 0.15rem;
     color: var(--text-380);
     text-decoration: none;
-    font-size: 0.64rem;
+    font-size: 0.56rem;
     font-weight: 700;
-    letter-spacing: 0.04em;
-    padding: 0.5rem 1rem;
+    letter-spacing: 0.02em;
+    padding: 0.3rem 0.12rem;
+    min-height: 44px;
+    min-width: 0;
     transition: 0.22s all ease;
     opacity: 0.65;
     flex: 1;
     text-align: center;
+    touch-action: manipulation;
+  }
+
+  .bottom-nav-avatar {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    object-fit: cover;
   }
 
   .bottom-nav-link svg {
-    font-size: 1.35rem;
+    font-size: 1.2rem;
+  }
+
+  .bottom-nav-link span {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .bottom-nav-link.is-active {
@@ -2555,13 +2676,13 @@ h3 {
    ============================================ */
 @media (display-mode: standalone) {
   body {
-    /* In standalone, iOS padding-top is already handled by safe-area-inset-top
-       applied to body, so the dark bg shows behind status bar natively. */
-    padding-top: 0;
+    padding-top: env(safe-area-inset-top);
   }
 
-  .app-shell {
-    padding-top: max(env(safe-area-inset-top), 0.75rem);
+  @media (max-width: 850px) {
+    .app-shell {
+      padding-top: calc(52px + env(safe-area-inset-top));
+    }
   }
 }
 
@@ -2600,12 +2721,21 @@ h3 {
 
   .trip-hero-overlay-v2 {
     padding: 1rem;
-    align-items: center;
+    align-items: flex-start;
+    text-align: left;
   }
   
   .trip-hero-overlay-v2 h1 {
-    font-size: 1.5rem !important;
-    text-align: center;
+    font-size: clamp(1.35rem, 6vw, 1.65rem) !important;
+    text-align: left;
+    line-height: 1.15;
+    word-break: break-word;
+  }
+
+  .trip-hero-meta-v2 {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    gap: 0.5rem 0.75rem;
   }
 }
 

@@ -3321,6 +3321,13 @@ thead {
   font-size: 0.72rem;
 }
 
+.discovery-trip-tags .chip.chip-sm {
+  padding: 0.12rem 0.38rem;
+  font-size: 0.62rem;
+  line-height: 1.25;
+  font-weight: 600;
+}
+
 .discovery-trip-cta {
   white-space: nowrap;
   align-self: center;
@@ -3406,6 +3413,31 @@ thead {
 
   .auth-split {
     grid-template-columns: 1fr;
+  }
+
+  .auth-page-v2.container {
+    width: 100%;
+    padding-inline: 0.85rem;
+  }
+
+  .auth-form-side {
+    padding: 0.75rem 0;
+  }
+
+  .auth-form-header h1 {
+    font-size: clamp(1.5rem, 7vw, 2rem);
+    text-align: left;
+  }
+
+  .auth-toggle-link {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .auth-form-fields .btn-primary {
+    min-height: 48px;
+    width: 100%;
   }
 
   .auth-illustration-side {
@@ -3635,6 +3667,193 @@ thead {
   gap: 2rem;
 }
 
+/* ── Profile History Categories (Refactored) ── */
+
+.profile-history-categories {
+  display: grid;
+  gap: 2rem;
+}
+
+.history-category-section {
+  display: grid;
+  gap: 1rem;
+}
+
+.history-category-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid rgba(154, 198, 148, 0.15);
+}
+
+.history-category-title {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.history-category-title .category-icon {
+  color: var(--green-580);
+  font-size: 1.1rem;
+}
+
+.history-category-title h4 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #f3fff1;
+  margin: 0;
+}
+
+.history-category-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 28px;
+  padding: 0 0.5rem;
+  border-radius: 999px;
+  background: rgba(65, 162, 56, 0.2);
+  color: var(--green-500);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.history-category-content {
+  display: grid;
+  gap: 0.5rem;
+}
+
+/* Trip Row Enhancements */
+
+.history-row-active {
+  border-left: 3px solid var(--green-500);
+  background: rgba(65, 162, 56, 0.08);
+}
+
+.history-row-past {
+  opacity: 0.85;
+}
+
+.history-row-past:hover {
+  opacity: 1;
+}
+
+/* Status Badges */
+
+.history-badge-active {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-left: 0.5rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #042116;
+  background: linear-gradient(135deg, #17f702, #41a238);
+  animation: pulse-active 2s ease-in-out infinite;
+}
+
+@keyframes pulse-active {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(23, 247, 2, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 4px rgba(23, 247, 2, 0);
+  }
+}
+
+.history-badge-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-left: 0.5rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-380);
+  background: rgba(154, 198, 148, 0.15);
+}
+
+.history-badge-status.status-upcoming {
+  color: #3b82f6;
+  background: rgba(59, 130, 246, 0.15);
+}
+
+.history-badge-status.status-past {
+  color: var(--text-380);
+  background: rgba(154, 198, 148, 0.1);
+}
+
+/* Meta Row */
+
+.history-meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: 0.4rem;
+}
+
+.history-meta-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.8rem;
+  color: var(--text-380);
+}
+
+/* Empty States */
+
+.history-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2.5rem 1rem;
+  text-align: center;
+  border-radius: 14px;
+  background: rgba(9, 14, 10, 0.3);
+  border: 1px dashed rgba(154, 198, 148, 0.2);
+}
+
+.history-empty-sticker {
+  width: 80px;
+  height: 80px;
+  object-fit: contain;
+  opacity: 0.6;
+  margin-bottom: 1rem;
+}
+
+/* Loading Skeleton */
+
+.history-loading-state {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.history-skeleton-row {
+  height: 76px;
+  border-radius: 14px;
+  background: linear-gradient(90deg, rgba(154, 198, 148, 0.1) 25%, rgba(154, 198, 148, 0.2) 50%, rgba(154, 198, 148, 0.1) 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s infinite;
+}
+
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
 .trip-members-head-v2 {
   display: flex;
   justify-content: space-between;
@@ -3798,6 +4017,54 @@ thead {
   .history-thumb-v2 {
     width: 60px;
     height: 60px;
+  }
+
+  /* Mobile History Categories */
+  .profile-history-categories {
+    gap: 1.5rem;
+  }
+
+  .history-category-header {
+    padding-bottom: 0.5rem;
+  }
+
+  .history-category-title h4 {
+    font-size: 1rem;
+  }
+
+  .history-category-count {
+    min-width: 24px;
+    height: 24px;
+    font-size: 0.75rem;
+  }
+
+  .history-meta-row {
+    gap: 0.75rem;
+    margin-top: 0.3rem;
+  }
+
+  .history-meta-item {
+    font-size: 0.75rem;
+  }
+
+  .history-badge-active,
+  .history-badge-status {
+    font-size: 0.6rem;
+    padding: 0.12rem 0.4rem;
+    margin-left: 0.35rem;
+  }
+
+  .history-empty-state {
+    padding: 2rem 1rem;
+  }
+
+  .history-empty-sticker {
+    width: 64px;
+    height: 64px;
+  }
+
+  .history-skeleton-row {
+    height: 70px;
   }
 
   .notification-row-v2,
@@ -5435,6 +5702,56 @@ thead {
   100% {
     background-position: -200% 0;
   }
+}
+
+/* ── AI Status Label (dynamic status inside thinking bubble) ── */
+
+.ai-status-label-v3 {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.88rem;
+  font-weight: 600;
+  background: linear-gradient(90deg, var(--green-500) 0%, var(--text-380) 50%, var(--green-500) 100%);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: thinking-shimmer 2.5s ease-in-out infinite;
+}
+
+.ai-status-label-v3 svg {
+  animation: status-icon-pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes status-icon-pulse {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+
+/* ── AI Stream Status (inline status bar inside streaming message) ── */
+
+.ai-stream-status-v3 {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0;
+  margin-top: 0.25rem;
+  border-top: 1px solid var(--line-soft);
+  opacity: 0.85;
+}
+
+.ai-stream-status-icon-v3 {
+  display: flex;
+  align-items: center;
+  color: var(--green-500);
+  animation: status-icon-pulse 1.8s ease-in-out infinite;
+}
+
+.ai-stream-status-label-v3 {
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--text-380);
 }
 
 
