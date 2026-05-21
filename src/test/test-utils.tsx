@@ -3,7 +3,9 @@ import { Provider } from 'react-redux'
 import { configureStore } from '@reduxjs/toolkit'
 import { combineReducers } from 'redux'
 import { render } from '@testing-library/react'
+import { ThemeProvider } from 'styled-components'
 import authReducer from '../data/authSlice'
+import theme from '../styles/theme'
 
 const rootReducer = combineReducers({
   auth: authReducer,
@@ -28,7 +30,11 @@ export function renderWithProviders(
   { preloadedState, store = createTestStore(preloadedState) }: RenderWithProvidersOptions = {},
 ) {
   function Wrapper({ children }: PropsWithChildren) {
-    return <Provider store={store}>{children}</Provider>
+    return (
+      <ThemeProvider theme={theme}>
+        <Provider store={store}>{children}</Provider>
+      </ThemeProvider>
+    )
   }
 
   return {

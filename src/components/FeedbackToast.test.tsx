@@ -1,5 +1,6 @@
-import { act, fireEvent, render, screen } from '@testing-library/react'
+import { act, fireEvent, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
+import { renderWithProviders } from '../test/test-utils'
 import { FeedbackToast } from './FeedbackToast'
 
 describe('FeedbackToast', () => {
@@ -7,7 +8,7 @@ describe('FeedbackToast', () => {
     vi.useFakeTimers()
     const clearToast = vi.fn()
 
-    render(
+    renderWithProviders(
       <FeedbackToast
         toast={{ id: 1, message: 'Saved changes', tone: 'success' }}
         clearToast={clearToast}
@@ -27,7 +28,7 @@ describe('FeedbackToast', () => {
   it('dismisses on manual click', () => {
     const clearToast = vi.fn()
 
-    render(
+    renderWithProviders(
       <FeedbackToast
         toast={{ id: 2, message: 'Something went wrong', tone: 'error' }}
         clearToast={clearToast}
