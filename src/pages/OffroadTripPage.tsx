@@ -29,6 +29,7 @@ import { putOffroadTrip, getOffroadTrip, putOffroadRoute, deleteOffroadRoute } f
 import { formatDisplayDateRange } from '../utils/dateDisplay'
 import { getTripStatusLabel } from '../utils/tripStatus'
 import { computeElevationStats, estimateDuration } from '../utils/coords'
+import { registerChatModerationEvents } from '../hooks/useChatModerationEvents'
 
 interface AuthStoreState {
   auth: { user: User | null; token: string | null }
@@ -222,6 +223,10 @@ export function OffroadTripPage() {
 
     connection.on('ReceiveMessage', (msg: ChatMessage) => {
       setChatMessages((prev) => (prev.some((m) => m.id === msg.id) ? prev : [...prev, msg]))
+    })
+
+    registerChatModerationEvents(connection, setChatMessages, (payload) => {
+      console.warn(payload.message ?? 'Message removed by moderation.')
     })
 
     connectionRef.current = connection

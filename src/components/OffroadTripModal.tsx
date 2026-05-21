@@ -12,6 +12,7 @@ import { getTripStatusLabel } from '../utils/tripStatus'
 import { getErrorMessage } from '../utils/errorMessage'
 import { downloadBlob } from '../utils/gpx'
 import { getAvatarUrl } from '../utils/userUtils'
+import { registerChatModerationEvents } from '../hooks/useChatModerationEvents'
 import styled from 'styled-components'
 
 interface OffroadTripModalProps {
@@ -647,6 +648,10 @@ export function OffroadTripModal({ trip, isOpen, onClose, onTripUpdate }: Offroa
 
     connection.on('ReceiveMessage', (msg: ChatMessage) => {
       setChatMessages((prev) => (prev.some((m) => m.id === msg.id) ? prev : [...prev, msg]))
+    })
+
+    registerChatModerationEvents(connection, setChatMessages, (payload) => {
+      console.warn(payload.message ?? 'Message removed by moderation.')
     })
 
     connectionRef.current = connection

@@ -42,6 +42,7 @@ import {
 } from '../utils/dateDisplay'
 import { useDebouncedCallback } from 'use-debounce'
 import { getAvatarUrl } from '../utils/userUtils'
+import { registerChatModerationEvents } from '../hooks/useChatModerationEvents'
 import { TabBar } from '../components/shared/TabBar'
 
 const MILLISECONDS_PER_DAY = 1000 * 60 * 60 * 24
@@ -548,6 +549,13 @@ function TripPageContent({ trip }: TripPageContentProps) {
       setChatMessages((prev) => {
         if (prev.some(m => m.id === msg.id)) return prev;
         return [...prev, msg];
+      })
+    })
+
+    registerChatModerationEvents(connection, setChatMessages, (payload) => {
+      setTripDetailsFeedback({
+        tone: 'error',
+        message: payload.message ?? 'Your message was removed because it was flagged as inappropriate.',
       })
     })
 
