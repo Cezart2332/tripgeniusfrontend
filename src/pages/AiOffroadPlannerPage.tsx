@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion'
 import { useEffect, useState } from 'react'
-import { FiZap, FiX, FiArrowLeft } from 'react-icons/fi'
+import { FiZap, FiX, FiArrowLeft, FiCompass } from 'react-icons/fi'
 import { useNavigate } from 'react-router-dom'
 import { useSelector } from 'react-redux'
 import styled from 'styled-components'
@@ -405,7 +405,7 @@ export function AiOffroadPlannerPage() {
             {isGenerating ? (
               <>
                 <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: 'linear' }}>
-                  <FiZap />
+                  <FiCompass aria-hidden />
                 </motion.div>
                 Planning your trail...
               </>
