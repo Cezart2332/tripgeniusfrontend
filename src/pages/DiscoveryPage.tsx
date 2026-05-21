@@ -1,8 +1,9 @@
 import { motion } from 'framer-motion'
 import { useEffect, useState } from 'react'
 import { FiPlusCircle, FiSliders, FiZap } from 'react-icons/fi'
-import { Link, NavLink, useLocation } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { useDebouncedCallback } from 'use-debounce'
+import styled from 'styled-components'
 import { tripTypeOptions } from '../data/tripTypeOptions'
 import type { Trip, User } from '../types/models'
 import { useSelector } from 'react-redux'
@@ -11,6 +12,11 @@ import { formatDisplayDate } from '../utils/dateDisplay'
 import { getTripStatusLabel } from '../utils/tripStatus'
 import { putAllTrips } from '../utils/tripCache'
 import { isNetworkError as isNetworkErrorUtil } from '../utils/errorMessage'
+import { SearchBar } from '../components/shared/SearchBar'
+import { BottomSheet } from '../components/shared/BottomSheet'
+import { DiscoveryModeTabs } from '../components/layout/DiscoveryModeTabs'
+import { SkeletonCard } from '../components/shared/SkeletonCard'
+import { EmptyState } from '../components/shared/EmptyState'
 
 const revealTransition = {
   duration: 0.55,
@@ -28,25 +34,520 @@ interface DiscoveryNavigationState {
   createdTripTitle?: string
 }
 
-function DiscoveryModeTabs() {
+function useMediaQuery(query: string) {
+  const [matches, setMatches] = useState(() => window.matchMedia(query).matches)
+
+  useEffect(() => {
+    const mql = window.matchMedia(query)
+    const handler = (e: MediaQueryListEvent) => setMatches(e.matches)
+    mql.addEventListener('change', handler)
+    return () => mql.removeEventListener('change', handler)
+  }, [query])
+
+  return matches
+}
+
+const Page = styled.section`
+  width: min(1200px, 100% - 2rem);
+  margin: 0 auto;
+  padding-top: ${({ theme }) => theme.spacing.lg};
+  padding-bottom: ${({ theme }) => theme.spacing['3xl']};
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.spacing.lg};
+
+  @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
+    width: min(1200px, 100% - 1rem);
+    padding-bottom: 7rem;
+    gap: ${({ theme }) => theme.spacing.md};
+  }
+`
+
+const AuthEmptyWrapper = styled(motion.div)`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: ${({ theme }) => theme.spacing['3xl']} ${({ theme }) => theme.spacing.lg};
+  gap: ${({ theme }) => theme.spacing.lg};
+`
+
+const AuthSticker = styled.img`
+  width: 160px;
+  height: auto;
+  margin-bottom: ${({ theme }) => theme.spacing.sm};
+  opacity: 0.85;
+`
+
+const AuthBody = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing.sm};
+`
+
+const AuthTitle = styled.h1`
+  font-size: ${({ theme }) => theme.typography.h1};
+  color: ${({ theme }) => theme.colors.text[100]};
+`
+
+const AuthDesc = styled.p`
+  font-size: ${({ theme }) => theme.typography.lead};
+  color: ${({ theme }) => theme.colors.text[380]};
+  max-width: 440px;
+`
+
+const HeaderRow = styled(motion.header)`
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: ${({ theme }) => theme.spacing.lg};
+  flex-wrap: wrap;
+
+  @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
+    flex-direction: column;
+  }
+`
+
+const HeaderLeft = styled.div`
+  flex: 1;
+`
+
+const HeaderTitle = styled.h1`
+  font-size: ${({ theme }) => theme.typography.h1};
+  color: ${({ theme }) => theme.colors.text[100]};
+  margin-bottom: ${({ theme }) => theme.spacing.xs};
+`
+
+const HeaderLead = styled.p`
+  font-size: ${({ theme }) => theme.typography.lead};
+  color: ${({ theme }) => theme.colors.text[380]};
+`
+
+const HeaderActions = styled.div`
+  display: flex;
+  gap: ${({ theme }) => theme.spacing.md};
+  align-items: center;
+  flex-shrink: 0;
+
+  @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+`
+
+const GhostButton = styled(Link)`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  font-weight: 600;
+  border-radius: ${({ theme }) => theme.radii.pill};
+  transition: all ${({ theme }) => theme.animation.duration.normal}s ${({ theme }) => theme.animation.easeOut.join(',')};
+  min-height: 44px;
+  min-width: 44px;
+  white-space: nowrap;
+  text-decoration: none;
+  line-height: 1;
+  padding: 0.55rem 1.2rem;
+  background: transparent;
+  color: ${({ theme }) => theme.colors.green[580]};
+  border: 1px solid rgba(154, 198, 148, 0.2);
+
+  &:hover {
+    background: rgba(65, 162, 56, 0.08);
+    border-color: ${({ theme }) => theme.colors.line};
+    color: ${({ theme }) => theme.colors.green[500]};
+  }
+
+  &:active {
+    background: rgba(65, 162, 56, 0.12);
+  }
+`
+
+const PrimaryButton = styled(Link)`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  border-radius: ${({ theme }) => theme.radii.pill};
+  transition: all ${({ theme }) => theme.animation.duration.normal}s ${({ theme }) => theme.animation.easeOut.join(',')};
+  min-height: 44px;
+  min-width: 44px;
+  white-space: nowrap;
+  text-decoration: none;
+  line-height: 1;
+  padding: 0.65rem 1.5rem;
+  background: linear-gradient(135deg, ${({ theme }) => theme.colors.green[580]}, ${({ theme }) => theme.colors.green[500]});
+  color: #0a1e08;
+  box-shadow: ${({ theme }) => theme.shadows.glowGreen};
+
+  &:hover {
+    background: linear-gradient(135deg, ${({ theme }) => theme.colors.green[500]}, ${({ theme }) => theme.colors.green[300]});
+    transform: translateY(-1px);
+    box-shadow: 0 0 40px rgba(23, 247, 2, 0.3), 0 0 80px rgba(23, 247, 2, 0.1);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+`
+
+const Toolbar = styled.div`
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing.md};
+  flex-wrap: wrap;
+
+  @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
+    flex-direction: column;
+    align-items: stretch;
+  }
+`
+
+const FilterToggleBtn = styled.button`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-family: inherit;
+  font-weight: 600;
+  border-radius: ${({ theme }) => theme.radii.pill};
+  transition: all ${({ theme }) => theme.animation.duration.normal}s ${({ theme }) => theme.animation.easeOut.join(',')};
+  min-height: 36px;
+  min-width: 36px;
+  white-space: nowrap;
+  text-decoration: none;
+  line-height: 1;
+  padding: 0.4rem 0.9rem;
+  font-size: ${({ theme }) => theme.typography.bodySmall};
+  background: transparent;
+  color: ${({ theme }) => theme.colors.text[220]};
+  border: 1px solid ${({ theme }) => theme.colors.lineSoft};
+  cursor: pointer;
+
+  &:hover {
+    background: rgba(65, 162, 56, 0.08);
+    border-color: ${({ theme }) => theme.colors.line};
+    color: ${({ theme }) => theme.colors.text[100]};
+  }
+
+  &:active {
+    background: rgba(65, 162, 56, 0.12);
+  }
+`
+
+const PrefToggle = styled.label`
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.35rem 0.9rem;
+  border-radius: ${({ theme }) => theme.radii.pill};
+  cursor: pointer;
+  font-size: ${({ theme }) => theme.typography.bodySmall};
+  color: ${({ theme }) => theme.colors.text[380]};
+  transition: all 0.2s ease;
+  user-select: none;
+  white-space: nowrap;
+  border: 1px solid transparent;
+
+  &:hover {
+    color: ${({ theme }) => theme.colors.text[220]};
+    border-color: ${({ theme }) => theme.colors.lineSoft};
+  }
+
+  input[type='checkbox'] {
+    width: 1rem;
+    height: 1rem;
+    accent-color: ${({ theme }) => theme.colors.green[500]};
+    cursor: pointer;
+    margin: 0;
+  }
+`
+
+const FiltersPanel = styled(motion.div)`
+  display: flex;
+  gap: ${({ theme }) => theme.spacing.lg};
+  flex-wrap: wrap;
+  padding: ${({ theme }) => theme.spacing.lg};
+  background: ${({ theme }) => theme.glass.bg};
+  border: 1px solid ${({ theme }) => theme.glass.border};
+  border-radius: ${({ theme }) => theme.radii.xl};
+  backdrop-filter: blur(${({ theme }) => theme.glass.blur});
+  -webkit-backdrop-filter: blur(${({ theme }) => theme.glass.blur});
+
+  @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
+    flex-direction: column;
+  }
+`
+
+const FilterItem = styled.div`
+  flex: 1;
+  min-width: 200px;
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.spacing.sm};
+`
+
+const FieldLabel = styled.label`
+  font-size: ${({ theme }) => theme.typography.eyebrow};
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: ${({ theme }) => theme.colors.text[500]};
+`
+
+const SelectInput = styled.select`
+  width: 100%;
+  padding: 0.7rem 1rem;
+  border-radius: ${({ theme }) => theme.radii.lg};
+  border: 1px solid ${({ theme }) => theme.colors.lineSoft};
+  background: ${({ theme }) => theme.colors.bg[940]};
+  color: ${({ theme }) => theme.colors.text[100]};
+  font-size: ${({ theme }) => theme.typography.body};
+  transition: border-color 0.15s ease;
+  min-height: 44px;
+  font-family: inherit;
+  cursor: pointer;
+
+  &:focus {
+    outline: none;
+    border-color: ${({ theme }) => theme.colors.green[500]};
+    box-shadow: 0 0 0 3px rgba(23, 247, 2, 0.1);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  option {
+    background: ${({ theme }) => theme.colors.bg[940]};
+    color: ${({ theme }) => theme.colors.text[100]};
+  }
+`
+
+const RangeInput = styled.input`
+  width: 100%;
+  height: 6px;
+  border-radius: 3px;
+  accent-color: ${({ theme }) => theme.colors.green[500]};
+  cursor: pointer;
+`
+
+const InfoBanner = styled.p`
+  padding: ${({ theme }) => theme.spacing.sm} ${({ theme }) => theme.spacing.md};
+  border-radius: ${({ theme }) => theme.radii.md};
+  background: rgba(23, 247, 2, 0.06);
+  border: 1px solid rgba(23, 247, 2, 0.15);
+  color: ${({ theme }) => theme.colors.green[400]};
+  font-size: ${({ theme }) => theme.typography.bodySmall};
+`
+
+const ResultsSection = styled.section`
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.spacing.md};
+`
+
+const ResultsMeta = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+`
+
+const ResultsCount = styled.h2`
+  font-size: ${({ theme }) => theme.typography.h2};
+  color: ${({ theme }) => theme.colors.text[100]};
+`
+
+const TripList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.spacing.md};
+`
+
+const TripCard = styled(motion.article)`
+  display: flex;
+  gap: ${({ theme }) => theme.spacing.lg};
+  padding: ${({ theme }) => theme.spacing.lg};
+  background: ${({ theme }) => theme.glass.bg};
+  border: 1px solid ${({ theme }) => theme.glass.border};
+  border-radius: ${({ theme }) => theme.radii.xl};
+  backdrop-filter: blur(${({ theme }) => theme.glass.blur});
+  -webkit-backdrop-filter: blur(${({ theme }) => theme.glass.blur});
+  transition: all ${({ theme }) => theme.animation.duration.normal}s ${({ theme }) => theme.animation.easeOut.join(',')};
+  align-items: flex-start;
+
+  &:hover {
+    border-color: ${({ theme }) => theme.colors.line};
+    box-shadow: ${({ theme }) => theme.shadows.glow};
+    transform: translateY(-2px);
+  }
+
+  @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
+    flex-direction: column;
+  }
+`
+
+const Thumb = styled.img`
+  width: 200px;
+  height: 140px;
+  border-radius: ${({ theme }) => theme.radii.md};
+  object-fit: cover;
+  flex-shrink: 0;
+
+  @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
+    width: 100%;
+    height: 180px;
+  }
+`
+
+const TripInfo = styled.div`
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 0;
+`
+
+const TripStatus = styled.span`
+  font-size: ${({ theme }) => theme.typography.eyebrow};
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: ${({ theme }) => theme.colors.green[580]};
+  font-weight: 600;
+`
+
+const TripTitle = styled.h3`
+  font-size: ${({ theme }) => theme.typography.h3};
+  color: ${({ theme }) => theme.colors.text[100]};
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+`
+
+const TripDesc = styled.p`
+  font-size: ${({ theme }) => theme.typography.bodySmall};
+  color: ${({ theme }) => theme.colors.text[380]};
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+`
+
+const MetaRow = styled.div`
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.3rem 0.5rem;
+  font-size: ${({ theme }) => theme.typography.caption};
+  color: ${({ theme }) => theme.colors.text[500]};
+`
+
+const MetaDot = styled.span`
+  color: ${({ theme }) => theme.colors.lineSoft};
+`
+
+const TagsRow = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.25rem;
+`
+
+const Chip = styled.span`
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.6rem;
+  border-radius: ${({ theme }) => theme.radii.pill};
+  font-size: ${({ theme }) => theme.typography.caption};
+  font-weight: 500;
+  background: ${({ theme }) => theme.colors.green[700]};
+  color: ${({ theme }) => theme.colors.green[300]};
+`
+
+const ViewButton = styled(Link)`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  border-radius: ${({ theme }) => theme.radii.pill};
+  transition: all ${({ theme }) => theme.animation.duration.normal}s ${({ theme }) => theme.animation.easeOut.join(',')};
+  min-height: 36px;
+  min-width: 36px;
+  white-space: nowrap;
+  text-decoration: none;
+  line-height: 1;
+  padding: 0.4rem 1rem;
+  font-size: ${({ theme }) => theme.typography.bodySmall};
+  background: linear-gradient(135deg, ${({ theme }) => theme.colors.green[580]}, ${({ theme }) => theme.colors.green[500]});
+  color: #0a1e08;
+  box-shadow: ${({ theme }) => theme.shadows.glowGreen};
+  flex-shrink: 0;
+
+  &:hover {
+    background: linear-gradient(135deg, ${({ theme }) => theme.colors.green[500]}, ${({ theme }) => theme.colors.green[300]});
+    transform: translateY(-1px);
+    box-shadow: 0 0 40px rgba(23, 247, 2, 0.3), 0 0 80px rgba(23, 247, 2, 0.1);
+  }
+`
+
+const MobileFilterPanel = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.spacing.lg};
+`
+
+function FilterFields({
+  selectedType,
+  setSelectedType,
+  maxBudget,
+  setMaxBudget,
+  autoApplyPreferences,
+}: {
+  selectedType: string
+  setSelectedType: (v: string) => void
+  maxBudget: number
+  setMaxBudget: (v: number) => void
+  autoApplyPreferences: boolean
+}) {
   return (
-    <nav className="discovery-mode-tabs" aria-label="Trip discovery mode">
-      <NavLink
-        to="/app"
-        end
-        className={({ isActive }) =>
-          `discovery-mode-tab discovery-mode-tab--classic ${isActive ? 'is-active' : ''}`
-        }
-      >
-        Classic
-      </NavLink>
-      <NavLink
-        to="/app/offroad"
-        className={({ isActive }) => `discovery-mode-tab ${isActive ? 'is-active' : ''}`}
-      >
-        Offroad
-      </NavLink>
-    </nav>
+    <>
+      <FilterItem>
+        <FieldLabel htmlFor="discover-trip-type">Trip type</FieldLabel>
+        <SelectInput
+          id="discover-trip-type"
+          value={selectedType}
+          onChange={(event) => setSelectedType(event.target.value)}
+          disabled={autoApplyPreferences}
+        >
+          <option value="all">All types</option>
+          {tripTypeOptions.map((tripType) => (
+            <option key={tripType} value={tripType}>
+              {tripType}
+            </option>
+          ))}
+        </SelectInput>
+      </FilterItem>
+
+      <FilterItem>
+        <FieldLabel htmlFor="discover-max-budget">
+          Budget up to {maxBudget} EUR
+        </FieldLabel>
+        <RangeInput
+          id="discover-max-budget"
+          type="range"
+          min={300}
+          max={2500}
+          step={50}
+          value={maxBudget}
+          onChange={(event) => setMaxBudget(Number(event.target.value))}
+        />
+      </FilterItem>
+    </>
   )
 }
 
@@ -55,7 +556,6 @@ export function DiscoveryPage() {
   const navigationState = location.state as DiscoveryNavigationState | null
   const user = useSelector((state: AuthStoreState) => state.auth.user)
 
-  // Classic trips state
   const [trips, setTrips] = useState<Trip[]>([])
   const [showFilters, setShowFilters] = useState(true)
   const [autoApplyPreferences, setAutoApplyPreferences] = useState(false)
@@ -64,6 +564,9 @@ export function DiscoveryPage() {
   const [selectedType, setSelectedType] = useState('all')
   const [maxBudget, setMaxBudget] = useState(1000)
   const [isFetchingTrips, setIsFetchingTrips] = useState(true)
+  const [mobileFilterOpen, setMobileFilterOpen] = useState(false)
+
+  const isMobile = useMediaQuery(`(max-width: ${'850px'})`)
 
   const isSearchDebouncing = search !== debouncedSearch
   const showDiscoverySkeleton = isSearchDebouncing || isFetchingTrips
@@ -83,7 +586,6 @@ export function DiscoveryPage() {
     }
   }, [handleSearch])
 
-  // Warm up the all-trips cache for offline use
   useEffect(() => {
     if (user && navigator.onLine) {
       api.get('api/trip/get-all-trips')
@@ -96,7 +598,6 @@ export function DiscoveryPage() {
     }
   }, [user])
 
-  // Fetch classic trips
   useEffect(() => {
     if (!user) {
       setIsFetchingTrips(false)
@@ -126,7 +627,6 @@ export function DiscoveryPage() {
           return
         }
 
-        // Offline Fallback: Trigger if offline OR if the network request just failed
         const isNetworkError = isNetworkErrorUtil(err)
         if (!navigator.onLine || isNetworkError) {
           try {
@@ -163,81 +663,78 @@ export function DiscoveryPage() {
 
   if (user == null) {
     return (
-      <section className="page discovery-page">
-        <motion.div
-          className="discovery-empty-state"
+      <Page>
+        <AuthEmptyWrapper
           initial={{ opacity: 0, y: 18 }}
           animate={{ opacity: 1, y: 0 }}
           transition={revealTransition}
         >
-          <img
+          <AuthSticker
             src="/newstickers/sticker5.png"
             alt=""
-            className="discovery-empty-sticker"
             aria-hidden="true"
           />
-          <div>
-            <h1>Sign in to discover trips</h1>
-            <p>Unlock personalized filters, matching, and trip collaboration.</p>
-            <Link className="btn btn-primary" to="/login">
+          <AuthBody>
+            <AuthTitle>Sign in to discover trips</AuthTitle>
+            <AuthDesc>Unlock personalized filters, matching, and trip collaboration.</AuthDesc>
+            <PrimaryButton to="/login">
               Go to login
-            </Link>
-          </div>
-        </motion.div>
-      </section>
+            </PrimaryButton>
+          </AuthBody>
+        </AuthEmptyWrapper>
+      </Page>
     )
   }
 
   return (
-    <section className="page discovery-page-v2">
+    <Page>
       <DiscoveryModeTabs />
-      {/* ── Header row ── */}
-      <motion.header
-        className="discovery-header-v2"
+
+      <HeaderRow
         initial={{ opacity: 0, y: 18 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true, amount: 0.5 }}
         transition={revealTransition}
       >
-        <div>
-          <h1>Discover trips</h1>
-          <p className="lead">
+        <HeaderLeft>
+          <HeaderTitle>Discover trips</HeaderTitle>
+          <HeaderLead>
             Filter by style, budget, and preferences to find the right trip.
-          </p>
-        </div>
-        <div className="discovery-header-actions" style={{ display: 'flex', gap: '1rem' }}>
-          <Link className="btn btn-ghost" style={{ gap: '0.6rem', color: 'var(--green-580)', border: '1px solid rgba(154,198,148,0.2)' }} to="/app/ai-planner">
+          </HeaderLead>
+        </HeaderLeft>
+        <HeaderActions>
+          <GhostButton to="/app/ai-planner">
             <FiZap /> Generate trip with AI
-          </Link>
-          <Link className="btn btn-primary" to='/app/create-trip'>
+          </GhostButton>
+          <PrimaryButton to="/app/create-trip">
             <FiPlusCircle aria-hidden="true" />
             Create trip
-          </Link>
-        </div>
-      </motion.header>
+          </PrimaryButton>
+        </HeaderActions>
+      </HeaderRow>
 
-      {/* ── Toolbar ── */}
-      <div className="discovery-toolbar-v2">
-        <div className="discovery-search-group">
-          <input
-            id="discover-search"
-            className="input"
-            value={search}
-            onChange={(event) => onChangeText(event.target.value)}
-            placeholder="Search destination or theme..."
-          />
-        </div>
+      <Toolbar>
+        <SearchBar
+          value={search}
+          onChange={onChangeText}
+          placeholder="Search destination or theme..."
+        />
 
-        <button
-          className="btn btn-ghost btn-sm"
+        <FilterToggleBtn
           type="button"
-          onClick={() => setShowFilters((current) => !current)}
+          onClick={() => {
+            if (isMobile) {
+              setMobileFilterOpen(true)
+            } else {
+              setShowFilters((current) => !current)
+            }
+          }}
         >
           <FiSliders aria-hidden="true" />
-          {showFilters ? 'Hide filters' : 'Filters'}
-        </button>
+          {isMobile ? 'Filters' : showFilters ? 'Hide filters' : 'Filters'}
+        </FilterToggleBtn>
 
-        <label className="discovery-pref-toggle">
+        <PrefToggle>
           <input
             type="checkbox"
             checked={autoApplyPreferences}
@@ -251,122 +748,100 @@ export function DiscoveryPage() {
           />
           <FiZap aria-hidden="true" />
           <span>Personalized for you</span>
-        </label>
-      </div>
+        </PrefToggle>
+      </Toolbar>
 
-      {/* ── Collapsible filters ── */}
-      {showFilters ? (
-        <motion.div
-          className="discovery-filters-v2"
+      {showFilters && !isMobile && (
+        <FiltersPanel
           initial={{ opacity: 0, height: 0 }}
           animate={{ opacity: 1, height: 'auto' }}
           exit={{ opacity: 0, height: 0 }}
           transition={{ duration: 0.3 }}
         >
-          <div className="discovery-filter-item">
-            <label className="field-label" htmlFor="discover-trip-type">Trip type</label>
-            <select
-              id="discover-trip-type"
-              className="input"
-              value={selectedType}
-              onChange={(event) => setSelectedType(event.target.value)}
-              disabled={autoApplyPreferences}
-            >
-              <option value="all">All types</option>
-              {tripTypeOptions.map((tripType) => (
-                <option key={tripType} value={tripType}>
-                  {tripType}
-                </option>
-              ))}
-            </select>
-          </div>
+          <FilterFields
+            selectedType={selectedType}
+            setSelectedType={setSelectedType}
+            maxBudget={maxBudget}
+            setMaxBudget={setMaxBudget}
+            autoApplyPreferences={autoApplyPreferences}
+          />
+        </FiltersPanel>
+      )}
 
-          <div className="discovery-filter-item">
-            <label className="field-label" htmlFor="discover-max-budget">
-              Budget up to {maxBudget} EUR
-            </label>
-            <input
-              id="discover-max-budget"
-              className="range"
-              type="range"
-              min={300}
-              max={2500}
-              step={50}
-              value={maxBudget}
-              onChange={(event) => setMaxBudget(Number(event.target.value))}
-            />
-          </div>
-        </motion.div>
-      ) : null}
+      <BottomSheet
+        isOpen={mobileFilterOpen}
+        onClose={() => setMobileFilterOpen(false)}
+        title="Filters"
+      >
+        <MobileFilterPanel>
+          <FilterFields
+            selectedType={selectedType}
+            setSelectedType={setSelectedType}
+            maxBudget={maxBudget}
+            setMaxBudget={setMaxBudget}
+            autoApplyPreferences={autoApplyPreferences}
+          />
+        </MobileFilterPanel>
+      </BottomSheet>
 
-      {/* ── Banner ── */}
       {navigationState?.createdTripTitle ? (
-        <p className="info-banner">
+        <InfoBanner>
           {navigationState.createdTripTitle} was published and is now visible in discovery.
-        </p>
+        </InfoBanner>
       ) : null}
 
-      {/* ── Results ── */}
-      <section className="discovery-results-v2" aria-live="polite" aria-busy={showDiscoverySkeleton}>
-        <div className="discovery-results-meta">
-          <h2>{showDiscoverySkeleton ? 'Loading...' : `${trips.length} trips found`}</h2>
-        </div>
+      <ResultsSection aria-live="polite" aria-busy={showDiscoverySkeleton}>
+        <ResultsMeta>
+          <ResultsCount>{showDiscoverySkeleton ? 'Loading...' : `${trips.length} trips found`}</ResultsCount>
+        </ResultsMeta>
 
-        <div className="discovery-trip-list">
+        <TripList>
           {showDiscoverySkeleton
             ? Array.from({ length: 3 }, (_, index) => (
-              <article className="discovery-trip-row discovery-trip-skeleton" key={`trip-skeleton-${index}`} aria-hidden="true">
-                <div className="discovery-trip-thumb discovery-skeleton-block" />
-                <div className="discovery-trip-info">
-                  <div className="discovery-skeleton-block" style={{ height: '1rem', width: '120px' }} />
-                  <div className="discovery-skeleton-block" style={{ height: '1.4rem', width: '280px' }} />
-                  <div className="discovery-skeleton-block" style={{ height: '0.85rem', width: '200px' }} />
-                </div>
-              </article>
+              <SkeletonCard key={`trip-skeleton-${index}`} />
             ))
             : trips.map((trip, index) => (
-              <motion.article
-                className="discovery-trip-row"
+              <TripCard
                 key={trip.id}
                 initial={{ opacity: 0, y: 16 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, amount: 0.15 }}
                 transition={{ ...revealTransition, delay: index * 0.04 }}
               >
-                <img src={trip.imageUrl} alt={trip.title} className="discovery-trip-thumb" />
-                <div className="discovery-trip-info">
-                  <span className="discovery-trip-status">{getTripStatusLabel(trip.status)}</span>
-                  <h3>{trip.title}</h3>
-                  <p className="discovery-trip-desc">{trip.description}</p>
-                  <div className="discovery-trip-meta-row">
+                <Thumb src={trip.imageUrl} alt={trip.title} />
+                <TripInfo>
+                  <TripStatus>{getTripStatusLabel(trip.status)}</TripStatus>
+                  <TripTitle>{trip.title}</TripTitle>
+                  <TripDesc>{trip.description}</TripDesc>
+                  <MetaRow>
                     <span>{trip.timelines?.length ?? 0} days</span>
-                    <span>·</span>
+                    <MetaDot>·</MetaDot>
                     <span>starts {formatDisplayDate(trip.startingDate)}</span>
-                    <span>·</span>
+                    <MetaDot>·</MetaDot>
                     <span>{trip.currentMembers}/{trip.maxParticipants} members</span>
-                    <span>·</span>
+                    <MetaDot>·</MetaDot>
                     <span>{trip.price} EUR</span>
-                  </div>
-                  <div className="discovery-trip-tags">
+                  </MetaRow>
+                  <TagsRow>
                     {trip.tags.map((tag) => (
-                      <span key={tag} className="chip chip-static chip-sm">{tag}</span>
+                      <Chip key={tag}>{tag}</Chip>
                     ))}
-                  </div>
-                </div>
-                <Link className="btn btn-primary btn-sm discovery-trip-cta" to={`/app/trip/${trip.id}`}>
+                  </TagsRow>
+                </TripInfo>
+                <ViewButton to={`/app/trip/${trip.id}`}>
                   View
-                </Link>
-              </motion.article>
+                </ViewButton>
+              </TripCard>
             ))}
 
           {!showDiscoverySkeleton && trips.length === 0 ? (
-            <div className="discovery-no-results">
-              <h3>No trips match these filters.</h3>
-              <p>Try adjusting your budget or disabling preference boost.</p>
-            </div>
+            <EmptyState
+              title="No trips match these filters."
+              description="Try adjusting your budget or disabling preference boost."
+            />
           ) : null}
-        </div>
-      </section>
-    </section>
+        </TripList>
+      </ResultsSection>
+    </Page>
   )
 }

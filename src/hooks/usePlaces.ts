@@ -4,7 +4,11 @@ import { fetchPlacesInBBox } from '../services/placesService';
 import type { Place } from '../services/placesService';
 import { getCached, setCache } from '../services/placesCache';
 
-export function usePlaces(map: maplibregl.Map | null, kind: string = 'interesting_places,foods,amusements,sport,accomodations,tourist_facilities') {
+export function usePlaces(
+  map: maplibregl.Map | null,
+  kind: string = 'interesting_places,foods,amusements,sport,accomodations,tourist_facilities',
+  minZoom = 11,
+) {
   const [places, setPlaces] = useState<Place[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -17,7 +21,7 @@ export function usePlaces(map: maplibregl.Map | null, kind: string = 'interestin
     const zoom = map.getZoom();
     setZoomLevel(zoom);
     
-    if (zoom < 12) {
+    if (zoom < minZoom) {
       setPlaces([]);
       return;
     }
@@ -48,7 +52,7 @@ export function usePlaces(map: maplibregl.Map | null, kind: string = 'interestin
     } finally {
       setLoading(false);
     }
-  }, [map, kind]);
+  }, [map, kind, minZoom]);
 
   useEffect(() => {
     if (!map) return;

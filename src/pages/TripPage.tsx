@@ -23,6 +23,7 @@ import {
 import { SiGooglemaps, SiWaze, SiApple } from 'react-icons/si'
 import { useSelector } from 'react-redux'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import styled from 'styled-components'
 import { TripRouteMap } from '../components/TripRouteMap'
 import { ActivityType, ActivityTypeLabels } from '../types/models'
 import type { ChatMessage, MemberRole, TimelineStop, Trip, TripMember, User } from '../types/models'
@@ -41,6 +42,7 @@ import {
 } from '../utils/dateDisplay'
 import { useDebouncedCallback } from 'use-debounce'
 import { getAvatarUrl } from '../utils/userUtils'
+import { TabBar } from '../components/shared/TabBar'
 
 const MILLISECONDS_PER_DAY = 1000 * 60 * 60 * 24
 
@@ -209,35 +211,25 @@ function TimelineStopCard({ stop, isSelected, onSelect, canManage, onEdit, onRem
   const [isExpanded, setIsExpanded] = useState(false)
 
   return (
-    <div className="timeline-day-v2">
-      <div className="day-marker-v2" />
-      <div className={isSelected ? 'day-card-v2 is-selected' : 'day-card-v2'} onClick={onSelect} style={{ cursor: 'pointer' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-          <div style={{ flex: 1 }}>
-            <p className="eyebrow">Day {stop.startDay}{stop.startDay !== stop.endDay ? ` - ${stop.endDay}` : ''}</p>
-            <h3 style={{ margin: '0.2rem 0' }}>{stop.startingPoint} → {stop.endPoint}</h3>
-            <p style={{ fontSize: '0.85rem', color: 'var(--text-380)', marginBottom: stop.activities && stop.activities.length > 0 ? '1rem' : 0 }}>{stop.note}</p>
+    <TimelineDay>
+      <DayMarker />
+      <DayCardWrapper $selected={isSelected} onClick={onSelect}>
+        <TimelineCardInner>
+          <TimelineCardBody>
+            <Eyebrow>Day {stop.startDay}{stop.startDay !== stop.endDay ? ` - ${stop.endDay}` : ''}</Eyebrow>
+            <TimelineCardTitle>{stop.startingPoint} → {stop.endPoint}</TimelineCardTitle>
+            <TimelineCardNote $hasActivities={!!(stop.activities && stop.activities.length > 0)}>{stop.note}</TimelineCardNote>
 
-            <div className="activities-dropdown-v2" style={{ marginTop: '0.8rem' }}>
+            <ActivitiesDropdown>
               {(stop.activities && stop.activities.length > 0) ? (
                 <>
-                  <button
-                    className="btn btn-ghost btn-sm"
+                  <ActivitiesToggle
                     onClick={(e) => { e.stopPropagation(); setIsExpanded(!isExpanded); }}
-                    style={{
-                      gap: '0.5rem',
-                      background: 'rgba(255,255,255,0.05)',
-                      border: '1px solid var(--line-soft)',
-                      borderRadius: '8px',
-                      padding: '0.4rem 0.8rem',
-                      fontSize: '0.8rem',
-                      color: 'var(--text-100)'
-                    }}
                   >
-                    <FiActivity size={14} color="var(--primary-500)" />
+                    <FiActivity size={14} color="#17f702" />
                     {stop.activities.length} Activities
                     {isExpanded ? <FiChevronUp /> : <FiChevronDown />}
-                  </button>
+                  </ActivitiesToggle>
 
                   <AnimatePresence>
                     {isExpanded && (
@@ -247,67 +239,65 @@ function TimelineStopCard({ stop, isSelected, onSelect, canManage, onEdit, onRem
                         exit={{ height: 0, opacity: 0 }}
                         style={{ overflow: 'hidden' }}
                       >
-                        <div className="activities-list-v2" style={{ marginTop: '1rem', display: 'grid', gap: '0.75rem' }}>
+                        <ActivitiesList>
                           {stop.activities.map((activity, idx) => (
-                            <div key={idx} className="activity-item-v2" style={{ padding: '0.75rem', background: 'var(--bg-980)', borderRadius: '12px', border: '1px solid var(--line-soft)' }}>
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
-                                <h4 style={{ fontSize: '0.9rem', color: 'var(--text-100)', fontWeight: 600 }}>{activity.name}</h4>
-                                <span className="chip chip-static chip-sm" style={{ fontSize: '0.65rem', background: 'var(--surface-860)' }}>
+                            <ActivityCard key={idx}>
+                              <ActivityCardHeader>
+                                <ActivityCardTitle>{activity.name}</ActivityCardTitle>
+                                <StaticChipSmall>
                                   {typeof activity.type === 'number' ? ActivityTypeLabels[activity.type as ActivityType] : activity.type}
-                                </span>
-                              </div>
+                                </StaticChipSmall>
+                              </ActivityCardHeader>
                               {activity.description && (
-                                <p style={{ fontSize: '0.8rem', color: 'var(--text-380)', marginBottom: '0.5rem', lineHeight: '1.4' }}>{activity.description}</p>
+                                <ActivityCardDesc>{activity.description}</ActivityCardDesc>
                               )}
-                              <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                              <ActivityCardMeta>
                                 {activity.cost !== undefined && activity.cost !== null && activity.cost > 0 && (
-                                  <span style={{ fontSize: '0.75rem', color: 'var(--green-500)', display: 'flex', alignItems: 'center', gap: '0.25rem', fontWeight: 500 }}>
+                                  <ActivityCost>
                                     <FiDollarSign size={12} /> {activity.cost}
-                                  </span>
+                                  </ActivityCost>
                                 )}
                                 {activity.link && (
-                                  <a
+                                  <ActivityLink
                                     href={activity.link.startsWith('http') ? activity.link : `https://${activity.link}`}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    style={{ fontSize: '0.75rem', color: 'var(--primary-400)', display: 'flex', alignItems: 'center', gap: '0.25rem', textDecoration: 'none' }}
                                     onClick={e => e.stopPropagation()}
                                   >
                                     <FiExternalLink size={12} /> View Details
-                                  </a>
+                                  </ActivityLink>
                                 )}
-                              </div>
-                            </div>
+                              </ActivityCardMeta>
+                            </ActivityCard>
                           ))}
-                        </div>
+                        </ActivitiesList>
                       </motion.div>
                     )}
                   </AnimatePresence>
                 </>
               ) : canManage && (
-                <div style={{ fontSize: '0.75rem', color: 'var(--text-400)', fontStyle: 'italic', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                <NoActivities>
                   <FiActivity size={12} opacity={0.5} />
                   No activities planned for this stop.
-                </div>
+                </NoActivities>
               )}
-            </div>
-          </div>
+            </ActivitiesDropdown>
+          </TimelineCardBody>
           {canManage && (
-            <div className="invite-actions-v2" onClick={e => e.stopPropagation()}>
-              <button className="btn btn-ghost btn-sm" onClick={onEdit}>Edit</button>
-              <button
-                className="btn btn-ghost btn-sm"
-                style={{ color: 'var(--danger-500)' }}
+            <InviteActions onClick={e => e.stopPropagation()}>
+              <GhostButtonSm onClick={onEdit}>Edit</GhostButtonSm>
+              <GhostButtonSm
+                style={{ color: '#db4a5b' }}
                 disabled={isRemoving}
                 onClick={onRemove}
               >
                 {isRemoving ? 'Removing...' : 'Remove'}
-              </button>
-            </div>
+              </GhostButtonSm>
+            </InviteActions>
           )}
-        </div>
-      </div>
-    </div>
+        </TimelineCardInner>
+      </DayCardWrapper>
+    </TimelineDay>
   )
 }
 
@@ -346,17 +336,14 @@ export function TripPage() {
         console.log(nextTrip)
         setTrip(nextTrip)
         setFetchState('ready')
-        // Persist full trip to IndexedDB for offline access
         putTrip(nextTrip)
       } catch (err: unknown) {
         if (!isMounted) {
           return
         }
 
-        // Offline Fallback: Check network error
         const networkError = isNetworkError(err)
         if (!navigator.onLine || networkError) {
-          // 1st: Try the per-trip IndexedDB cache (full data with timelines + members)
           try {
             const cachedTrip = await getTrip(tripId)
             if (cachedTrip && isMounted) {
@@ -369,7 +356,6 @@ export function TripPage() {
             console.warn('[TripCache] Failed to read from IndexedDB:', cacheErr)
           }
 
-          // 2nd: Fall back to scanning get-all-trips (summary only, may lack timelines)
           try {
             const allRes = await api.get('api/trip/get-all-trips')
             const allTrips: Trip[] = allRes.data
@@ -404,42 +390,38 @@ export function TripPage() {
 
   if (!tripId || fetchState === 'not-found') {
     return (
-      <section className="page trip-page-v2 container">
-        <div className="discovery-empty-state">
-          <img src="/newstickers/sticker5.png" alt="" className="discovery-empty-sticker" />
-          <h1>Trip not found</h1>
-          <p>This trip room has been archived or the coordinates are invalid.</p>
-          <Link className="btn btn-primary" to="/app/discover">
-            Back to discovery
-          </Link>
-        </div>
-      </section>
+      <PageSection>
+        <EmptyStateWrapper>
+          <EmptySticker src="/newstickers/sticker5.png" alt="" />
+          <EmptyTitle>Trip not found</EmptyTitle>
+          <EmptyDesc>This trip room has been archived or the coordinates are invalid.</EmptyDesc>
+          <PrimaryLink to="/app/discover">Back to discovery</PrimaryLink>
+        </EmptyStateWrapper>
+      </PageSection>
     )
   }
 
   if (fetchState === 'loading') {
     return (
-      <section className="page trip-page-v2 container">
-        <div className="discovery-empty-state">
-          <h1>Loading your trip...</h1>
-          <p>We're getting everything ready for your next adventure.</p>
-        </div>
-      </section>
+      <PageSection>
+        <EmptyStateWrapper>
+          <EmptyTitle>Loading your trip...</EmptyTitle>
+          <EmptyDesc>We're getting everything ready for your next adventure.</EmptyDesc>
+        </EmptyStateWrapper>
+      </PageSection>
     )
   }
 
   if (fetchState === 'error') {
     return (
-      <section className="page trip-page-v2 container">
-        <div className="discovery-empty-state">
-          <img src="/newstickers/sticker6.png" alt="" className="discovery-empty-sticker" />
-          <h1>Communication error</h1>
-          <p>We lost contact with the server. Check your signal and try again.</p>
-          <Link className="btn btn-primary" to="/app/discover">
-            Back to discovery
-          </Link>
-        </div>
-      </section>
+      <PageSection>
+        <EmptyStateWrapper>
+          <EmptySticker src="/newstickers/sticker6.png" alt="" />
+          <EmptyTitle>Communication error</EmptyTitle>
+          <EmptyDesc>We lost contact with the server. Check your signal and try again.</EmptyDesc>
+          <PrimaryLink to="/app/discover">Back to discovery</PrimaryLink>
+        </EmptyStateWrapper>
+      </PageSection>
     )
   }
 
@@ -498,13 +480,11 @@ function TripPageContent({ trip }: TripPageContentProps) {
   const connectionRef = useRef<signalR.HubConnection | null>(null);
   const [activeTab, setActiveTab] = useState<TripWorkspaceTab>(() => {
     const requestedTab = searchParams.get('view')
-    // ownerTabs contains all possible valid keys
     return requestedTab && ownerTabs.some((tab) => tab.key === requestedTab)
       ? (requestedTab as TripWorkspaceTab)
       : 'overview'
   })
 
-  // Sync activeTab with URL
   useEffect(() => {
     const requestedTab = searchParams.get('view')
     const nextTab = requestedTab && ownerTabs.some((tab) => tab.key === requestedTab)
@@ -513,8 +493,9 @@ function TripPageContent({ trip }: TripPageContentProps) {
     if (nextTab !== activeTab) {
       setActiveTab(nextTab)
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- sync tab from URL only
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams])
+
   const [ownerTripDraft, setOwnerTripDraft] = useState<OwnerTripEditState>(
     createOwnerTripEditState(trip),
   )
@@ -532,11 +513,9 @@ function TripPageContent({ trip }: TripPageContentProps) {
   )
   const [members, setMembers] = useState<TripMember[]>(trip.members)
 
-  // Sync members only when the trip ID changes (initial load)
-  // Subsequent updates are handled locally in member action handlers
   useEffect(() => {
     setMembers(trip.members);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- reset members when switching trips only
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trip.id]);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([])
   const [newMessage, setNewMessage] = useState('')
@@ -607,25 +586,20 @@ function TripPageContent({ trip }: TripPageContentProps) {
     }
   }, [trip.id, token, baseURL])
 
-  // Pre-fetch OSRM routes + OpenTripMap attractions for offline use
   useEffect(() => {
     if (!timelines.length || !navigator.onLine) return
 
     const ATTRACTION_KINDS = 'interesting_places,foods,amusements,sport,accomodations,tourist_facilities'
-    // Bounding box half-size in degrees — roughly covers a ~5 km radius around the stop
     const BBOX_HALF = 0.05
 
     const prefetchAll = async () => {
       for (const stop of timelines) {
         try {
-          // 1. OSRM driving preview route
           const coordStr = `${stop.fromCoords[1]},${stop.fromCoords[0]};${stop.toCoords[1]},${stop.toCoords[0]}`
           await fetch(`https://router.project-osrm.org/route/v1/driving/${coordStr}?overview=full&geometries=geojson`)
 
-          // 2. OSRM route with navigation steps
           await fetch(`https://router.project-osrm.org/route/v1/driving/${coordStr}?overview=full&geometries=geojson&steps=true`)
 
-          // 3. Attractions around the destination
           const [destLat, destLon] = stop.toCoords
           const lonMin = Number((destLon - BBOX_HALF).toFixed(4))
           const latMin = Number((destLat - BBOX_HALF).toFixed(4))
@@ -633,7 +607,6 @@ function TripPageContent({ trip }: TripPageContentProps) {
           const latMax = Number((destLat + BBOX_HALF).toFixed(4))
           const bboxKey = `${lonMin},${latMin},${lonMax},${latMax}_${ATTRACTION_KINDS}`
 
-          // Only fetch if not already cached
           const already = await getCached(bboxKey)
           if (!already) {
             const places = await fetchPlacesInBBox(lonMin, latMin, lonMax, latMax, ATTRACTION_KINDS)
@@ -642,7 +615,6 @@ function TripPageContent({ trip }: TripPageContentProps) {
             }
           }
 
-          // 4. Basemap tiles around destination (z12–16)
           await prefetchAroundPoint(
             stop.toCoords[1],
             stop.toCoords[0],
@@ -651,7 +623,6 @@ function TripPageContent({ trip }: TripPageContentProps) {
             16,
           )
 
-          // 5. Route corridor tiles (z12–14)
           const corridor = corridorBounds(
             stop.fromCoords[1],
             stop.fromCoords[0],
@@ -660,9 +631,7 @@ function TripPageContent({ trip }: TripPageContentProps) {
             BBOX_HALF,
           )
           await prefetchBounds(corridor, 12, 14)
-        } catch {
-          // Ignore pre-fetch errors — non-critical background operation
-        }
+        } catch { void 0 }
       }
     }
     prefetchAll()
@@ -765,11 +734,23 @@ function TripPageContent({ trip }: TripPageContentProps) {
 
   const tabs = isAcceptedMember ? (canManageTripDetails ? ownerTabs : memberTabs) : visitorTabs
 
-  const selectTab = (nextTab: TripWorkspaceTab) => {
-    setActiveTab(nextTab) // Immediate UI update
+  const tabItems = tabs.map(t => ({
+    key: t.key,
+    label: t.label,
+    icon: <t.Icon size={16} />,
+  }))
+
+  const selectTab = (nextTab: string) => {
+    setActiveTab(nextTab as TripWorkspaceTab)
     const nextParams = new URLSearchParams(searchParams)
     nextParams.set('view', nextTab)
     setSearchParams(nextParams, { replace: true })
+
+    if (nextTab === 'map') {
+      requestAnimationFrame(() => {
+        window.dispatchEvent(new Event('resize'))
+      })
+    }
   }
 
   const handleTabKeyDown = (event: KeyboardEvent<HTMLButtonElement>, currentIndex: number) => {
@@ -793,7 +774,6 @@ function TripPageContent({ trip }: TripPageContentProps) {
     window.open(url, '_blank');
   };
 
-  // API Methods
   const handleOwnerDraftChange = (field: Exclude<keyof OwnerTripEditState, 'imageFile'>, value: string) => {
     setOwnerTripDraft((p) => ({ ...p, [field]: value }))
   }
@@ -854,7 +834,6 @@ function TripPageContent({ trip }: TripPageContentProps) {
 
       setTripDetailsFeedback({ tone: 'success', message: 'Trip details updated.' })
 
-      // Update SW cache and IndexedDB
       const finalTrip = updatedTrip || { ...tripDetails, ...ownerTripDraft }
       updateCachedResponse(`api/trip/get-trip/${tripDetails.id}`, finalTrip)
       putTrip({ ...tripDetails, ...finalTrip })
@@ -959,7 +938,6 @@ function TripPageContent({ trip }: TripPageContentProps) {
 
         setMembers(updatedMembers)
 
-        // Sync cache
         updateCachedResponse(`api/trip/get-trip/${tripDetails.id}`, { ...tripDetails, members: updatedMembers })
 
         setTripDetailsFeedback({ tone: 'success', message: `Response to ${member.username} will be processed later.` })
@@ -1081,7 +1059,6 @@ function TripPageContent({ trip }: TripPageContentProps) {
             setSelectedDay(next[0].startDay)
           }
 
-          // Sync updated timelines to IndexedDB
           putTrip({ ...tripDetails, timelines: next, members })
 
           return next
@@ -1105,7 +1082,6 @@ function TripPageContent({ trip }: TripPageContentProps) {
     setNewMessage('')
   }
 
-  // ── Export: PDF costs report ──────────────────────────────────────────────
   const [isExportingCosts, setIsExportingCosts] = useState(false)
 
   const handleExportCosts = async () => {
@@ -1130,7 +1106,6 @@ function TripPageContent({ trip }: TripPageContentProps) {
     }
   }
 
-  // ── Export: Google Calendar event ────────────────────────────────────────
   const exportToGoogleCalendar = () => {
     const format = (date: string) =>
       new Date(date).toISOString().replace(/-|:|\.\d{3}/g, '').slice(0, 8)
@@ -1162,109 +1137,110 @@ function TripPageContent({ trip }: TripPageContentProps) {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -12 }}
       transition={revealTransition}
-      className="trip-workspace-v2"
     >
-      <div className="trip-main-content">
-        <div className="day-card-v2" style={{ marginBottom: '2rem' }}>
-          <h3>Trip Summary</h3>
-          <p style={{ lineHeight: 1.6, color: 'var(--text-380)' }}>{tripDetails.description}</p>
-        </div>
+      <TripWorkspace>
+        <TripMainContent>
+          <DayCard style={{ marginBottom: '2rem' }}>
+            <CardSectionTitle>Trip Summary</CardSectionTitle>
+            <SummaryDesc>{tripDetails.description}</SummaryDesc>
+          </DayCard>
 
-        <div className="trip-stats-bar-v2">
-          <div className="trip-stat-v2">
-            <label>Timeline</label>
-            <span>{timelines.length} Days</span>
-          </div>
-          <div className="trip-stat-v2">
-            <label>Group Size</label>
-            <span>{acceptedMembers.length}/{tripDetails.maxParticipants} Explorers</span>
-          </div>
-          <div className="trip-stat-v2">
-            <label>Starting</label>
-            <span>{formatDisplayDate(tripDetails.startingDate)}</span>
-          </div>
-        </div>
+          <TripStatsBar>
+            <TripStat>
+              <StatLabel>Timeline</StatLabel>
+              <StatValue>{timelines.length} Days</StatValue>
+            </TripStat>
+            <TripStat>
+              <StatLabel>Group Size</StatLabel>
+              <StatValue>{acceptedMembers.length}/{tripDetails.maxParticipants} Explorers</StatValue>
+            </TripStat>
+            <TripStat>
+              <StatLabel>Starting</StatLabel>
+              <StatValue>{formatDisplayDate(tripDetails.startingDate)}</StatValue>
+            </TripStat>
+          </TripStatsBar>
 
-        <div className="builder-section-v2">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-            <h3>Route Preview</h3>
-            {currentStop && <span className="chip chip-static">{currentStop.startDay}{currentStop.startDay !== currentStop.endDay ? `-${currentStop.endDay}` : ''} OF {timelines.length}</span>}
-          </div>
+          <BuilderSection>
+            <BuilderSectionHeader>
+              <CardSectionTitle>Route Preview</CardSectionTitle>
+              {currentStop && <StaticChip>{currentStop.startDay}{currentStop.startDay !== currentStop.endDay ? `-${currentStop.endDay}` : ''} OF {timelines.length}</StaticChip>}
+            </BuilderSectionHeader>
 
-          {currentStop ? (
-            <div className="stop-row-v2" style={{ border: 'none' }}>
-              <div className="stop-connector-v2">
-                <div className="stop-dot-v2" style={{ background: 'var(--green-580)' }} />
-                <div className="stop-line-v2" />
-                <div className="stop-dot-v2" />
-              </div>
-              <div>
-                <h4 style={{ color: 'var(--text-100)', marginBottom: '0.4rem' }}>{currentStop.startingPoint} → {currentStop.endPoint}</h4>
-                <p style={{ fontSize: '0.85rem', color: 'var(--text-380)' }}>{currentStop.note}</p>
-                <div style={{ marginTop: '1rem', display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                  <span style={{ fontSize: '0.8rem', opacity: 0.5 }}>{selectedRouteDistanceKm.toFixed(1)} KM</span>
-                  <span className="dot" />
-                  <span style={{ fontSize: '0.8rem', opacity: 0.5 }}>{formatDisplayDate(currentStop.date)}</span>
+            {currentStop ? (
+              <StopRow>
+                <StopConnector>
+                  <StopDotFirst />
+                  <StopLine />
+                  <StopDot />
+                </StopConnector>
+                <div>
+                  <StopTitle>{currentStop.startingPoint} → {currentStop.endPoint}</StopTitle>
+                  <StopNote>{currentStop.note}</StopNote>
+                  <StopMeta>
+                    <StopMetaLabel>{selectedRouteDistanceKm.toFixed(1)} KM</StopMetaLabel>
+                    <DotDivider />
+                    <StopMetaLabel>{formatDisplayDate(currentStop.date)}</StopMetaLabel>
+                  </StopMeta>
                 </div>
-              </div>
-            </div>
-          ) : (
-            <p className="empty-note">No coordinates mapped yet.</p>
-          )}
+              </StopRow>
+            ) : (
+              <EmptyNote>No coordinates mapped yet.</EmptyNote>
+            )}
 
-          <div className="trip-overview-map" style={{ height: '300px', borderRadius: '16px', overflow: 'hidden', marginTop: '2rem', position: 'relative' }}>
-            <TripRouteMap timeline={timelines} selectedDay={selectedDay} showOverlay={false} />
-          </div>
+            <OverviewMapContainer>
+              <TripRouteMap timeline={timelines} selectedDay={selectedDay} showOverlay={false} />
+            </OverviewMapContainer>
 
-          {currentStop && (
-            <div style={{ marginTop: '1.5rem', display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
-              <button onClick={() => openExternalMap('google')} className="btn btn-ghost" style={{ background: 'var(--surface-860)', color: 'var(--text-220)', gap: '0.6rem', border: '1px solid var(--surface-820)', borderRadius: '12px' }}>
-                <SiGooglemaps size={18} style={{ color: '#4285F4' }} /> Google Maps
-              </button>
-              <button onClick={() => openExternalMap('waze')} className="btn btn-ghost" style={{ background: 'var(--surface-860)', color: 'var(--text-220)', gap: '0.6rem', border: '1px solid var(--surface-820)', borderRadius: '12px' }}>
-                <SiWaze size={18} style={{ color: '#33CCFF' }} /> Waze
-              </button>
-              <button onClick={() => openExternalMap('apple')} className="btn btn-ghost" style={{ background: 'var(--surface-860)', color: 'var(--text-220)', gap: '0.6rem', border: '1px solid var(--surface-820)', borderRadius: '12px' }}>
-                <SiApple size={18} style={{ color: '#FFFFFF' }} /> Apple Maps
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
+            {currentStop && (
+              <ExternalMapRow>
+                <ExternalMapButton onClick={() => openExternalMap('google')}>
+                  <SiGooglemaps size={18} style={{ color: '#4285F4' }} /> Google Maps
+                </ExternalMapButton>
+                <ExternalMapButton onClick={() => openExternalMap('waze')}>
+                  <SiWaze size={18} style={{ color: '#33CCFF' }} /> Waze
+                </ExternalMapButton>
+                <ExternalMapButton onClick={() => openExternalMap('apple')}>
+                  <SiApple size={18} style={{ color: '#FFFFFF' }} /> Apple Maps
+                </ExternalMapButton>
+              </ExternalMapRow>
+            )}
+          </BuilderSection>
+        </TripMainContent>
 
-      <aside className="trip-sidebar-v2">
-        <div className="day-card-v2">
-          <h3>Your Access</h3>
-          {viewerParticipationState === 'accepted' ? (
-            <p className="empty-note" style={{ marginTop: '0.75rem' }}>
-              You are part of this trip.
-            </p>
-          ) : viewerParticipationState === 'invited' ? (
-            <p className="empty-note" style={{ marginTop: '0.75rem' }}>
-              You have an invitation to join this trip.
-            </p>
-          ) : viewerParticipationState === 'requested' ? (
-            <p className="empty-note" style={{ marginTop: '0.75rem' }}>
-              Your join request is pending review.
-            </p>
-          ) : authenticatedUser ? (
-            <button className="btn btn-primary" onClick={handleRequestToJoin} disabled={isRequestingAccess}>
-              {isRequestingAccess ? 'Requesting...' : 'Request to join'}
-            </button>
-          ) : (
-            <Link className="btn btn-primary" to="/login">
-              Log in to request access
-            </Link>
-          )}
-        </div>
-        <div className="day-card-v2">
-          <h3>Tags</h3>
-          <div className="chip-row" style={{ marginTop: '1rem' }}>
-            {tripDetails.tags.map(t => <span key={t} className="chip chip-static chip-sm">{t}</span>)}
-          </div>
-        </div>
-        <img src="/newstickers/sticker2.png" alt="" style={{ width: '100%', marginTop: '2rem', opacity: 0.6 }} />
-      </aside>
+        <TripSidebar>
+          <DayCard>
+            <CardSectionTitle>Your Access</CardSectionTitle>
+            {viewerParticipationState === 'accepted' ? (
+              <EmptyNote style={{ marginTop: '0.75rem' }}>
+                You are part of this trip.
+              </EmptyNote>
+            ) : viewerParticipationState === 'invited' ? (
+              <EmptyNote style={{ marginTop: '0.75rem' }}>
+                You have an invitation to join this trip.
+              </EmptyNote>
+            ) : viewerParticipationState === 'requested' ? (
+              <EmptyNote style={{ marginTop: '0.75rem' }}>
+                Your join request is pending review.
+              </EmptyNote>
+            ) : authenticatedUser ? (
+              <PrimaryButton onClick={handleRequestToJoin} disabled={isRequestingAccess}>
+                {isRequestingAccess ? 'Requesting...' : 'Request to join'}
+              </PrimaryButton>
+            ) : (
+              <PrimaryLink to="/login">
+                Log in to request access
+              </PrimaryLink>
+            )}
+          </DayCard>
+          <DayCard>
+            <CardSectionTitle>Tags</CardSectionTitle>
+            <ChipRow>
+              {tripDetails.tags.map(t => <StaticChipSmall key={t}>{t}</StaticChipSmall>)}
+            </ChipRow>
+          </DayCard>
+          <SidebarSticker src="/newstickers/sticker2.png" alt="" />
+        </TripSidebar>
+      </TripWorkspace>
     </motion.div>
   )
 
@@ -1275,74 +1251,59 @@ function TripPageContent({ trip }: TripPageContentProps) {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -12 }}
       transition={revealTransition}
-      className="trip-workspace-v2"
     >
-      <div className="trip-main-content">
+      <TripWorkspace>
+        <TripMainContent>
 
-        {/* ── Export Action Strip ── */}
-        <div style={{
-          display: 'flex',
-          flexWrap: 'wrap',
-          gap: '0.75rem',
-          padding: '1rem 1.25rem',
-          background: 'linear-gradient(135deg, rgba(17,34,26,0.7), rgba(9,18,13,0.6))',
-          border: '1px solid var(--line-soft)',
-          borderRadius: 'var(--radius-md)',
-          alignItems: 'center',
-        }}>
-          <span style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-380)', letterSpacing: '0.08em', textTransform: 'uppercase', marginRight: 'auto' }}>
-            Export
-          </span>
-          <button
-            className="btn btn-ghost btn-sm"
-            style={{ gap: '0.5rem', border: '1px solid var(--line-soft)' }}
-            onClick={handleExportCosts}
-            disabled={isExportingCosts}
-            title="Download a PDF report of all activity costs"
-          >
-            {isExportingCosts ? (
-              <span className="inline-spinner" />
-            ) : (
-              <FiDownload size={15} />
+          <ExportStrip>
+            <ExportStripLabel>Export</ExportStripLabel>
+            <ExportButton
+              onClick={handleExportCosts}
+              disabled={isExportingCosts}
+              title="Download a PDF report of all activity costs"
+            >
+              {isExportingCosts ? (
+                <InlineSpinner />
+              ) : (
+                <FiDownload size={15} />
+              )}
+              {isExportingCosts ? 'Exporting...' : 'Export Costs (PDF)'}
+            </ExportButton>
+            <ExportButton
+              onClick={exportToGoogleCalendar}
+              title="Add this trip to Google Calendar"
+            >
+              <FiCalendar size={15} style={{ color: '#4285F4' }} />
+              Add to Google Calendar
+            </ExportButton>
+          </ExportStrip>
+
+          <TimelineFlow>
+            {timelines.map((stop) => (
+              <TimelineStopCard
+                key={stop.id}
+                stop={stop}
+                isSelected={selectedDay === stop.startDay}
+                onSelect={() => setSelectedDay(stop.startDay)}
+                canManage={canManageTimelines}
+                onEdit={() => navigate(`/app/edit-timeline/${trip.id}/${stop.id}`)}
+                onRemove={() => handleRemoveTimeline(stop.id)}
+                isRemoving={isRemovingTimelineId === stop.id}
+              />
+            ))}
+            {canManageTimelines && (
+              <PrimaryButton onClick={() => navigate(`/app/add-timeline/${trip.id}`)}>
+                <FiPlusCircle /> Add Day
+              </PrimaryButton>
             )}
-            {isExportingCosts ? 'Exporting...' : 'Export Costs (PDF)'}
-          </button>
-          <button
-            className="btn btn-ghost btn-sm"
-            style={{ gap: '0.5rem', border: '1px solid var(--line-soft)' }}
-            onClick={exportToGoogleCalendar}
-            title="Add this trip to Google Calendar"
-          >
-            <FiCalendar size={15} style={{ color: '#4285F4' }} />
-            Add to Google Calendar
-          </button>
-        </div>
-
-        <div className="timeline-flow-v2">
-          {timelines.map((stop) => (
-            <TimelineStopCard
-              key={stop.id}
-              stop={stop}
-              isSelected={selectedDay === stop.startDay}
-              onSelect={() => setSelectedDay(stop.startDay)}
-              canManage={canManageTimelines}
-              onEdit={() => navigate(`/app/edit-timeline/${trip.id}/${stop.id}`)}
-              onRemove={() => handleRemoveTimeline(stop.id)}
-              isRemoving={isRemovingTimelineId === stop.id}
-            />
-          ))}
-          {canManageTimelines && (
-            <button className="btn btn-primary" onClick={() => navigate(`/app/add-timeline/${trip.id}`)}>
-              <FiPlusCircle /> Add Day
-            </button>
-          )}
-        </div>
-      </div>
-      <div className="trip-sidebar-v2" style={{ position: 'sticky', top: '2rem' }}>
-        <div className="day-card-v2" style={{ padding: 0, height: '600px', overflow: 'hidden' }}>
-          <TripRouteMap timeline={timelines} selectedDay={selectedDay} />
-        </div>
-      </div>
+          </TimelineFlow>
+        </TripMainContent>
+        <TripSidebarSticky>
+          <DayCard style={{ padding: 0, height: '600px', overflow: 'hidden' }}>
+            <TripRouteMap timeline={timelines} selectedDay={selectedDay} />
+          </DayCard>
+        </TripSidebarSticky>
+      </TripWorkspace>
     </motion.div>
   )
 
@@ -1354,60 +1315,56 @@ function TripPageContent({ trip }: TripPageContentProps) {
       exit={{ opacity: 0, y: -12 }}
       transition={revealTransition}
     >
-      <div className="profile-section-v2" style={{ marginBottom: '2rem' }}>
-        <div className="trip-members-head-v2">
+      <ProfileSection>
+        <MembersHead>
           <div>
-            <h3>The Trip Team</h3>
-            <p>Collaborators and explorers currently in the room.</p>
+            <CardSectionTitle>The Trip Team</CardSectionTitle>
+            <SectionDesc>Collaborators and explorers currently in the room.</SectionDesc>
           </div>
           {canInviteMembers && (
-            <button className="btn btn-primary invite-btn-mobile" onClick={() => setIsInviteModalOpen(true)}>
+            <PrimaryButton onClick={() => setIsInviteModalOpen(true)}>
               <FiUserPlus /> Invite Explorer
-            </button>
+            </PrimaryButton>
           )}
-        </div>
-      </div>
+        </MembersHead>
+      </ProfileSection>
 
-      <div className="discovery-grid">
+      <DiscoveryGrid>
         {acceptedMembers.map((m) => (
-          <div key={m.id} className="history-row-v2" style={{ background: 'var(--surface-860)', gridTemplateColumns: '60px 1fr auto' }}>
-            <img src={getAvatarUrl(m.username, m.avatarUrl)} alt="" className="avatar" style={{ width: '50px', height: '50px', borderRadius: '14px', objectFit: 'cover' }} />
+          <HistoryRow key={m.id}>
+            <MemberAvatar src={getAvatarUrl(m.username, m.avatarUrl)} alt="" />
             <div>
-              <h4 style={{ color: 'var(--text-100)' }}>{m.username}</h4>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <p className="eyebrow" style={{ fontSize: '0.65rem' }}>{normalizeMemberRole(m.role)}</p>
+              <MemberName>{m.username}</MemberName>
+              <MemberRoleRow>
+                <Eyebrow style={{ fontSize: '0.65rem' }}>{normalizeMemberRole(m.role)}</Eyebrow>
                 {canEditMemberRoles && normalizeMemberRole(m.role) !== 'owner' && (
-                  <select
-                    className="input-trigger"
-                    style={{ fontSize: '0.65rem', padding: '0.1rem 0.4rem', background: 'var(--surface-860)', border: '1px solid var(--line-soft)', borderRadius: '4px', color: 'var(--green-580)' }}
+                  <RoleSelect
                     value={normalizeMemberRole(m.role)}
                     disabled={isUpdatingRoleMemberId === m.id || isRemovingMemberId === m.id}
                     onChange={(e) => handleRoleChange(m.id, e.target.value as MemberRole)}
                   >
                     <option value="admin">Admin</option>
                     <option value="member">Member</option>
-                  </select>
+                  </RoleSelect>
                 )}
-              </div>
+              </MemberRoleRow>
             </div>
             {canRemoveMembers && normalizeMemberRole(m.role) !== 'owner' && (
-              <button
-                className="btn btn-ghost btn-sm"
-                style={{ color: 'var(--danger-500)' }}
+              <RemoveButton
                 disabled={isRemovingMemberId === m.id}
                 onClick={() => handleRemove(m.id)}
               >
                 {isRemovingMemberId === m.id ? 'Removing...' : 'Remove'}
-              </button>
+              </RemoveButton>
             )}
-          </div>
+          </HistoryRow>
         ))}
-      </div>
+      </DiscoveryGrid>
 
       {pendingMembers.length > 0 && (
-        <div className="profile-section-v2" style={{ marginTop: '1.5rem' }}>
-          <h3>Pending participants</h3>
-          <div className="discovery-grid" style={{ marginTop: '1rem' }}>
+        <ProfileSection style={{ marginTop: '1.5rem' }}>
+          <CardSectionTitle>Pending participants</CardSectionTitle>
+          <DiscoveryGrid style={{ marginTop: '1rem' }}>
             {pendingMembers.map((m) => {
               const memberRecord = m as unknown as Record<string, unknown>
               const memberStatusLabel = getTripMemberStatusLabel(
@@ -1415,38 +1372,35 @@ function TripPageContent({ trip }: TripPageContentProps) {
               )
 
               return (
-                <div key={m.id} className="history-row-v2" style={{ background: 'var(--surface-860)', gridTemplateColumns: '60px 1fr auto' }}>
-                  <img src={getAvatarUrl(m.username, m.avatarUrl)} alt="" className="avatar" style={{ width: '50px', height: '50px', borderRadius: '14px', objectFit: 'cover' }} />
-                  <div className="member-info-v2">
-                    <h4 style={{ color: 'var(--text-100)' }}>{m.username}</h4>
-                    <div className="member-status-row-v2">
-                      <p className="eyebrow" style={{ fontSize: '0.65rem' }}>{memberStatusLabel}</p>
+                <HistoryRow key={m.id}>
+                  <MemberAvatar src={getAvatarUrl(m.username, m.avatarUrl)} alt="" />
+                  <MemberInfo>
+                    <MemberName>{m.username}</MemberName>
+                    <MemberStatusRow>
+                      <Eyebrow style={{ fontSize: '0.65rem' }}>{memberStatusLabel}</Eyebrow>
                       {memberStatusLabel === 'Waiting for approval' && canInviteMembers && (
-                        <div className="member-actions-v2">
-                          <button
-                            className="btn btn-primary btn-sm"
+                        <MemberActions>
+                          <PrimaryButtonSm
                             disabled={isProcessingRequestMemberId === m.id}
                             onClick={() => handleRespondToRequest(m, 'Accepted')}
                           >
                             {isProcessingRequestMemberId === m.id ? 'Processing...' : 'Accept'}
-                          </button>
-                          <button
-                            className="btn btn-ghost btn-sm"
+                          </PrimaryButtonSm>
+                          <DeclineButton
                             disabled={isProcessingRequestMemberId === m.id}
                             onClick={() => handleRespondToRequest(m, 'Declined')}
-                            style={{ color: 'var(--danger-500)' }}
                           >
                             Decline
-                          </button>
-                        </div>
+                          </DeclineButton>
+                        </MemberActions>
                       )}
-                    </div>
-                  </div>
-                </div>
+                    </MemberStatusRow>
+                  </MemberInfo>
+                </HistoryRow>
               )
             })}
-          </div>
-        </div>
+          </DiscoveryGrid>
+        </ProfileSection>
       )}
     </motion.div>
   )
@@ -1458,42 +1412,39 @@ function TripPageContent({ trip }: TripPageContentProps) {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -12 }}
       transition={revealTransition}
-      className="ai-chat-v2 trip-chat-v2"
     >
-      <div className="ai-thread-v2">
-        {chatMessages.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '4rem 0' }}>
-            <img src="/newstickers/sticker3.png" alt="" style={{ width: '120px', opacity: 0.4 }} />
-            <p className="empty-note">Chat is quiet. Start the conversation.</p>
-          </div>
-        ) : (
-          chatMessages.map(msg => (
-            <div
-              key={msg.id}
-              className={msg.username === authenticatedUser?.username ? 'ai-bubble-v2 user' : 'ai-bubble-v2 assistant'}
-            >
-              <header className="bubble-header" style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                <img
-                  src={getAvatarUrl(msg.username, msg.profileUrl)}
-                  alt=""
-                  style={{ width: '20px', height: '20px', borderRadius: '50%', objectFit: 'cover' }}
-                />
-                <span>{msg.username}</span>
-              </header>
-              <p>{msg.content}</p>
-              <span style={{ fontSize: '0.65rem', opacity: 0.4, float: 'right', marginTop: '0.3rem' }}>
-                {new Date(msg.sentAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-              </span>
-            </div>
-          ))
-        )}
-      </div>
-      <form className="ai-composer-v2" onSubmit={sendMessage}>
-        <div className="ai-composer-input-v2">
-          <input className="input" placeholder="Broadcast a signal to the team..." value={newMessage} onChange={e => setNewMessage(e.target.value)} />
-          <button className="btn btn-primary" type="submit">Send</button>
-        </div>
-      </form>
+      <ChatContainer>
+        <ChatThread>
+          {chatMessages.length === 0 ? (
+            <ChatEmpty>
+              <ChatEmptySticker src="/newstickers/sticker3.png" alt="" />
+              <EmptyNote>Chat is quiet. Start the conversation.</EmptyNote>
+            </ChatEmpty>
+          ) : (
+            chatMessages.map(msg => (
+              <ChatBubble key={msg.id} $isOwn={msg.username === authenticatedUser?.username}>
+                <ChatBubbleHeader>
+                  <ChatAvatar
+                    src={getAvatarUrl(msg.username, msg.profileUrl)}
+                    alt=""
+                  />
+                  <span>{msg.username}</span>
+                </ChatBubbleHeader>
+                <p>{msg.content}</p>
+                <ChatTime>
+                  {new Date(msg.sentAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </ChatTime>
+              </ChatBubble>
+            ))
+          )}
+        </ChatThread>
+        <ChatComposer onSubmit={sendMessage}>
+          <ChatComposerRow>
+            <ChatInput placeholder="Broadcast a signal to the team..." value={newMessage} onChange={e => setNewMessage(e.target.value)} />
+            <PrimaryButton type="submit">Send</PrimaryButton>
+          </ChatComposerRow>
+        </ChatComposer>
+      </ChatContainer>
     </motion.div>
   )
 
@@ -1505,69 +1456,69 @@ function TripPageContent({ trip }: TripPageContentProps) {
       exit={{ opacity: 0, y: -12 }}
       transition={revealTransition}
     >
-      <form className="builder-form-v2" onSubmit={saveOwnerTripDetails}>
-        <div className="builder-section-v2">
-          <h3>Trip Info</h3>
-          <div style={{ display: 'grid', gridTemplateColumns: '240px 1fr', gap: '2rem', marginBottom: '2rem' }}>
-            <label className="avatar-wrapper-v2" style={{ width: '240px', height: '160px', borderRadius: '24px' }}>
-              <img src={ownerTripDraft.imagePreviewUrl} alt="" className="avatar-preview-v2" />
-              <div className="avatar-upload-overlay-v2">
+      <BuilderForm onSubmit={saveOwnerTripDetails}>
+        <BuilderSection>
+          <CardSectionTitle>Trip Info</CardSectionTitle>
+          <SettingsInfoGrid>
+            <AvatarUploadWrapper>
+              <AvatarPreview src={ownerTripDraft.imagePreviewUrl} alt="" />
+              <AvatarUploadOverlay>
                 <FiUploadCloud size={24} />
                 <span>Upload Cover</span>
-              </div>
-              <input type="file" className="visually-hidden" accept="image/*" onChange={handleImageUpload} />
-            </label>
-            <div style={{ display: 'grid', gap: '1.5rem', flex: 1 }}>
-              <div className="form-group">
-                <label className="field-label">Workspace Title</label>
-                <input className="input" value={ownerTripDraft.title} onChange={e => handleOwnerDraftChange('title', e.target.value)} />
-              </div>
-              <div className="form-group">
-                <label className="field-label">Trip Status</label>
-                <select className="input" value={ownerTripDraft.status} onChange={e => handleOwnerDraftChange('status', e.target.value)}>
+              </AvatarUploadOverlay>
+              <HiddenInput type="file" accept="image/*" onChange={handleImageUpload} />
+            </AvatarUploadWrapper>
+            <SettingsFieldsColumn>
+              <FormGroup>
+                <FieldLabel>Workspace Title</FieldLabel>
+                <TextInput value={ownerTripDraft.title} onChange={e => handleOwnerDraftChange('title', e.target.value)} />
+              </FormGroup>
+              <FormGroup>
+                <FieldLabel>Trip Status</FieldLabel>
+                <StyledSelect value={ownerTripDraft.status} onChange={e => handleOwnerDraftChange('status', e.target.value)}>
                   <option value="Upcoming">Upcoming</option>
                   <option value="Started">Started</option>
                   <option value="Finished">Finished</option>
-                </select>
-              </div>
-            </div>
-          </div>
-          <div className="form-group" style={{ marginTop: '1.5rem' }}>
-            <label className="field-label">Mission Briefing</label>
-            <textarea className="input" rows={4} value={ownerTripDraft.description} onChange={e => handleOwnerDraftChange('description', e.target.value)} />
-          </div>
-        </div>
+                </StyledSelect>
+              </FormGroup>
+            </SettingsFieldsColumn>
+          </SettingsInfoGrid>
+          <FormGroup style={{ marginTop: '1.5rem' }}>
+            <FieldLabel>Mission Briefing</FieldLabel>
+            <TextArea rows={4} value={ownerTripDraft.description} onChange={e => handleOwnerDraftChange('description', e.target.value)} />
+          </FormGroup>
+        </BuilderSection>
 
-        <div className="builder-section-v2">
-          <h3>Chronology & Capacity</h3>
-          <div className="builder-grid-v2">
-            <div className="form-group">
-              <label className="field-label">Starting Sync</label>
-              <input className="input" type="date" value={ownerTripDraft.startingDate} onChange={e => handleOwnerDraftChange('startingDate', e.target.value)} />
-            </div>
-            <div className="form-group">
-              <label className="field-label">Ending Sync</label>
-              <input className="input" type="date" value={ownerTripDraft.endingDate} onChange={e => handleOwnerDraftChange('endingDate', e.target.value)} />
-            </div>
-          </div>
-          <div className="form-group" style={{ marginTop: '1.5rem', maxWidth: '300px' }}>
-            <label className="field-label">Explorer Capacity</label>
-            <input className="input" type="number" value={ownerTripDraft.maxParticipants} onChange={e => handleOwnerDraftChange('maxParticipants', e.target.value)} />
-          </div>
-        </div>
+        <BuilderSection>
+          <CardSectionTitle>Chronology & Capacity</CardSectionTitle>
+          <BuilderGrid>
+            <FormGroup>
+              <FieldLabel>Starting Sync</FieldLabel>
+              <TextInput type="date" value={ownerTripDraft.startingDate} onChange={e => handleOwnerDraftChange('startingDate', e.target.value)} />
+            </FormGroup>
+            <FormGroup>
+              <FieldLabel>Ending Sync</FieldLabel>
+              <TextInput type="date" value={ownerTripDraft.endingDate} onChange={e => handleOwnerDraftChange('endingDate', e.target.value)} />
+            </FormGroup>
+          </BuilderGrid>
+          <FormGroup style={{ marginTop: '1.5rem', maxWidth: '300px' }}>
+            <FieldLabel>Explorer Capacity</FieldLabel>
+            <TextInput type="number" value={ownerTripDraft.maxParticipants} onChange={e => handleOwnerDraftChange('maxParticipants', e.target.value)} />
+          </FormGroup>
+        </BuilderSection>
 
-        <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end', alignItems: 'center' }}>
+        <SettingsActions>
           {tripDetailsFeedback && (
-            <span className={`info-banner ${tripDetailsFeedback.tone}`} style={{ padding: '0.4rem 0.8rem', margin: 0, fontSize: '0.85rem' }}>
+            <InfoBanner $tone={tripDetailsFeedback.tone}>
               {tripDetailsFeedback.message}
-            </span>
+            </InfoBanner>
           )}
-          <button className="btn btn-ghost" type="button" onClick={resetOwnerTripDraft}>Reset</button>
-          <button className="btn btn-primary btn-lg" type="submit" disabled={isSavingTripDetails}>
+          <GhostButton type="button" onClick={resetOwnerTripDraft}>Reset</GhostButton>
+          <PrimaryButtonLg type="submit" disabled={isSavingTripDetails}>
             {isSavingTripDetails ? 'Syncing...' : 'Save Workspace'}
-          </button>
-        </div>
-      </form>
+          </PrimaryButtonLg>
+        </SettingsActions>
+      </BuilderForm>
     </motion.div>
   )
 
@@ -1579,69 +1530,65 @@ function TripPageContent({ trip }: TripPageContentProps) {
       exit={{ opacity: 0, y: -12 }}
       transition={revealTransition}
     >
-      <div className="profile-section-v2" style={{ marginBottom: '2rem' }}>
+      <ProfileSection style={{ marginBottom: '2rem' }}>
         <div>
-          <h3>Trip History</h3>
-          <p>Chronological log of updates and milestones for this journey.</p>
+          <CardSectionTitle>Trip History</CardSectionTitle>
+          <SectionDesc>Chronological log of updates and milestones for this journey.</SectionDesc>
         </div>
-      </div>
+      </ProfileSection>
 
-      <div className="discovery-grid">
+      <DiscoveryGrid>
         {tripDetails.history && tripDetails.history.length > 0 ? (
           [...tripDetails.history].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map((h) => (
-            <div key={h.id} className="history-row-v2" style={{ background: 'var(--surface-860)', gridTemplateColumns: '1fr auto', padding: '1.25rem' }}>
+            <HistoryRowWide key={h.id}>
               <div>
-                <p style={{ color: 'var(--text-100)', fontSize: '1rem', marginBottom: '0.4rem' }}>{h.content}</p>
-                <p className="eyebrow" style={{ fontSize: '0.75rem', opacity: 0.6 }}>
-                  {formatDisplayDate(h.date)}
-                </p>
+                <HistoryContent>{h.content}</HistoryContent>
+                <HistoryDate>{formatDisplayDate(h.date)}</HistoryDate>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center' }}>
+              <HistoryIcon>
                 <FiClock style={{ opacity: 0.3 }} />
-              </div>
-            </div>
+              </HistoryIcon>
+            </HistoryRowWide>
           ))
         ) : (
-          <div style={{ textAlign: 'center', padding: '4rem 0', gridColumn: '1 / -1' }}>
-            <img src="/newstickers/sticker4.png" alt="" style={{ width: '120px', opacity: 0.4 }} />
-            <p className="empty-note">No history logs recorded yet.</p>
-          </div>
+          <HistoryEmpty>
+            <ChatEmptySticker src="/newstickers/sticker4.png" alt="" />
+            <EmptyNote>No history logs recorded yet.</EmptyNote>
+          </HistoryEmpty>
         )}
-      </div>
+      </DiscoveryGrid>
     </motion.div>
   )
 
   return (
-    <section className="page trip-page-v2 container">
-      <header className="trip-hero-v2">
-        <img src={tripDetails.imageUrl} alt="" className="trip-hero-img-v2" />
-        <div className="trip-hero-overlay-v2">
-          <div className="trip-hero-meta-v2">
-            <span className="chip chip-static">{tripDetails.status}</span>
-            <span className="chip chip-static">{formatDisplayDateRange(tripDetails.startingDate, tripDetails.endingDate)}</span>
+    <PageSection>
+      <TripHero>
+        <TripHeroImg src={tripDetails.imageUrl} alt="" />
+        <TripHeroOverlay>
+          <TripHeroMeta>
+            <StaticChip>{tripDetails.status}</StaticChip>
+            <StaticChip>{formatDisplayDateRange(tripDetails.startingDate, tripDetails.endingDate)}</StaticChip>
             {!isAcceptedMember && viewerParticipationState !== 'visitor' && (
-              <span className="chip chip-static">
+              <StaticChip>
                 {viewerParticipationState === 'invited' ? 'Invitation pending' : 'Request pending'}
-              </span>
+              </StaticChip>
             )}
-          </div>
-          <h1>{tripDetails.title}</h1>
-        </div>
-      </header>
+          </TripHeroMeta>
+          <TripHeroTitle>{tripDetails.title}</TripHeroTitle>
+        </TripHeroOverlay>
+      </TripHero>
 
-      <nav className="profile-tab-bar-v2" style={{ marginBottom: '3rem' }}>
-        {tabs.map((tab, idx) => (
-          <button
-            key={tab.key}
-            className={activeTab === tab.key ? 'profile-tab-btn-v2 is-active' : 'profile-tab-btn-v2'}
-            onClick={() => selectTab(tab.key)}
-            onKeyDown={e => handleTabKeyDown(e, idx)}
-          >
-            <span className="tab-icon-mobile"><tab.Icon /></span>
-            <span className="tab-label-desktop">{tab.label}</span>
-          </button>
-        ))}
-      </nav>
+      <TabBarWrapper onKeyDown={e => {
+        const currentIndex = tabs.findIndex(t => t.key === activeTab)
+        handleTabKeyDown(e as unknown as KeyboardEvent<HTMLButtonElement>, currentIndex)
+      }}>
+        <TabBar
+          tabs={tabItems}
+          activeTab={activeTab}
+          onChange={selectTab}
+          variant="pill"
+        />
+      </TabBarWrapper>
 
       <AnimatePresence mode="popLayout">
         {activeTab === 'overview' && renderOverview()}
@@ -1652,41 +1599,1159 @@ function TripPageContent({ trip }: TripPageContentProps) {
         {activeTab === 'history' && renderHistory()}
       </AnimatePresence>
 
-      {/* Invite Modal */}
       <AnimatePresence>
         {isInviteModalOpen && (
-          <div className="modal-scrim" onClick={() => setIsInviteModalOpen(false)}>
-            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="builder-section-v2" style={{ width: '100%', maxWidth: '500px', background: 'var(--bg-900)' }} onClick={e => e.stopPropagation()}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2rem' }}>
-                <h3>Invite Explorer</h3>
-                <button className="btn btn-ghost btn-sm" onClick={() => setIsInviteModalOpen(false)}><FiX /></button>
-              </div>
-              <input className="input" placeholder="Search by username..." value={inviteUsernameQuery} onChange={e => { setInviteUsernameQuery(e.target.value); debounceSearchInviteCanditate(e.target.value); }} />
+          <ModalScrim onClick={() => setIsInviteModalOpen(false)}>
+            <InviteModal onClick={e => e.stopPropagation()}>
+              <InviteModalHeader>
+                <CardSectionTitle>Invite Explorer</CardSectionTitle>
+                <GhostButtonSm onClick={() => setIsInviteModalOpen(false)}><FiX /></GhostButtonSm>
+              </InviteModalHeader>
+              <TextInput placeholder="Search by username..." value={inviteUsernameQuery} onChange={e => { setInviteUsernameQuery(e.target.value); debounceSearchInviteCanditate(e.target.value); }} />
               {isSearchingInviteUser ? (
-                <p className="empty-note" style={{ marginTop: '0.75rem' }}>Searching users...</p>
+                <EmptyNote style={{ marginTop: '0.75rem' }}>Searching users...</EmptyNote>
               ) : null}
 
-              <div style={{ marginTop: '2rem', display: 'grid', gap: '1rem' }}>
+              <CandidateList>
                 {candidates.map(c => (
-                  <div key={c.id} className="history-row-v2" style={{ gridTemplateColumns: '40px 1fr auto', padding: '0.6rem' }}>
-                    <img src={c.profileUrl || '/newstickers/sticker1.png'} alt="" style={{ width: '30px', height: '30px', borderRadius: '8px' }} />
-                    <span style={{ fontSize: '0.9rem' }}>{c.username}</span>
-                    <button
-                      className="btn btn-primary btn-sm"
+                  <CandidateRow key={c.id}>
+                    <CandidateAvatar src={c.profileUrl || '/newstickers/sticker1.png'} alt="" />
+                    <CandidateName>{c.username}</CandidateName>
+                    <PrimaryButtonSm
                       disabled={isInvitingUserId === String(c.id)}
                       onClick={() => handleInviteAction(c)}
                     >
                       {isInvitingUserId === String(c.id) ? 'Inviting...' : 'Invite'}
-                    </button>
-                  </div>
+                    </PrimaryButtonSm>
+                  </CandidateRow>
                 ))}
-              </div>
-              {inviteFeedback && <p className={`info-banner ${inviteFeedback.tone}`} style={{ marginTop: '1rem' }}>{inviteFeedback.message}</p>}
-            </motion.div>
-          </div>
+              </CandidateList>
+              {inviteFeedback && <InfoBanner $tone={inviteFeedback.tone} style={{ marginTop: '1rem' }}>{inviteFeedback.message}</InfoBanner>}
+            </InviteModal>
+          </ModalScrim>
         )}
       </AnimatePresence>
-    </section>
+    </PageSection>
   )
 }
 
+const PageSection = styled.section`
+  width: min(1200px, 100% - 2rem);
+  margin: 0 auto;
+  padding-top: ${({ theme }) => theme.spacing.lg};
+  padding-bottom: ${({ theme }) => theme.spacing['3xl']};
+
+  @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
+    width: min(1200px, 100% - 1rem);
+    padding-bottom: 7rem;
+  }
+`
+
+const EmptyStateWrapper = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: ${({ theme }) => theme.spacing['3xl']} ${({ theme }) => theme.spacing.lg};
+  gap: ${({ theme }) => theme.spacing.lg};
+`
+
+const EmptySticker = styled.img`
+  width: 160px;
+  height: auto;
+  margin-bottom: ${({ theme }) => theme.spacing.sm};
+  opacity: 0.85;
+`
+
+const EmptyTitle = styled.h1`
+  font-size: ${({ theme }) => theme.typography.h1};
+  color: ${({ theme }) => theme.colors.text[100]};
+`
+
+const EmptyDesc = styled.p`
+  font-size: ${({ theme }) => theme.typography.lead};
+  color: ${({ theme }) => theme.colors.text[380]};
+  max-width: 440px;
+`
+
+const PrimaryLink = styled(Link)`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.65rem 1.5rem;
+  border-radius: ${({ theme }) => theme.radii.pill};
+  font-size: ${({ theme }) => theme.typography.bodySmall};
+  font-weight: 700;
+  text-decoration: none;
+  background: linear-gradient(135deg, ${({ theme }) => theme.colors.green[580]}, ${({ theme }) => theme.colors.green[500]});
+  color: ${({ theme }) => theme.colors.text[100]};
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: linear-gradient(135deg, ${({ theme }) => theme.colors.green[500]}, ${({ theme }) => theme.colors.green[300]});
+    transform: translateY(-1px);
+  }
+`
+
+const PrimaryButton = styled.button`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.65rem 1.5rem;
+  border-radius: ${({ theme }) => theme.radii.pill};
+  font-size: ${({ theme }) => theme.typography.bodySmall};
+  font-weight: 700;
+  background: linear-gradient(135deg, ${({ theme }) => theme.colors.green[580]}, ${({ theme }) => theme.colors.green[500]});
+  color: ${({ theme }) => theme.colors.text[100]};
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s ease;
+
+  &:hover:not(:disabled) {
+    background: linear-gradient(135deg, ${({ theme }) => theme.colors.green[500]}, ${({ theme }) => theme.colors.green[300]});
+    transform: translateY(-1px);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+`
+
+const PrimaryButtonSm = styled(PrimaryButton)`
+  padding: 0.35rem 0.9rem;
+  font-size: 0.75rem;
+`
+
+const PrimaryButtonLg = styled(PrimaryButton)`
+  padding: 0.8rem 2rem;
+  font-size: ${({ theme }) => theme.typography.body};
+`
+
+const GhostButton = styled.button`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: ${({ theme }) => theme.radii.md};
+  font-size: ${({ theme }) => theme.typography.bodySmall};
+  font-weight: 500;
+  background: transparent;
+  color: ${({ theme }) => theme.colors.text[380]};
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover:not(:disabled) {
+    color: ${({ theme }) => theme.colors.text[220]};
+    background: rgba(243, 255, 241, 0.05);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+`
+
+const GhostButtonSm = styled(GhostButton)`
+  padding: 0.3rem 0.7rem;
+  font-size: 0.75rem;
+`
+
+const DeclineButton = styled(GhostButtonSm)`
+  color: ${({ theme }) => theme.colors.danger[500]};
+`
+
+const RemoveButton = styled.button`
+  display: inline-flex;
+  align-items: center;
+  padding: 0.3rem 0.7rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  background: transparent;
+  color: ${({ theme }) => theme.colors.danger[500]};
+  border: none;
+  cursor: pointer;
+  border-radius: ${({ theme }) => theme.radii.sm};
+  transition: all 0.2s ease;
+
+  &:hover:not(:disabled) {
+    background: rgba(219, 74, 91, 0.1);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+`
+
+const TripHero = styled.header`
+  position: relative;
+  width: 100%;
+  height: 340px;
+  border-radius: ${({ theme }) => theme.radii.xl};
+  overflow: hidden;
+  margin-bottom: ${({ theme }) => theme.spacing.md};
+
+  @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
+    height: 220px;
+    border-radius: ${({ theme }) => theme.radii.lg};
+  }
+`
+
+const TripHeroImg = styled.img`
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+`
+
+const TripHeroOverlay = styled.div`
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(13, 15, 13, 0.2) 0%, rgba(13, 15, 13, 0.85) 100%);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: ${({ theme }) => theme.spacing.xl};
+
+  @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
+    padding: ${({ theme }) => theme.spacing.lg};
+  }
+`
+
+const TripHeroMeta = styled.div`
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.75rem;
+`
+
+const TripHeroTitle = styled.h1`
+  font-size: ${({ theme }) => theme.typography.h1};
+  color: ${({ theme }) => theme.colors.text[100]};
+  margin: 0;
+`
+
+const StaticChip = styled.span`
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.7rem;
+  border-radius: ${({ theme }) => theme.radii.pill};
+  font-size: ${({ theme }) => theme.typography.caption};
+  font-weight: 600;
+  background: ${({ theme }) => theme.colors.green[700]};
+  color: ${({ theme }) => theme.colors.green[300]};
+  white-space: nowrap;
+`
+
+const StaticChipSmall = styled(StaticChip)`
+  font-size: 0.65rem;
+  padding: 0.15rem 0.5rem;
+  background: ${({ theme }) => theme.colors.surface[860]};
+  color: ${({ theme }) => theme.colors.text[380]};
+`
+
+const TabBarWrapper = styled.nav`
+  margin-bottom: ${({ theme }) => theme.spacing['2xl']};
+`
+
+const TripWorkspace = styled.div`
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: ${({ theme }) => theme.spacing.xl};
+  align-items: start;
+
+  @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
+    grid-template-columns: 1fr;
+    gap: ${({ theme }) => theme.spacing.lg};
+  }
+`
+
+const TripMainContent = styled.div`
+  min-width: 0;
+`
+
+const TripSidebar = styled.aside`
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.spacing.lg};
+`
+
+const TripSidebarSticky = styled(TripSidebar)`
+  position: sticky;
+  top: 2rem;
+`
+
+const DayCard = styled.div`
+  background: ${({ theme }) => theme.glass.bg};
+  border: 1px solid ${({ theme }) => theme.glass.border};
+  backdrop-filter: blur(${({ theme }) => theme.glass.blur});
+  -webkit-backdrop-filter: blur(${({ theme }) => theme.glass.blur});
+  border-radius: ${({ theme }) => theme.radii.xl};
+  padding: ${({ theme }) => theme.spacing.lg};
+`
+
+const DayCardWrapper = styled.div<{ $selected: boolean }>`
+  background: ${({ theme, $selected }) => $selected ? 'rgba(26, 96, 19, 0.2)' : theme.glass.bg};
+  border: 1px solid ${({ theme, $selected }) => $selected ? theme.colors.green[580] : theme.glass.border};
+  border-radius: ${({ theme }) => theme.radii.xl};
+  padding: ${({ theme }) => theme.spacing.lg};
+  cursor: pointer;
+  transition: all 0.25s ease;
+
+  &:hover {
+    border-color: ${({ theme }) => theme.colors.line};
+  }
+`
+
+const CardSectionTitle = styled.h3`
+  font-size: ${({ theme }) => theme.typography.h3};
+  color: ${({ theme }) => theme.colors.text[100]};
+  margin: 0 0 0.75rem;
+`
+
+const SummaryDesc = styled.p`
+  line-height: 1.6;
+  color: ${({ theme }) => theme.colors.text[380]};
+  margin: 0;
+`
+
+const TripStatsBar = styled.div`
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: ${({ theme }) => theme.spacing.md};
+  margin-top: ${({ theme }) => theme.spacing.lg};
+  margin-bottom: ${({ theme }) => theme.spacing.xl};
+
+  @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
+    grid-template-columns: 1fr;
+  }
+`
+
+const TripStat = styled.div`
+  background: ${({ theme }) => theme.glass.bg};
+  border: 1px solid ${({ theme }) => theme.glass.border};
+  border-radius: ${({ theme }) => theme.radii.lg};
+  padding: ${({ theme }) => theme.spacing.md} ${({ theme }) => theme.spacing.lg};
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+`
+
+const StatLabel = styled.span`
+  font-size: ${({ theme }) => theme.typography.eyebrow};
+  color: ${({ theme }) => theme.colors.text[500]};
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+`
+
+const StatValue = styled.span`
+  font-size: ${({ theme }) => theme.typography.body};
+  font-weight: 600;
+  color: ${({ theme }) => theme.colors.text[100]};
+`
+
+const BuilderSection = styled.div`
+  background: ${({ theme }) => theme.glass.bg};
+  border: 1px solid ${({ theme }) => theme.glass.border};
+  border-radius: ${({ theme }) => theme.radii.xl};
+  padding: ${({ theme }) => theme.spacing.lg};
+  margin-bottom: ${({ theme }) => theme.spacing.lg};
+`
+
+const BuilderSectionHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+
+  h3 {
+    margin: 0;
+  }
+`
+
+const StopRow = styled.div`
+  display: flex;
+  gap: 1.25rem;
+`
+
+const StopConnector = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  flex-shrink: 0;
+`
+
+const StopDot = styled.div`
+  width: 10px;
+  height: 10px;
+  border-radius: ${({ theme }) => theme.radii.full};
+  background: ${({ theme }) => theme.colors.text[500]};
+  flex-shrink: 0;
+`
+
+const StopDotFirst = styled(StopDot)`
+  background: ${({ theme }) => theme.colors.green[580]};
+`
+
+const StopLine = styled.div`
+  width: 2px;
+  flex: 1;
+  min-height: 24px;
+  background: ${({ theme }) => theme.colors.lineSoft};
+`
+
+const StopTitle = styled.h4`
+  color: ${({ theme }) => theme.colors.text[100]};
+  margin: 0 0 0.4rem;
+  font-size: ${({ theme }) => theme.typography.body};
+  font-weight: 600;
+`
+
+const StopNote = styled.p`
+  font-size: 0.85rem;
+  color: ${({ theme }) => theme.colors.text[380]};
+  margin: 0;
+`
+
+const StopMeta = styled.div`
+  margin-top: 1rem;
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+`
+
+const StopMetaLabel = styled.span`
+  font-size: 0.8rem;
+  color: ${({ theme }) => theme.colors.text[500]};
+`
+
+const DotDivider = styled.span`
+  width: 4px;
+  height: 4px;
+  border-radius: ${({ theme }) => theme.radii.full};
+  background: ${({ theme }) => theme.colors.text[500]};
+`
+
+const OverviewMapContainer = styled.div`
+  height: 300px;
+  border-radius: ${({ theme }) => theme.radii.lg};
+  overflow: hidden;
+  margin-top: 2rem;
+  position: relative;
+`
+
+const ExternalMapRow = styled.div`
+  margin-top: 1.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+`
+
+const ExternalMapButton = styled.button`
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem 1rem;
+  background: ${({ theme }) => theme.colors.surface[860]};
+  color: ${({ theme }) => theme.colors.text[220]};
+  border: 1px solid ${({ theme }) => theme.colors.surface[820]};
+  border-radius: 12px;
+  font-size: ${({ theme }) => theme.typography.bodySmall};
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: ${({ theme }) => theme.colors.surface[820]};
+    border-color: ${({ theme }) => theme.colors.line};
+  }
+`
+
+const ChipRow = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1rem;
+`
+
+const SidebarSticker = styled.img`
+  width: 100%;
+  margin-top: 2rem;
+  opacity: 0.6;
+`
+
+const EmptyNote = styled.p`
+  font-size: ${({ theme }) => theme.typography.bodySmall};
+  color: ${({ theme }) => theme.colors.text[500]};
+  text-align: center;
+  padding: 1rem 0;
+`
+
+const SectionDesc = styled.p`
+  font-size: ${({ theme }) => theme.typography.bodySmall};
+  color: ${({ theme }) => theme.colors.text[380]};
+  margin: 0;
+`
+
+const Eyebrow = styled.p`
+  font-size: ${({ theme }) => theme.typography.eyebrow};
+  color: ${({ theme }) => theme.colors.text[500]};
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin: 0 0 0.25rem;
+`
+
+const TimelineFlow = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.spacing.md};
+`
+
+const TimelineDay = styled.div`
+  display: flex;
+  gap: 1rem;
+  align-items: stretch;
+`
+
+const DayMarker = styled.div`
+  width: 3px;
+  flex-shrink: 0;
+  background: linear-gradient(180deg, ${({ theme }) => theme.colors.green[580]} 0%, transparent 100%);
+  border-radius: 2px;
+`
+
+const TimelineCardInner = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+`
+
+const TimelineCardBody = styled.div`
+  flex: 1;
+`
+
+const TimelineCardTitle = styled.h3`
+  margin: 0.2rem 0;
+  font-size: ${({ theme }) => theme.typography.body};
+  color: ${({ theme }) => theme.colors.text[100]};
+`
+
+const TimelineCardNote = styled.p<{ $hasActivities: boolean }>`
+  font-size: 0.85rem;
+  color: ${({ theme }) => theme.colors.text[380]};
+  margin: 0 0 ${({ $hasActivities }) => $hasActivities ? '1rem' : 0};
+`
+
+const ActivitiesDropdown = styled.div`
+  margin-top: 0.8rem;
+`
+
+const ActivitiesToggle = styled.button`
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid ${({ theme }) => theme.colors.lineSoft};
+  border-radius: 8px;
+  padding: 0.4rem 0.8rem;
+  font-size: 0.8rem;
+  color: ${({ theme }) => theme.colors.text[100]};
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.08);
+  }
+`
+
+const ActivitiesList = styled.div`
+  margin-top: 1rem;
+  display: grid;
+  gap: 0.75rem;
+`
+
+const ActivityCard = styled.div`
+  padding: 0.75rem;
+  background: ${({ theme }) => theme.colors.bg[980]};
+  border-radius: 12px;
+  border: 1px solid ${({ theme }) => theme.colors.lineSoft};
+`
+
+const ActivityCardHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.25rem;
+`
+
+const ActivityCardTitle = styled.h4`
+  font-size: 0.9rem;
+  color: ${({ theme }) => theme.colors.text[100]};
+  font-weight: 600;
+  margin: 0;
+`
+
+const ActivityCardDesc = styled.p`
+  font-size: 0.8rem;
+  color: ${({ theme }) => theme.colors.text[380]};
+  margin: 0 0 0.5rem;
+  line-height: 1.4;
+`
+
+const ActivityCardMeta = styled.div`
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+`
+
+const ActivityCost = styled.span`
+  font-size: 0.75rem;
+  color: ${({ theme }) => theme.colors.green[500]};
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-weight: 500;
+`
+
+const ActivityLink = styled.a`
+  font-size: 0.75rem;
+  color: ${({ theme }) => theme.colors.green[400]};
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  text-decoration: none;
+
+  &:hover {
+    color: ${({ theme }) => theme.colors.green[300]};
+  }
+`
+
+const NoActivities = styled.div`
+  font-size: 0.75rem;
+  color: ${({ theme }) => theme.colors.text[500]};
+  font-style: italic;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+`
+
+const InviteActions = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  flex-shrink: 0;
+  margin-left: 1rem;
+`
+
+const ExportStrip = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  background: linear-gradient(135deg, rgba(17, 34, 26, 0.7), rgba(9, 18, 13, 0.6));
+  border: 1px solid ${({ theme }) => theme.colors.lineSoft};
+  border-radius: ${({ theme }) => theme.radii.md};
+  align-items: center;
+  margin-bottom: ${({ theme }) => theme.spacing.lg};
+`
+
+const ExportStripLabel = styled.span`
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: ${({ theme }) => theme.colors.text[380]};
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-right: auto;
+`
+
+const ExportButton = styled.button`
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.8rem;
+  background: transparent;
+  color: ${({ theme }) => theme.colors.text[220]};
+  border: 1px solid ${({ theme }) => theme.colors.lineSoft};
+  border-radius: ${({ theme }) => theme.radii.sm};
+  font-size: ${({ theme }) => theme.typography.bodySmall};
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover:not(:disabled) {
+    background: rgba(243, 255, 241, 0.05);
+    border-color: ${({ theme }) => theme.colors.line};
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+`
+
+const InlineSpinner = styled.span`
+  width: 15px;
+  height: 15px;
+  border: 2px solid rgba(243, 255, 241, 0.2);
+  border-top-color: ${({ theme }) => theme.colors.green[500]};
+  border-radius: ${({ theme }) => theme.radii.full};
+  animation: spin 0.6s linear infinite;
+
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+`
+
+const ProfileSection = styled.div`
+  margin-bottom: 2rem;
+`
+
+const MembersHead = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: ${({ theme }) => theme.spacing.md};
+`
+
+const DiscoveryGrid = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.spacing.md};
+`
+
+const HistoryRow = styled.div`
+  display: grid;
+  grid-template-columns: 60px 1fr auto;
+  gap: ${({ theme }) => theme.spacing.md};
+  align-items: center;
+  padding: 1rem ${({ theme }) => theme.spacing.lg};
+  background: ${({ theme }) => theme.colors.surface[860]};
+  border-radius: ${({ theme }) => theme.radii.lg};
+  border: 1px solid ${({ theme }) => theme.colors.lineSoft};
+`
+
+const HistoryRowWide = styled(HistoryRow)`
+  grid-template-columns: 1fr auto;
+  padding: 1.25rem;
+`
+
+const MemberAvatar = styled.img`
+  width: 50px;
+  height: 50px;
+  border-radius: 14px;
+  object-fit: cover;
+`
+
+const MemberName = styled.h4`
+  color: ${({ theme }) => theme.colors.text[100]};
+  margin: 0 0 0.2rem;
+  font-size: ${({ theme }) => theme.typography.body};
+`
+
+const MemberRoleRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+`
+
+const RoleSelect = styled.select`
+  font-size: 0.65rem;
+  padding: 0.1rem 0.4rem;
+  background: ${({ theme }) => theme.colors.surface[860]};
+  border: 1px solid ${({ theme }) => theme.colors.lineSoft};
+  border-radius: 4px;
+  color: ${({ theme }) => theme.colors.green[580]};
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.5;
+  }
+`
+
+const MemberInfo = styled.div``
+
+const MemberStatusRow = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+`
+
+const MemberActions = styled.div`
+  display: flex;
+  gap: 0.5rem;
+`
+
+const ChatContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 500px);
+  min-height: 400px;
+  background: ${({ theme }) => theme.glass.bg};
+  border: 1px solid ${({ theme }) => theme.glass.border};
+  border-radius: ${({ theme }) => theme.radii.xl};
+  overflow: hidden;
+`
+
+const ChatThread = styled.div`
+  flex: 1;
+  overflow-y: auto;
+  padding: ${({ theme }) => theme.spacing.lg};
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.spacing.md};
+`
+
+const ChatEmpty = styled.div`
+  text-align: center;
+  padding: 4rem 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+`
+
+const ChatEmptySticker = styled.img`
+  width: 120px;
+  opacity: 0.4;
+`
+
+const ChatBubble = styled.div<{ $isOwn: boolean }>`
+  max-width: 70%;
+  padding: 0.8rem 1rem;
+  border-radius: ${({ theme }) => theme.radii.lg};
+  background: ${({ theme, $isOwn }) => $isOwn ? 'rgba(23, 247, 2, 0.1)' : theme.colors.surface[860]};
+  border: 1px solid ${({ theme, $isOwn }) => $isOwn ? 'rgba(23, 247, 2, 0.2)' : theme.colors.lineSoft};
+  align-self: ${({ $isOwn }) => $isOwn ? 'flex-end' : 'flex-start'};
+  color: ${({ theme }) => theme.colors.text[100]};
+`
+
+const ChatBubbleHeader = styled.header`
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: ${({ theme }) => theme.typography.caption};
+  color: ${({ theme }) => theme.colors.text[380]};
+  margin-bottom: 0.25rem;
+`
+
+const ChatAvatar = styled.img`
+  width: 20px;
+  height: 20px;
+  border-radius: ${({ theme }) => theme.radii.full};
+  object-fit: cover;
+`
+
+const ChatTime = styled.span`
+  font-size: 0.65rem;
+  color: ${({ theme }) => theme.colors.text[500]};
+  float: right;
+  margin-top: 0.3rem;
+`
+
+const ChatComposer = styled.form`
+  padding: ${({ theme }) => theme.spacing.md} ${({ theme }) => theme.spacing.lg};
+  border-top: 1px solid ${({ theme }) => theme.colors.lineSoft};
+`
+
+const ChatComposerRow = styled.div`
+  display: flex;
+  gap: ${({ theme }) => theme.spacing.sm};
+`
+
+const ChatInput = styled.input`
+  flex: 1;
+  padding: 0.65rem 1rem;
+  border-radius: ${({ theme }) => theme.radii.lg};
+  border: 1px solid ${({ theme }) => theme.colors.lineSoft};
+  background: ${({ theme }) => theme.colors.bg[940]};
+  color: ${({ theme }) => theme.colors.text[100]};
+  font-size: ${({ theme }) => theme.typography.body};
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.2s ease;
+
+  &:focus {
+    border-color: ${({ theme }) => theme.colors.green[500]};
+  }
+
+  &::placeholder {
+    color: ${({ theme }) => theme.colors.text[500]};
+  }
+`
+
+const TextInput = styled.input`
+  width: 100%;
+  padding: 0.65rem 1rem;
+  border-radius: ${({ theme }) => theme.radii.lg};
+  border: 1px solid ${({ theme }) => theme.colors.lineSoft};
+  background: ${({ theme }) => theme.colors.bg[940]};
+  color: ${({ theme }) => theme.colors.text[100]};
+  font-size: ${({ theme }) => theme.typography.body};
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.2s ease;
+
+  &:focus {
+    border-color: ${({ theme }) => theme.colors.green[500]};
+  }
+
+  &::placeholder {
+    color: ${({ theme }) => theme.colors.text[500]};
+  }
+`
+
+const StyledSelect = styled.select`
+  width: 100%;
+  padding: 0.65rem 1rem;
+  border-radius: ${({ theme }) => theme.radii.lg};
+  border: 1px solid ${({ theme }) => theme.colors.lineSoft};
+  background: ${({ theme }) => theme.colors.bg[940]};
+  color: ${({ theme }) => theme.colors.text[100]};
+  font-size: ${({ theme }) => theme.typography.body};
+  font-family: inherit;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.2s ease;
+
+  &:focus {
+    border-color: ${({ theme }) => theme.colors.green[500]};
+  }
+`
+
+const TextArea = styled.textarea`
+  width: 100%;
+  padding: 0.65rem 1rem;
+  border-radius: ${({ theme }) => theme.radii.lg};
+  border: 1px solid ${({ theme }) => theme.colors.lineSoft};
+  background: ${({ theme }) => theme.colors.bg[940]};
+  color: ${({ theme }) => theme.colors.text[100]};
+  font-size: ${({ theme }) => theme.typography.body};
+  font-family: inherit;
+  outline: none;
+  resize: vertical;
+  transition: border-color 0.2s ease;
+
+  &:focus {
+    border-color: ${({ theme }) => theme.colors.green[500]};
+  }
+
+  &::placeholder {
+    color: ${({ theme }) => theme.colors.text[500]};
+  }
+`
+
+const BuilderForm = styled.form``
+
+const FormGroup = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+`
+
+const FieldLabel = styled.label`
+  font-size: ${({ theme }) => theme.typography.eyebrow};
+  color: ${({ theme }) => theme.colors.text[380]};
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+`
+
+const BuilderGrid = styled.div`
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: ${({ theme }) => theme.spacing.lg};
+
+  @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
+    grid-template-columns: 1fr;
+  }
+`
+
+const SettingsInfoGrid = styled.div`
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  gap: 2rem;
+  margin-bottom: 2rem;
+
+  @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
+    grid-template-columns: 1fr;
+  }
+`
+
+const SettingsFieldsColumn = styled.div`
+  display: grid;
+  gap: 1.5rem;
+  flex: 1;
+`
+
+const AvatarUploadWrapper = styled.label`
+  position: relative;
+  width: 240px;
+  height: 160px;
+  border-radius: 24px;
+  overflow: hidden;
+  cursor: pointer;
+  display: block;
+
+  &:hover > div {
+    opacity: 1;
+  }
+`
+
+const AvatarPreview = styled.img`
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+`
+
+const AvatarUploadOverlay = styled.div`
+  position: absolute;
+  inset: 0;
+  background: rgba(13, 15, 13, 0.7);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  color: ${({ theme }) => theme.colors.text[100]};
+  font-size: ${({ theme }) => theme.typography.bodySmall};
+  opacity: 0;
+  transition: opacity 0.25s ease;
+`
+
+const HiddenInput = styled.input`
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+`
+
+const SettingsActions = styled.div`
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+  align-items: center;
+  margin-top: ${({ theme }) => theme.spacing.lg};
+`
+
+const InfoBanner = styled.span<{ $tone: 'success' | 'info' | 'error' }>`
+  padding: 0.4rem 0.8rem;
+  margin: 0;
+  font-size: 0.85rem;
+  border-radius: ${({ theme }) => theme.radii.sm};
+  color: ${({ theme, $tone }) =>
+    $tone === 'success' ? theme.colors.green[300] :
+    $tone === 'error' ? theme.colors.danger[400] :
+    theme.colors.text[220]
+  };
+  background: ${({ $tone }) =>
+    $tone === 'success' ? 'rgba(23, 247, 2, 0.1)' :
+    $tone === 'error' ? 'rgba(219, 74, 91, 0.1)' :
+    'rgba(243, 255, 241, 0.06)'
+  };
+  border: 1px solid ${({ theme, $tone }) =>
+    $tone === 'success' ? 'rgba(23, 247, 2, 0.2)' :
+    $tone === 'error' ? 'rgba(219, 74, 91, 0.2)' :
+    theme.colors.lineSoft
+  };
+`
+
+const HistoryContent = styled.p`
+  color: ${({ theme }) => theme.colors.text[100]};
+  font-size: 1rem;
+  margin: 0 0 0.4rem;
+`
+
+const HistoryDate = styled.p`
+  font-size: 0.75rem;
+  color: ${({ theme }) => theme.colors.text[500]};
+  margin: 0;
+`
+
+const HistoryIcon = styled.div`
+  display: flex;
+  align-items: center;
+`
+
+const HistoryEmpty = styled.div`
+  text-align: center;
+  padding: 4rem 0;
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+`
+
+const ModalScrim = styled.div`
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: ${({ theme }) => theme.colors.overlay};
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: ${({ theme }) => theme.spacing.lg};
+`
+
+const InviteModal = styled(motion.div).attrs({
+  initial: { opacity: 0, scale: 0.95 },
+  animate: { opacity: 1, scale: 1 },
+  exit: { opacity: 0, scale: 0.95 },
+})`
+  width: 100%;
+  max-width: 500px;
+  background: ${({ theme }) => theme.colors.bg[980]};
+  border: 1px solid ${({ theme }) => theme.colors.lineSoft};
+  border-radius: ${({ theme }) => theme.radii.xl};
+  padding: ${({ theme }) => theme.spacing.lg};
+`
+
+const InviteModalHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 2rem;
+
+  h3 {
+    margin: 0;
+  }
+`
+
+const CandidateList = styled.div`
+  margin-top: 2rem;
+  display: grid;
+  gap: 1rem;
+`
+
+const CandidateRow = styled.div`
+  display: grid;
+  grid-template-columns: 40px 1fr auto;
+  gap: ${({ theme }) => theme.spacing.sm};
+  align-items: center;
+  padding: 0.6rem;
+`
+
+const CandidateAvatar = styled.img`
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  object-fit: cover;
+`
+
+const CandidateName = styled.span`
+  font-size: 0.9rem;
+  color: ${({ theme }) => theme.colors.text[100]};
+`

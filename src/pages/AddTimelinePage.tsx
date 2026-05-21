@@ -2,11 +2,11 @@ import { motion } from 'framer-motion'
 import { useState } from 'react'
 import { FiArrowLeft, FiMapPin, FiCalendar, FiActivity, FiPlusCircle, FiTrash2 } from 'react-icons/fi'
 import { Link, useNavigate, useParams } from 'react-router-dom'
+import styled from 'styled-components'
 import { ActivityType } from '../types/models'
 import type { TimelineStop } from '../types/models'
 import api from '../data/api'
-import { FeedbackToast } from '../components/FeedbackToast'
-import type { FeedbackToastState } from '../components/FeedbackToast'
+import { useToast, ToastContainer } from '../components/shared/Toast'
 import { isQueuedRequestError } from '../utils/errorMessage'
 
 interface LocationSelection {
@@ -20,11 +20,6 @@ interface LocationSuggestion extends LocationSelection {
   id: string
 }
 
-
-const revealTransition = {
-  duration: 0.58,
-  ease: [0.22, 1, 0.36, 1] as const,
-}
 
 const getCoordinateCaption = (lng: string, lat: string): string => {
   const parsedLng = Number(lng)
@@ -45,6 +40,7 @@ const toBackendCoords = (coords: [number, number]): [number, number] => [
 export function AddTimelinePage() {
   const navigate = useNavigate()
   const { tripId } = useParams<{ tripId: string }>()
+  const { toasts, addToast, removeToast } = useToast()
 
   const [timelineDraft, setTimelineDraft] = useState<TimelineStop>({
     id: 0,
@@ -63,7 +59,6 @@ export function AddTimelinePage() {
   const [fromSuggestions, setFromSuggestions] = useState<LocationSuggestion[]>([])
   const [toSuggestions, setToSuggestions] = useState<LocationSuggestion[]>([])
   const [isSaving, setIsSaving] = useState(false)
-  const [toast, setToast] = useState<FeedbackToastState | null>(null)
 
   const updateTimelineDraft = (updater: (previous: TimelineStop) => TimelineStop) => {
     setTimelineDraft((previous) => updater(previous))
@@ -171,7 +166,7 @@ export function AddTimelinePage() {
     }
     catch (err: unknown) {
       if (isQueuedRequestError(err)) {
-        setToast({ id: Date.now(), message: 'Timeline stop will be added when online!', tone: 'success' })
+        addToast('Timeline stop will be added when online!', 'success')
         setTimeout(() => navigate(`/app/trip/${tripId}?view=map`), 2000)
       } else {
         console.error(err)
@@ -188,49 +183,46 @@ export function AddTimelinePage() {
   }
 
   return (
-    <section className="page add-timeline-page">
-      <FeedbackToast toast={toast} clearToast={() => setToast(null)} />
-      <motion.header
-        className="panel add-timeline-head"
+    <PageSection>
+      <ToastContainer toasts={toasts} removeToast={removeToast} />
+      <PageHeader
         initial={{ opacity: 0, y: 20 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true, amount: 0.3 }}
-        transition={revealTransition}
+        transition={{ duration: 0.58, ease: [0.22, 1, 0.36, 1] }}
       >
-        <div className="add-timeline-header-content">
+        <HeaderContent>
           <div>
-            <p className="eyebrow">Add Trip Timeline</p>
+            <Eyebrow>Add Trip Timeline</Eyebrow>
             <h1>Create a new timeline stop</h1>
             <p>Define the route, date, and details for the next day in your trip.</p>
           </div>
-          <Link className="btn btn-ghost add-timeline-back-link" to={`/app/trip/${tripId}?view=map`}>
+          <BackLink to={`/app/trip/${tripId}?view=map`}>
             <FiArrowLeft aria-hidden="true" />
             Back to trip
-          </Link>
-        </div>
-      </motion.header>
+          </BackLink>
+        </HeaderContent>
+      </PageHeader>
 
-      <motion.section
-        className="panel add-timeline-form-panel"
+      <FormPanel
         initial={{ opacity: 0, y: 16 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true, amount: 0.2 }}
-        transition={revealTransition}
+        transition={{ duration: 0.58, ease: [0.22, 1, 0.36, 1] }}
       >
-        <form className="add-timeline-form" onSubmit={(e) => e.preventDefault()}>
-          <fieldset>
-            <legend>Route Details</legend>
+        <form onSubmit={(e) => e.preventDefault()}>
+          <Fieldset>
+            <Legend>Route Details</Legend>
 
-            <div className="form-group">
-              <label className="field-label" htmlFor="starting-point">
+            <FormGroup>
+              <FieldLabelEl htmlFor="starting-point">
                 <FiMapPin aria-hidden="true" />
                 Starting Point
-              </label>
-              <div className="location-autocomplete">
-                <div className="location-input-shell">
-                  <input
+              </FieldLabelEl>
+              <LocationAutocompleteWrapper>
+                <LocationInputShell>
+                  <Input
                     id="starting-point"
-                    className="input location-input"
                     type="text"
                     placeholder="Search location..."
                     value={timelineDraft.startingPoint}
@@ -242,43 +234,41 @@ export function AddTimelinePage() {
                       }, 120)
                     }}
                   />
-                </div>
+                </LocationInputShell>
                 {fromFocused && fromSuggestions.length > 0 ? (
-                  <div className="location-dropdown">
+                  <LocationDropdown>
                     {fromSuggestions.map((suggestion) => (
-                      <button
+                      <LocationOption
                         key={suggestion.id}
                         type="button"
-                        className="location-option"
                         onMouseDown={(e) => {
                           e.preventDefault()
                           handleLocationSelect(suggestion, 'startingPoint')
                         }}
                       >
-                        <span className="location-option-main">{suggestion.name}</span>
-                        <span className="location-option-sub">{suggestion.placeName}</span>
-                      </button>
+                        <LocationOptionMain>{suggestion.name}</LocationOptionMain>
+                        <LocationOptionSub>{suggestion.placeName}</LocationOptionSub>
+                      </LocationOption>
                     ))}
-                  </div>
+                  </LocationDropdown>
                 ) : null}
-              </div>
+              </LocationAutocompleteWrapper>
               {timelineDraft.fromCoords ? (
-                <p className="location-meta">
+                <LocationMeta>
                   {getCoordinateCaption(String(timelineDraft.fromCoords[0]), String(timelineDraft.fromCoords[1]))}
-                </p>
+                </LocationMeta>
               ) : null}
-            </div>
+            </FormGroup>
 
-            <div className="form-group">
-              <label className="field-label" htmlFor="ending-point">
+            <FormGroup>
+              <FieldLabelEl htmlFor="ending-point">
                 <FiMapPin aria-hidden="true" />
                 Ending Point
-              </label>
-              <div className="location-autocomplete">
-                <div className="location-input-shell">
-                  <input
+              </FieldLabelEl>
+              <LocationAutocompleteWrapper>
+                <LocationInputShell>
+                  <Input
                     id="ending-point"
-                    className="input location-input"
                     type="text"
                     placeholder="Search location..."
                     value={timelineDraft.endPoint}
@@ -290,46 +280,44 @@ export function AddTimelinePage() {
                       }, 120)
                     }}
                   />
-                </div>
+                </LocationInputShell>
                 {toFocused && toSuggestions.length > 0 ? (
-                  <div className="location-dropdown">
+                  <LocationDropdown>
                     {toSuggestions.map((suggestion) => (
-                      <button
+                      <LocationOption
                         key={suggestion.id}
                         type="button"
-                        className="location-option"
                         onMouseDown={(e) => {
                           e.preventDefault()
                           handleLocationSelect(suggestion, 'endingPoint')
                         }}
                       >
-                        <span className="location-option-main">{suggestion.name}</span>
-                        <span className="location-option-sub">{suggestion.placeName}</span>
-                      </button>
+                        <LocationOptionMain>{suggestion.name}</LocationOptionMain>
+                        <LocationOptionSub>{suggestion.placeName}</LocationOptionSub>
+                      </LocationOption>
                     ))}
-                  </div>
+                  </LocationDropdown>
                 ) : null}
-              </div>
+              </LocationAutocompleteWrapper>
               {timelineDraft.toCoords ? (
-                <p className="location-meta">
+                <LocationMeta>
                   {getCoordinateCaption(String(timelineDraft.toCoords[0]), String(timelineDraft.toCoords[1]))}
-                </p>
+                </LocationMeta>
               ) : null}
-            </div>
-          </fieldset>
+            </FormGroup>
+          </Fieldset>
 
-          <fieldset>
-            <legend>Additional Information</legend>
+          <Fieldset>
+            <Legend>Additional Information</Legend>
 
-            <div className="builder-grid-v2">
-              <div className="form-group">
-                <label className="field-label" htmlFor="startDay">
+            <BuilderGrid>
+              <FormGroup>
+                <FieldLabelEl htmlFor="startDay">
                   <FiCalendar aria-hidden="true" />
                   Start Day
-                </label>
-                <input
+                </FieldLabelEl>
+                <Input
                   id="startDay"
-                  className="input"
                   type="number"
                   min={1}
                   step={1}
@@ -341,16 +329,15 @@ export function AddTimelinePage() {
                     }))
                   }
                 />
-              </div>
+              </FormGroup>
 
-              <div className="form-group">
-                <label className="field-label" htmlFor="endDay">
+              <FormGroup>
+                <FieldLabelEl htmlFor="endDay">
                   <FiCalendar aria-hidden="true" />
                   End Day
-                </label>
-                <input
+                </FieldLabelEl>
+                <Input
                   id="endDay"
-                  className="input"
                   type="number"
                   min={1}
                   step={1}
@@ -362,54 +349,48 @@ export function AddTimelinePage() {
                     }))
                   }
                 />
-              </div>
-            </div>
+              </FormGroup>
+            </BuilderGrid>
 
-            {/* Activities Section */}
-            <div style={{ marginTop: '2rem', paddingTop: '1.5rem', borderTop: '1px dashed var(--line-soft)' }}>
-               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                  <h4 style={{ fontSize: '0.9rem', color: 'var(--text-100)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <ActivitiesSection>
+               <ActivitiesHeader>
+                  <ActivitiesTitle>
                      <FiActivity size={16} /> Activities
-                  </h4>
-                  <button 
-                    type="button" 
-                    className="btn btn-ghost btn-sm" 
-                    onClick={() => updateTimelineDraft(p => ({ 
-                      ...p, 
-                      activities: [...p.activities, { id: 0, name: '', description: '', link: '', cost: 0, type: ActivityType.Attraction }] 
+                  </ActivitiesTitle>
+                  <GhostBtnSm
+                    type="button"
+                    onClick={() => updateTimelineDraft(p => ({
+                      ...p,
+                      activities: [...p.activities, { id: 0, name: '', description: '', link: '', cost: 0, type: ActivityType.Attraction }]
                     }))}
                   >
                      <FiPlusCircle /> Add
-                  </button>
-               </div>
+                  </GhostBtnSm>
+               </ActivitiesHeader>
 
-               <div style={{ display: 'grid', gap: '1rem' }}>
+               <ActivitiesGrid>
                   {timelineDraft.activities.map((act, j) => (
-                    <div key={j} style={{ padding: '1rem', background: 'rgba(255,255,255,0.02)', borderRadius: '12px', border: '1px solid var(--line-soft)' }}>
-                       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
-                          <input 
-                            className="input" 
-                            style={{ background: 'transparent', border: 'none', borderBottom: '1px solid var(--line-soft)', borderRadius: 0, paddingLeft: 0, fontSize: '0.9rem', fontWeight: 600 }} 
-                            placeholder="Activity name..." 
-                            value={act.name} 
+                    <ActivityCard key={j}>
+                       <ActivityCardHeader>
+                          <ActivityNameInput
+                            placeholder="Activity name..."
+                            value={act.name}
                             onChange={e => updateTimelineDraft(p => ({
                               ...p,
                               activities: p.activities.map((a, aidx) => aidx === j ? { ...a, name: e.target.value } : a)
                             }))}
                           />
-                          <button type="button" className="btn btn-ghost btn-sm" style={{ color: 'var(--danger-500)' }} onClick={() => updateTimelineDraft(p => ({
+                          <DangerBtn type="button" onClick={() => updateTimelineDraft(p => ({
                             ...p,
                             activities: p.activities.filter((_, aidx) => aidx !== j)
                           }))}>
                              <FiTrash2 size={14} />
-                          </button>
-                       </div>
-                       <div className="builder-grid-v2">
-                          <div className="form-group">
-                             <label className="field-label" style={{ fontSize: '0.75rem' }}>Type</label>
-                             <select 
-                               className="input" 
-                               style={{ fontSize: '0.8rem' }}
+                          </DangerBtn>
+                       </ActivityCardHeader>
+                       <BuilderGrid>
+                          <FormGroup>
+                             <SmallFieldLabel>Type</SmallFieldLabel>
+                             <SmallSelect
                                value={act.type}
                                onChange={e => updateTimelineDraft(p => ({
                                  ...p,
@@ -421,79 +402,434 @@ export function AddTimelinePage() {
                                 <option value={ActivityType.Accommodation}>Accommodation</option>
                                 <option value={ActivityType.Transport}>Transport</option>
                                 <option value={ActivityType.Other}>Other</option>
-                             </select>
-                          </div>
-                          <div className="form-group">
-                             <label className="field-label" style={{ fontSize: '0.75rem' }}>Cost (EUR)</label>
-                             <input 
-                               type="number" 
-                               className="input" 
-                               style={{ fontSize: '0.8rem' }}
+                             </SmallSelect>
+                          </FormGroup>
+                          <FormGroup>
+                             <SmallFieldLabel>Cost (EUR)</SmallFieldLabel>
+                             <SmallInput
+                               type="number"
                                value={act.cost || ''}
                                onChange={e => updateTimelineDraft(p => ({
                                  ...p,
                                  activities: p.activities.map((a, aidx) => aidx === j ? { ...a, cost: Number(e.target.value) } : a)
                                }))}
                              />
-                          </div>
-                       </div>
-                       <div className="form-group" style={{ marginTop: '0.5rem' }}>
-                          <label className="field-label" style={{ fontSize: '0.75rem' }}>Description</label>
-                          <textarea 
-                            className="input" 
-                            rows={2} 
-                            style={{ fontSize: '0.8rem' }}
-                            placeholder="Brief details..." 
+                          </FormGroup>
+                       </BuilderGrid>
+                       <FormGroup style={{ marginTop: '0.5rem' }}>
+                          <SmallFieldLabel>Description</SmallFieldLabel>
+                          <SmallTextarea
+                            rows={2}
+                            placeholder="Brief details..."
                             value={act.description}
                             onChange={e => updateTimelineDraft(p => ({
                               ...p,
                               activities: p.activities.map((a, aidx) => aidx === j ? { ...a, description: e.target.value } : a)
                             }))}
                           />
-                       </div>
-                       <div className="form-group" style={{ marginTop: '0.5rem' }}>
-                          <label className="field-label" style={{ fontSize: '0.75rem' }}>External Link</label>
-                          <input 
-                            className="input" 
-                            style={{ fontSize: '0.8rem' }}
-                            placeholder="https://..." 
+                       </FormGroup>
+                       <FormGroup style={{ marginTop: '0.5rem' }}>
+                          <SmallFieldLabel>External Link</SmallFieldLabel>
+                          <SmallInput
+                            placeholder="https://..."
                             value={act.link || ''}
                             onChange={e => updateTimelineDraft(p => ({
                               ...p,
                               activities: p.activities.map((a, aidx) => aidx === j ? { ...a, link: e.target.value } : a)
                             }))}
                           />
-                       </div>
-                    </div>
+                       </FormGroup>
+                    </ActivityCard>
                   ))}
-               </div>
-            </div>
-          </fieldset>
+               </ActivitiesGrid>
+            </ActivitiesSection>
+          </Fieldset>
 
-          <div className="add-timeline-actions">
-            <button
-              type="button"
-              className="btn btn-ghost"
-              disabled={isSaving}
-              onClick={handleCancel}
-            >
+          <Actions>
+            <GhostBtn type="button" disabled={isSaving} onClick={handleCancel}>
               Cancel
-            </button>
-            <button
-              type="button"
-              className="btn btn-primary"
-              disabled={isSaving}
-              onClick={handleSave}
-            >
+            </GhostBtn>
+            <PrimaryBtn type="button" disabled={isSaving} onClick={handleSave}>
               {isSaving ? 'Saving...' : 'Add Timeline'}
-            </button>
-          </div>
+            </PrimaryBtn>
+          </Actions>
         </form>
 
-        <p className="info-banner">
+        <InfoBanner>
           This timeline editor is UI-only. To persist changes, connect this form to your backend API.
-        </p>
-      </motion.section>
-    </section>
+        </InfoBanner>
+      </FormPanel>
+    </PageSection>
   )
 }
+
+// --- Styled Components ---
+
+const PageSection = styled.section`
+  width: min(1200px, 100% - 2rem);
+  margin: 0 auto;
+  padding-top: ${({ theme }) => theme.spacing.lg};
+  padding-bottom: ${({ theme }) => theme.spacing['3xl']};
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.spacing.lg};
+
+  @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
+    width: min(1200px, 100% - 1rem);
+    padding-bottom: 7rem;
+    gap: ${({ theme }) => theme.spacing.md};
+  }
+`
+
+const PageHeader = styled(motion.header)`
+  background: ${({ theme }) => theme.glass.bg};
+  border: 1px solid ${({ theme }) => theme.glass.border};
+  border-radius: ${({ theme }) => theme.radii.xl};
+  padding: ${({ theme }) => theme.spacing.xl};
+  backdrop-filter: blur(${({ theme }) => theme.glass.blur});
+
+  h1 { color: ${({ theme }) => theme.colors.text[100]}; }
+  p { color: ${({ theme }) => theme.colors.text[380]}; }
+`
+
+const HeaderContent = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: ${({ theme }) => theme.spacing.md};
+`
+
+const BackLink = styled(Link)`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  border-radius: ${({ theme }) => theme.radii.pill};
+  transition: all ${({ theme }) => theme.animation.duration.normal}s ${({ theme }) => theme.animation.easeOut.join(',')};
+  min-height: 44px;
+  min-width: 44px;
+  white-space: nowrap;
+  text-decoration: none;
+  line-height: 1;
+  padding: 0.55rem 1.2rem;
+  background: transparent;
+  color: ${({ theme }) => theme.colors.text[220]};
+  border: 1px solid ${({ theme }) => theme.colors.lineSoft};
+
+  &:hover {
+    background: rgba(65, 162, 56, 0.08);
+    border-color: ${({ theme }) => theme.colors.line};
+    color: ${({ theme }) => theme.colors.text[100]};
+  }
+`
+
+const Eyebrow = styled.p`
+  font-size: ${({ theme }) => theme.typography.eyebrow};
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: ${({ theme }) => theme.colors.green[580]};
+  font-weight: 600;
+`
+
+const FormPanel = styled(motion.section)`
+  background: ${({ theme }) => theme.glass.bg};
+  border: 1px solid ${({ theme }) => theme.glass.border};
+  border-radius: ${({ theme }) => theme.radii.xl};
+  padding: ${({ theme }) => theme.spacing.xl};
+  backdrop-filter: blur(${({ theme }) => theme.glass.blur});
+
+  form { display: flex; flex-direction: column; gap: ${({ theme }) => theme.spacing.lg}; }
+`
+
+const Fieldset = styled.fieldset`
+  border: none;
+  padding: 0;
+`
+
+const Legend = styled.legend`
+  font-size: ${({ theme }) => theme.typography.body};
+  font-weight: 700;
+  color: ${({ theme }) => theme.colors.text[100]};
+  margin-bottom: ${({ theme }) => theme.spacing.md};
+`
+
+const FormGroup = styled.div`
+  margin-bottom: ${({ theme }) => theme.spacing.md};
+`
+
+const FieldLabelEl = styled.label`
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: ${({ theme }) => theme.typography.bodySmall};
+  color: ${({ theme }) => theme.colors.text[380]};
+  margin-bottom: 0.35rem;
+  font-weight: 500;
+`
+
+const SmallFieldLabel = styled(FieldLabelEl)`
+  font-size: 0.75rem;
+`
+
+const Input = styled.input`
+  width: 100%;
+  padding: 0.7rem 1rem;
+  border-radius: ${({ theme }) => theme.radii.lg};
+  border: 1px solid ${({ theme }) => theme.colors.lineSoft};
+  background: ${({ theme }) => theme.glass.bg};
+  color: ${({ theme }) => theme.colors.text[100]};
+  font-size: ${({ theme }) => theme.typography.body};
+  transition: border-color ${({ theme }) => theme.animation.duration.fast}s ease;
+  min-height: 44px;
+  backdrop-filter: blur(${({ theme }) => theme.glass.blur});
+
+  &::placeholder { color: ${({ theme }) => theme.colors.text[500]}; }
+  &:focus {
+    outline: none;
+    border-color: ${({ theme }) => theme.colors.green[500]};
+    box-shadow: 0 0 0 3px rgba(23, 247, 2, 0.1);
+  }
+  &:disabled { opacity: 0.5; }
+`
+
+const SmallInput = styled(Input)`
+  font-size: 0.8rem;
+`
+
+const SmallSelect = styled.select`
+  width: 100%;
+  padding: 0.7rem 1rem;
+  border-radius: ${({ theme }) => theme.radii.lg};
+  border: 1px solid ${({ theme }) => theme.colors.lineSoft};
+  background: ${({ theme }) => theme.glass.bg};
+  color: ${({ theme }) => theme.colors.text[100]};
+  font-size: 0.8rem;
+  min-height: 44px;
+  backdrop-filter: blur(${({ theme }) => theme.glass.blur});
+
+  &:focus { outline: none; border-color: ${({ theme }) => theme.colors.green[500]}; }
+`
+
+const SmallTextarea = styled.textarea`
+  width: 100%;
+  padding: 0.7rem 1rem;
+  border-radius: ${({ theme }) => theme.radii.lg};
+  border: 1px solid ${({ theme }) => theme.colors.lineSoft};
+  background: ${({ theme }) => theme.glass.bg};
+  color: ${({ theme }) => theme.colors.text[100]};
+  font-size: 0.8rem;
+  font-family: inherit;
+  transition: border-color ${({ theme }) => theme.animation.duration.fast}s ease;
+  min-height: 44px;
+  resize: vertical;
+  backdrop-filter: blur(${({ theme }) => theme.glass.blur});
+
+  &::placeholder { color: ${({ theme }) => theme.colors.text[500]}; }
+  &:focus {
+    outline: none;
+    border-color: ${({ theme }) => theme.colors.green[500]};
+    box-shadow: 0 0 0 3px rgba(23, 247, 2, 0.1);
+  }
+`
+
+const BuilderGrid = styled.div`
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: ${({ theme }) => theme.spacing.md};
+
+  @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
+    grid-template-columns: 1fr;
+  }
+`
+
+const LocationAutocompleteWrapper = styled.div`
+  position: relative;
+`
+
+const LocationInputShell = styled.div``
+
+const LocationDropdown = styled.div`
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  background: ${({ theme }) => theme.colors.bg[960]};
+  border: 1px solid ${({ theme }) => theme.colors.lineSoft};
+  border-radius: ${({ theme }) => theme.radii.md};
+  max-height: 220px;
+  overflow-y: auto;
+  margin-top: 0.25rem;
+`
+
+const LocationOption = styled.button`
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 100%;
+  padding: 0.65rem 1rem;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid ${({ theme }) => theme.colors.lineSoft};
+  cursor: pointer;
+  text-align: left;
+  color: ${({ theme }) => theme.colors.text[100]};
+
+  &:last-child { border-bottom: none; }
+  &:hover { background: rgba(65, 162, 56, 0.08); }
+`
+
+const LocationOptionMain = styled.span`
+  font-size: ${({ theme }) => theme.typography.bodySmall};
+  font-weight: 600;
+`
+
+const LocationOptionSub = styled.span`
+  font-size: ${({ theme }) => theme.typography.caption};
+  color: ${({ theme }) => theme.colors.text[380]};
+`
+
+const LocationMeta = styled.p`
+  font-size: ${({ theme }) => theme.typography.caption};
+  color: ${({ theme }) => theme.colors.text[500]};
+  margin-top: 0.25rem;
+`
+
+const ActivitiesSection = styled.div`
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px dashed ${({ theme }) => theme.colors.lineSoft};
+`
+
+const ActivitiesHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+`
+
+const ActivitiesTitle = styled.h4`
+  font-size: 0.9rem;
+  color: ${({ theme }) => theme.colors.text[100]};
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+`
+
+const ActivitiesGrid = styled.div`
+  display: grid;
+  gap: 1rem;
+`
+
+const ActivityCard = styled.div`
+  padding: 1rem;
+  background: rgba(255,255,255,0.02);
+  border-radius: 12px;
+  border: 1px solid ${({ theme }) => theme.colors.lineSoft};
+`
+
+const ActivityCardHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+`
+
+const ActivityNameInput = styled.input`
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid ${({ theme }) => theme.colors.lineSoft};
+  border-radius: 0;
+  padding-left: 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: ${({ theme }) => theme.colors.text[100]};
+  flex: 1;
+  min-height: 32px;
+  outline: none;
+
+  &::placeholder { color: ${({ theme }) => theme.colors.text[500]}; }
+  &:focus { border-color: ${({ theme }) => theme.colors.green[500]}; }
+`
+
+const GhostBtnSm = styled.button`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  border-radius: ${({ theme }) => theme.radii.pill};
+  transition: all ${({ theme }) => theme.animation.duration.normal}s ${({ theme }) => theme.animation.easeOut.join(',')};
+  min-height: 36px;
+  min-width: 36px;
+  white-space: nowrap;
+  line-height: 1;
+  padding: 0.4rem 0.9rem;
+  font-size: ${({ theme }) => theme.typography.bodySmall};
+  background: transparent;
+  color: ${({ theme }) => theme.colors.text[220]};
+  border: 1px solid ${({ theme }) => theme.colors.lineSoft};
+
+  &:hover {
+    background: rgba(65, 162, 56, 0.08);
+    border-color: ${({ theme }) => theme.colors.line};
+    color: ${({ theme }) => theme.colors.text[100]};
+  }
+  &:disabled { opacity: 0.4; cursor: not-allowed; }
+`
+
+const GhostBtn = styled(GhostBtnSm)`
+  padding: 0.55rem 1.2rem;
+  min-height: 44px;
+  font-size: ${({ theme }) => theme.typography.body};
+`
+
+const DangerBtn = styled(GhostBtnSm)`
+  color: ${({ theme }) => theme.colors.danger[500]};
+  border-color: rgba(219, 74, 91, 0.25);
+
+  &:hover { background: rgba(219, 74, 91, 0.1); border-color: ${({ theme }) => theme.colors.danger[500]}; color: ${({ theme }) => theme.colors.danger[400]}; }
+`
+
+const PrimaryBtn = styled.button`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  border-radius: ${({ theme }) => theme.radii.pill};
+  transition: all ${({ theme }) => theme.animation.duration.normal}s ${({ theme }) => theme.animation.easeOut.join(',')};
+  min-height: 44px;
+  min-width: 44px;
+  white-space: nowrap;
+  line-height: 1;
+  padding: 0.65rem 1.5rem;
+  background: linear-gradient(135deg, ${({ theme }) => theme.colors.green[580]}, ${({ theme }) => theme.colors.green[500]});
+  color: #0a1e08;
+  box-shadow: ${({ theme }) => theme.shadows.glowGreen};
+  border: none;
+  cursor: pointer;
+
+  &:hover {
+    background: linear-gradient(135deg, ${({ theme }) => theme.colors.green[500]}, ${({ theme }) => theme.colors.green[300]});
+    transform: translateY(-1px);
+  }
+  &:disabled { opacity: 0.5; transform: none; box-shadow: none; cursor: not-allowed; }
+`
+
+const Actions = styled.div`
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+`
+
+const InfoBanner = styled.p`
+  background: rgba(65, 162, 56, 0.08);
+  border: 1px solid ${({ theme }) => theme.colors.lineSoft};
+  color: ${({ theme }) => theme.colors.text[380]};
+  padding: 0.75rem 1rem;
+  border-radius: ${({ theme }) => theme.radii.lg};
+  font-size: ${({ theme }) => theme.typography.bodySmall};
+  margin-top: ${({ theme }) => theme.spacing.lg};
+`

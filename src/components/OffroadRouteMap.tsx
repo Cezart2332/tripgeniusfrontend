@@ -3,6 +3,7 @@ import maplibregl from 'maplibre-gl'
 import type { OffroadRoute } from '../types/models'
 import { lineStringToLngLatCoords } from '../utils/coords'
 import { OFFROAD_MAP_STYLE } from '../map/osmStyle'
+import styled from 'styled-components'
 
 interface OffroadRouteMapProps {
   routes: OffroadRoute[]
@@ -10,6 +11,13 @@ interface OffroadRouteMapProps {
   height?: string
   interactive?: boolean
 }
+
+const MapContainer = styled.div<{ $height: string }>`
+  width: 100%;
+  height: ${({ $height }) => $height};
+  border-radius: 12px;
+  overflow: hidden;
+`
 
 export function OffroadRouteMap({ routes, selectedRouteId, height = '320px', interactive = false }: OffroadRouteMapProps) {
   const containerRef = useRef<HTMLDivElement | null>(null)
@@ -120,10 +128,9 @@ export function OffroadRouteMap({ routes, selectedRouteId, height = '320px', int
   }, [routes, selectedRouteId, mapReady, applyRoutesToMap])
 
   return (
-    <div
+    <MapContainer
       ref={containerRef}
-      className="offroad-route-map"
-      style={{ width: '100%', height, borderRadius: 12, overflow: 'hidden' }}
+      $height={height}
     />
   )
 }

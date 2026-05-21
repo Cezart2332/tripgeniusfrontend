@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import type { ChangeEvent, FormEvent, KeyboardEvent } from 'react'
 import { FiBell, FiChevronDown, FiCompass, FiMail, FiUploadCloud, FiZap, FiUser, FiUsers, FiCalendar, FiClock } from 'react-icons/fi'
 import { useDispatch, useSelector } from 'react-redux'
+import styled from 'styled-components'
 
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { tripTypeOptions } from '../data/tripTypeOptions'
@@ -11,8 +12,7 @@ import api, { updateCachedResponse } from '../data/api'
 import { setUser } from '../data/authSlice'
 import { AxiosError } from 'axios'
 import { isQueuedRequestError } from '../utils/errorMessage'
-import { FeedbackToast } from '../components/FeedbackToast'
-import type { FeedbackToastState, FeedbackToastTone } from '../components/FeedbackToast'
+import { ToastContainer, useToast } from '../components/shared/Toast'
 import waitForBackendButtonUnlock from '../utils/interactionDelay'
 import { formatDisplayDate, formatDisplayDateRange } from '../utils/dateDisplay'
 import {
@@ -21,6 +21,8 @@ import {
   isUpcomingTripStatus,
 } from '../utils/tripStatus'
 import { getAvatarUrl } from '../utils/userUtils'
+import { EmptyState } from '../components/shared/EmptyState'
+import { SkeletonCard } from '../components/shared/SkeletonCard'
 
 interface AuthStoreState {
   auth: {
@@ -64,10 +66,6 @@ const revealTransition = {
 
 const DEFAULT_PROFILE_DESCRIPTION = ''
 
-/**
- * Determines if a trip is currently active (happening now)
- * A trip is active when: startDate <= today <= endDate
- */
 const isActiveTrip = (trip: TripWithType): boolean => {
   const today = new Date()
   today.setHours(0, 0, 0, 0)
@@ -81,9 +79,6 @@ const isActiveTrip = (trip: TripWithType): boolean => {
   return startDate <= today && today <= endDate
 }
 
-/**
- * Determines if a trip is upcoming (future start date)
- */
 const isUpcomingTrip = (trip: TripWithType): boolean => {
   const today = new Date()
   today.setHours(0, 0, 0, 0)
@@ -94,9 +89,6 @@ const isUpcomingTrip = (trip: TripWithType): boolean => {
   return startDate > today
 }
 
-/**
- * Determines if a trip is past (ended before today)
- */
 const isPastTrip = (trip: TripWithType): boolean => {
   const today = new Date()
   today.setHours(0, 0, 0, 0)
@@ -106,8 +98,6 @@ const isPastTrip = (trip: TripWithType): boolean => {
 
   return endDate < today
 }
-
-
 
 const profileTabs: Array<{ key: ProfileTab; label: string; icon: React.ComponentType<{ className?: string; size?: number }> }> = [
   { key: 'identity', label: 'Identity', icon: FiUser },
@@ -227,6 +217,1041 @@ const getErrorMessage = (error: unknown, fallbackMessage: string): string => {
   return fallbackMessage
 }
 
+const Page = styled.section`
+  width: min(1200px, 100% - 2rem);
+  margin: 0 auto;
+  padding-top: ${({ theme }) => theme.spacing.lg};
+  padding-bottom: ${({ theme }) => theme.spacing['3xl']};
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.spacing.lg};
+
+  @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
+    width: min(1200px, 100% - 1rem);
+    padding-bottom: 7rem;
+    gap: ${({ theme }) => theme.spacing.md};
+  }
+`
+
+const UnauthedWrapper = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: ${({ theme }) => theme.spacing['3xl']} ${({ theme }) => theme.spacing.lg};
+  gap: ${({ theme }) => theme.spacing.md};
+`
+
+const UnauthedSticker = styled.img`
+  width: 160px;
+  height: auto;
+  margin-bottom: ${({ theme }) => theme.spacing.sm};
+  opacity: 0.85;
+`
+
+const UnauthedTitle = styled.h1`
+  font-size: ${({ theme }) => theme.typography.h1};
+  color: ${({ theme }) => theme.colors.text[100]};
+`
+
+const UnauthedDesc = styled.p`
+  font-size: ${({ theme }) => theme.typography.lead};
+  color: ${({ theme }) => theme.colors.text[380]};
+  max-width: 440px;
+`
+
+const UnauthedLink = styled(Link)`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  border-radius: ${({ theme }) => theme.radii.pill};
+  transition: all ${({ theme }) => theme.animation.duration.normal}s;
+  min-height: 44px;
+  min-width: 44px;
+  white-space: nowrap;
+  text-decoration: none;
+  line-height: 1;
+  padding: 0.65rem 1.5rem;
+  background: linear-gradient(135deg, ${({ theme }) => theme.colors.green[580]}, ${({ theme }) => theme.colors.green[500]});
+  color: #0a1e08;
+  box-shadow: ${({ theme }) => theme.shadows.glowGreen};
+
+  &:hover {
+    background: linear-gradient(135deg, ${({ theme }) => theme.colors.green[500]}, ${({ theme }) => theme.colors.green[300]});
+    transform: translateY(-1px);
+    box-shadow: 0 0 40px rgba(23, 247, 2, 0.3), 0 0 80px rgba(23, 247, 2, 0.1);
+  }
+`
+
+const Header = styled.header`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: ${({ theme }) => theme.spacing.lg};
+  flex-wrap: wrap;
+
+  @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+`
+
+const HeaderText = styled.div``
+
+const HeaderTitle = styled.h1`
+  font-size: ${({ theme }) => theme.typography.h1};
+  color: ${({ theme }) => theme.colors.text[100]};
+`
+
+const Eyebrow = styled.p`
+  font-size: ${({ theme }) => theme.typography.eyebrow};
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: ${({ theme }) => theme.colors.green[580]};
+  margin-bottom: 0.15rem;
+`
+
+const TabList = styled.nav`
+  display: flex;
+  gap: 0.25rem;
+  border-bottom: 1px solid ${({ theme }) => theme.colors.lineSoft};
+
+  @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+
+    &::-webkit-scrollbar {
+      display: none;
+    }
+  }
+`
+
+const Tab = styled.button<{ $active: boolean }>`
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.7rem 1rem;
+  font-size: ${({ theme }) => theme.typography.bodySmall};
+  font-weight: ${({ $active }) => ($active ? 700 : 500)};
+  color: ${({ $active, theme }) => ($active ? theme.colors.text[100] : theme.colors.text[380])};
+  background: transparent;
+  border: none;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color 0.2s ease;
+  min-height: 40px;
+  font-family: inherit;
+
+  &:hover {
+    color: ${({ theme }) => theme.colors.text[220]};
+  }
+`
+
+const TabActiveBar = styled(motion.div)`
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, ${({ theme }) => theme.colors.green[580]}, ${({ theme }) => theme.colors.green[500]});
+`
+
+const TabIconMobile = styled.span`
+  @media (min-width: calc(${({ theme }) => theme.breakpoints.mobile} + 1px)) {
+    display: none;
+  }
+`
+
+const TabLabelDesktop = styled.span`
+  @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
+    display: none;
+  }
+`
+
+const Panel = styled(motion.div)``
+
+const Section = styled.div`
+  background: ${({ theme }) => theme.glass.bg};
+  border: 1px solid ${({ theme }) => theme.glass.border};
+  border-radius: ${({ theme }) => theme.radii.xl};
+  backdrop-filter: blur(${({ theme }) => theme.glass.blur});
+  -webkit-backdrop-filter: blur(${({ theme }) => theme.glass.blur});
+  padding: ${({ theme }) => theme.spacing.xl};
+
+  @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
+    padding: ${({ theme }) => theme.spacing.lg};
+  }
+`
+
+const SectionTitle = styled.h3`
+  font-size: ${({ theme }) => theme.typography.h3};
+  color: ${({ theme }) => theme.colors.text[100]};
+`
+
+const SectionDesc = styled.p`
+  font-size: ${({ theme }) => theme.typography.body};
+  color: ${({ theme }) => theme.colors.text[380]};
+  line-height: 1.5;
+`
+
+const FieldLabel = styled.label`
+  font-size: ${({ theme }) => theme.typography.eyebrow};
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: ${({ theme }) => theme.colors.text[500]};
+  display: block;
+`
+
+const Input = styled.input`
+  width: 100%;
+  padding: 0.7rem 1rem;
+  border-radius: ${({ theme }) => theme.radii.lg};
+  border: 1px solid ${({ theme }) => theme.colors.lineSoft};
+  background: ${({ theme }) => theme.colors.bg[940]};
+  color: ${({ theme }) => theme.colors.text[100]};
+  font-size: ${({ theme }) => theme.typography.body};
+  font-family: inherit;
+  transition: border-color 0.15s ease;
+  min-height: 44px;
+
+  &:focus {
+    outline: none;
+    border-color: ${({ theme }) => theme.colors.green[500]};
+    box-shadow: 0 0 0 3px rgba(23, 247, 2, 0.1);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+`
+
+const TextArea = styled.textarea`
+  width: 100%;
+  padding: 0.7rem 1rem;
+  border-radius: ${({ theme }) => theme.radii.lg};
+  border: 1px solid ${({ theme }) => theme.colors.lineSoft};
+  background: ${({ theme }) => theme.colors.bg[940]};
+  color: ${({ theme }) => theme.colors.text[100]};
+  font-size: ${({ theme }) => theme.typography.body};
+  font-family: inherit;
+  transition: border-color 0.15s ease;
+  resize: vertical;
+  min-height: 44px;
+
+  &:focus {
+    outline: none;
+    border-color: ${({ theme }) => theme.colors.green[500]};
+    box-shadow: 0 0 0 3px rgba(23, 247, 2, 0.1);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+`
+
+const PrimaryBtn = styled.button`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  font-family: inherit;
+  border-radius: ${({ theme }) => theme.radii.pill};
+  transition: all ${({ theme }) => theme.animation.duration.normal}s;
+  min-height: 44px;
+  min-width: 44px;
+  white-space: nowrap;
+  line-height: 1;
+  padding: 0.65rem 1.5rem;
+  background: linear-gradient(135deg, ${({ theme }) => theme.colors.green[580]}, ${({ theme }) => theme.colors.green[500]});
+  color: #0a1e08;
+  box-shadow: ${({ theme }) => theme.shadows.glowGreen};
+  border: none;
+  cursor: pointer;
+  align-self: flex-start;
+
+  &:hover {
+    background: linear-gradient(135deg, ${({ theme }) => theme.colors.green[500]}, ${({ theme }) => theme.colors.green[300]});
+    transform: translateY(-1px);
+    box-shadow: 0 0 40px rgba(23, 247, 2, 0.3), 0 0 80px rgba(23, 247, 2, 0.1);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+  }
+`
+
+const SmallPrimaryBtn = styled.button`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  font-family: inherit;
+  border-radius: ${({ theme }) => theme.radii.pill};
+  transition: all ${({ theme }) => theme.animation.duration.normal}s;
+  min-height: 36px;
+  min-width: 36px;
+  white-space: nowrap;
+  line-height: 1;
+  padding: 0.4rem 0.9rem;
+  font-size: ${({ theme }) => theme.typography.bodySmall};
+  background: linear-gradient(135deg, ${({ theme }) => theme.colors.green[580]}, ${({ theme }) => theme.colors.green[500]});
+  color: #0a1e08;
+  border: none;
+  cursor: pointer;
+
+  &:hover {
+    background: linear-gradient(135deg, ${({ theme }) => theme.colors.green[500]}, ${({ theme }) => theme.colors.green[300]});
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+`
+
+const GhostBtn = styled.button`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  font-family: inherit;
+  border-radius: ${({ theme }) => theme.radii.pill};
+  transition: all ${({ theme }) => theme.animation.duration.normal}s;
+  min-height: 36px;
+  min-width: 36px;
+  white-space: nowrap;
+  line-height: 1;
+  padding: 0.4rem 0.9rem;
+  font-size: ${({ theme }) => theme.typography.bodySmall};
+  background: transparent;
+  color: ${({ theme }) => theme.colors.green[580]};
+  border: 1px solid rgba(154, 198, 148, 0.2);
+  cursor: pointer;
+
+  &:hover {
+    background: rgba(65, 162, 56, 0.08);
+    border-color: ${({ theme }) => theme.colors.line};
+    color: ${({ theme }) => theme.colors.green[500]};
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+`
+
+const GhostLink = styled(Link)`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  border-radius: ${({ theme }) => theme.radii.pill};
+  transition: all ${({ theme }) => theme.animation.duration.normal}s;
+  min-height: 36px;
+  min-width: 36px;
+  white-space: nowrap;
+  text-decoration: none;
+  line-height: 1;
+  padding: 0.4rem 0.9rem;
+  font-size: ${({ theme }) => theme.typography.bodySmall};
+  background: transparent;
+  color: ${({ theme }) => theme.colors.green[580]};
+  border: 1px solid rgba(154, 198, 148, 0.2);
+
+  &:hover {
+    background: rgba(65, 162, 56, 0.08);
+    border-color: ${({ theme }) => theme.colors.line};
+    color: ${({ theme }) => theme.colors.green[500]};
+  }
+`
+
+const DiscoverLink = styled(Link)`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  border-radius: ${({ theme }) => theme.radii.pill};
+  transition: all ${({ theme }) => theme.animation.duration.normal}s;
+  min-height: 36px;
+  min-width: 36px;
+  white-space: nowrap;
+  text-decoration: none;
+  line-height: 1;
+  margin-top: 0.5rem;
+  padding: 0.4rem 0.9rem;
+  font-size: ${({ theme }) => theme.typography.bodySmall};
+  background: linear-gradient(135deg, ${({ theme }) => theme.colors.green[580]}, ${({ theme }) => theme.colors.green[500]});
+  color: #0a1e08;
+  border: none;
+  cursor: pointer;
+
+  &:hover {
+    background: linear-gradient(135deg, ${({ theme }) => theme.colors.green[500]}, ${({ theme }) => theme.colors.green[300]});
+  }
+`
+
+const IdentityLayout = styled(motion.div)`
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: ${({ theme }) => theme.spacing.xl};
+  align-items: flex-start;
+
+  @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
+    grid-template-columns: 1fr;
+  }
+`
+
+const AvatarSection = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: ${({ theme }) => theme.spacing.xl};
+  background: ${({ theme }) => theme.glass.bg};
+  border: 1px solid ${({ theme }) => theme.glass.border};
+  border-radius: ${({ theme }) => theme.radii.xl};
+  backdrop-filter: blur(${({ theme }) => theme.glass.blur});
+  -webkit-backdrop-filter: blur(${({ theme }) => theme.glass.blur});
+
+  @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
+    padding: ${({ theme }) => theme.spacing.lg};
+  }
+`
+
+const AvatarWrapper = styled.label`
+  position: relative;
+  width: 140px;
+  height: 140px;
+  border-radius: ${({ theme }) => theme.radii.full};
+  overflow: hidden;
+  cursor: pointer;
+  border: 2px solid ${({ theme }) => theme.colors.line};
+  display: block;
+
+  &:hover {
+    border-color: ${({ theme }) => theme.colors.green[500]};
+  }
+`
+
+const AvatarImg = styled.img`
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+`
+
+const AvatarOverlay = styled.div`
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  color: #fff;
+  font-size: ${({ theme }) => theme.typography.bodySmall};
+  opacity: 0;
+  transition: opacity 0.2s ease;
+
+  ${AvatarWrapper}:hover & {
+    opacity: 1;
+  }
+`
+
+const HiddenInput = styled.input`
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+`
+
+const AvatarSticker = styled.img`
+  width: 100%;
+  max-width: 200px;
+  margin-top: 2rem;
+  opacity: 0.8;
+`
+
+const IdentityForm = styled.form`
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.spacing.lg};
+  padding: ${({ theme }) => theme.spacing.xl};
+  background: ${({ theme }) => theme.glass.bg};
+  border: 1px solid ${({ theme }) => theme.glass.border};
+  border-radius: ${({ theme }) => theme.radii.xl};
+  backdrop-filter: blur(${({ theme }) => theme.glass.blur});
+  -webkit-backdrop-filter: blur(${({ theme }) => theme.glass.blur});
+
+  @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
+    padding: ${({ theme }) => theme.spacing.lg};
+  }
+`
+
+const FormSection = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.spacing.sm};
+`
+
+const ChipRow = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+`
+
+const Chip = styled.button<{ $selected: boolean }>`
+  display: inline-flex;
+  align-items: center;
+  padding: 0.35rem 0.9rem;
+  border-radius: ${({ theme }) => theme.radii.pill};
+  font-size: ${({ theme }) => theme.typography.bodySmall};
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border: 1px solid ${({ $selected, theme }) => ($selected ? theme.colors.green[580] : theme.colors.lineSoft)};
+  background: ${({ $selected }) => ($selected ? 'rgba(65, 162, 56, 0.15)' : 'transparent')};
+  color: ${({ $selected, theme }) => ($selected ? theme.colors.green[500] : theme.colors.text[380])};
+
+  &:hover {
+    border-color: ${({ theme }) => theme.colors.green[580]};
+    color: ${({ theme }) => theme.colors.green[500]};
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+`
+
+const SectionHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  gap: ${({ theme }) => theme.spacing.md};
+`
+
+const SectionHeaderLeft = styled.div``
+
+const InvitesContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.spacing.sm};
+`
+
+const InviteRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing.md};
+  padding: ${({ theme }) => theme.spacing.md} ${({ theme }) => theme.spacing.lg};
+  background: ${({ theme }) => theme.colors.bg[940]};
+  border-radius: ${({ theme }) => theme.radii.lg};
+  border: 1px solid ${({ theme }) => theme.colors.lineSoft};
+
+  @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: ${({ theme }) => theme.spacing.md};
+  }
+`
+
+const InviteIcon = styled.div`
+  width: 40px;
+  height: 40px;
+  border-radius: ${({ theme }) => theme.radii.lg};
+  background: rgba(65, 162, 56, 0.12);
+  color: ${({ theme }) => theme.colors.green[580]};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  flex-shrink: 0;
+`
+
+const InviteInfo = styled.div`
+  flex: 1;
+`
+
+const InviteTitle = styled.p`
+  color: ${({ theme }) => theme.colors.text[100]};
+  font-weight: 500;
+  font-size: ${({ theme }) => theme.typography.body};
+`
+
+const InviteActions = styled.div`
+  display: flex;
+  gap: ${({ theme }) => theme.spacing.sm};
+  flex-shrink: 0;
+`
+
+const HistoryLayout = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.spacing['2xl']};
+`
+
+const HistorySectionHeader = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+
+  @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: ${({ theme }) => theme.spacing.md};
+  }
+`
+
+const HistorySectionHeaderLeft = styled.div`
+  h3 {
+    margin-bottom: 0.25rem;
+  }
+`
+
+const HeaderSticker = styled.img`
+  width: 80px;
+
+  @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
+    width: 60px;
+  }
+`
+
+const HistoryCategorySection = styled.div`
+  background: ${({ theme }) => theme.glass.bg};
+  border: 1px solid ${({ theme }) => theme.glass.border};
+  border-radius: ${({ theme }) => theme.radii.xl};
+  backdrop-filter: blur(${({ theme }) => theme.glass.blur});
+  -webkit-backdrop-filter: blur(${({ theme }) => theme.glass.blur});
+  overflow: hidden;
+`
+
+const HistoryCategoryHeader = styled.div`
+  padding: ${({ theme }) => theme.spacing.md} ${({ theme }) => theme.spacing.xl};
+  border-bottom: 1px solid ${({ theme }) => theme.colors.lineSoft};
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
+    padding: ${({ theme }) => theme.spacing.md} ${({ theme }) => theme.spacing.lg};
+  }
+`
+
+const HistoryCategoryTitle = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+`
+
+const CategoryIcon = styled.span`
+  color: ${({ theme }) => theme.colors.green[580]};
+  display: flex;
+  align-items: center;
+  font-size: 1rem;
+`
+
+const CategoryTitle = styled.h4`
+  font-size: ${({ theme }) => theme.typography.body};
+  color: ${({ theme }) => theme.colors.text[100]};
+  font-weight: 600;
+`
+
+const CategoryCount = styled.span`
+  font-size: ${({ theme }) => theme.typography.caption};
+  font-weight: 600;
+  color: ${({ theme }) => theme.colors.text[380]};
+  background: ${({ theme }) => theme.colors.bg[940]};
+  padding: 0.15rem 0.6rem;
+  border-radius: ${({ theme }) => theme.radii.pill};
+`
+
+const HistoryCategoryContent = styled.div`
+  padding: ${({ theme }) => theme.spacing.md};
+`
+
+const HistoryList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+`
+
+const HistoryRow = styled(Link)<{ $active?: boolean; $past?: boolean }>`
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing.md};
+  padding: ${({ theme }) => theme.spacing.md} ${({ theme }) => theme.spacing.lg};
+  background: ${({ $active }) => ($active ? 'rgba(65, 162, 56, 0.06)' : 'transparent')};
+  border: 1px solid ${({ $active, theme }) => ($active ? theme.colors.line : 'transparent')};
+  border-radius: ${({ theme }) => theme.radii.lg};
+  text-decoration: none;
+  transition: background 0.15s ease, border-color 0.15s ease;
+  opacity: ${({ $past }) => ($past ? 0.65 : 1)};
+
+  &:hover {
+    background: ${({ theme }) => theme.colors.bg[940]};
+    border-color: ${({ theme }) => theme.colors.lineSoft};
+    opacity: 1;
+  }
+
+  @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
+    flex-wrap: wrap;
+    padding: ${({ theme }) => theme.spacing.md};
+  }
+`
+
+const HistoryThumb = styled.img`
+  width: 64px;
+  height: 48px;
+  border-radius: ${({ theme }) => theme.radii.sm};
+  object-fit: cover;
+  flex-shrink: 0;
+
+  @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
+    width: 56px;
+    height: 42px;
+  }
+`
+
+const HistoryInfo = styled.div`
+  flex: 1;
+  min-width: 0;
+`
+
+const HistoryTitleRow = styled.h4`
+  font-size: ${({ theme }) => theme.typography.body};
+  color: ${({ theme }) => theme.colors.text[100]};
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.3rem;
+`
+
+const HistoryBadgeOffroad = styled.span`
+  font-size: ${({ theme }) => theme.typography.caption};
+  font-weight: 600;
+  color: ${({ theme }) => theme.colors.offroad.accent};
+  background: ${({ theme }) => theme.colors.offroad.accentSoft};
+  padding: 0.1rem 0.5rem;
+  border-radius: ${({ theme }) => theme.radii.pill};
+`
+
+const HistoryBadgeActive = styled.span`
+  font-size: ${({ theme }) => theme.typography.caption};
+  font-weight: 600;
+  color: ${({ theme }) => theme.colors.green[500]};
+  background: rgba(23, 247, 2, 0.12);
+  padding: 0.1rem 0.5rem;
+  border-radius: ${({ theme }) => theme.radii.pill};
+`
+
+const HistoryBadgeStatus = styled.span<{ $upcoming?: boolean; $past?: boolean }>`
+  font-size: ${({ theme }) => theme.typography.caption};
+  font-weight: 600;
+  padding: 0.1rem 0.5rem;
+  border-radius: ${({ theme }) => theme.radii.pill};
+  color: ${({ $upcoming, $past, theme }) =>
+    $upcoming ? theme.colors.offroad.accent :
+    $past ? theme.colors.text[500] :
+    theme.colors.green[580]};
+  background: ${({ $upcoming, $past, theme }) =>
+    $upcoming ? theme.colors.offroad.accentSoft :
+    $past ? 'rgba(122, 158, 116, 0.1)' :
+    'rgba(65, 162, 56, 0.1)'};
+`
+
+const HistoryMetaRow = styled.div`
+  display: flex;
+  gap: ${({ theme }) => theme.spacing.lg};
+  flex-wrap: wrap;
+`
+
+const HistoryMetaItem = styled.span`
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: ${({ theme }) => theme.typography.caption};
+  color: ${({ theme }) => theme.colors.text[500]};
+`
+
+const HistorySkeletonGroup = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+`
+
+const HistorySkeletonRow = styled.div`
+  height: 64px;
+  background: linear-gradient(
+    90deg,
+    rgba(65, 162, 56, 0.06) 25%,
+    rgba(65, 162, 56, 0.12) 50%,
+    rgba(65, 162, 56, 0.06) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: ${({ theme }) => theme.radii.md};
+
+  @keyframes shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+`
+
+const MatchesGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: ${({ theme }) => theme.spacing.lg};
+
+  @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
+    grid-template-columns: 1fr;
+  }
+`
+
+const MatchCard = styled(Link)`
+  display: flex;
+  flex-direction: column;
+  background: ${({ theme }) => theme.glass.bg};
+  border: 1px solid ${({ theme }) => theme.glass.border};
+  border-radius: ${({ theme }) => theme.radii.xl};
+  backdrop-filter: blur(${({ theme }) => theme.glass.blur});
+  -webkit-backdrop-filter: blur(${({ theme }) => theme.glass.blur});
+  overflow: hidden;
+  text-decoration: none;
+  transition: border-color 0.2s ease, transform 0.2s ease;
+
+  &:hover {
+    border-color: ${({ theme }) => theme.colors.line};
+    transform: translateY(-2px);
+  }
+`
+
+const MatchBadge = styled.div`
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  padding: 0.25rem 0.7rem;
+  font-size: ${({ theme }) => theme.typography.caption};
+  font-weight: 700;
+  border-radius: ${({ theme }) => theme.radii.pill};
+  background: linear-gradient(135deg, ${({ theme }) => theme.colors.green[580]}, ${({ theme }) => theme.colors.green[500]});
+  color: #0a1e08;
+  z-index: 1;
+`
+
+const MatchThumbWrap = styled.div`
+  position: relative;
+  height: 160px;
+  overflow: hidden;
+`
+
+const MatchThumb = styled.img`
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+`
+
+const MatchContent = styled.div`
+  padding: ${({ theme }) => theme.spacing.lg};
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  flex: 1;
+
+  @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
+    padding: ${({ theme }) => theme.spacing.md};
+  }
+`
+
+const MatchEyebrow = styled.p`
+  font-size: ${({ theme }) => theme.typography.eyebrow};
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: ${({ theme }) => theme.colors.green[580]};
+`
+
+const MatchTitle = styled.h3`
+  font-size: ${({ theme }) => theme.typography.h3};
+  color: ${({ theme }) => theme.colors.text[100]};
+  line-height: 1.3;
+`
+
+const MatchDesc = styled.p`
+  font-size: ${({ theme }) => theme.typography.bodySmall};
+  color: ${({ theme }) => theme.colors.text[380]};
+  line-height: 1.45;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+`
+
+const MatchReasons = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-top: 0.5rem;
+`
+
+const MatchReason = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: ${({ theme }) => theme.typography.caption};
+  color: ${({ theme }) => theme.colors.text[380]};
+
+  svg {
+    color: ${({ theme }) => theme.colors.green[580]};
+    flex-shrink: 0;
+  }
+`
+
+const MatchMeta = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: auto;
+  padding-top: ${({ theme }) => theme.spacing.md};
+  border-top: 1px solid ${({ theme }) => theme.colors.lineSoft};
+`
+
+const MatchPrice = styled.div`
+  font-weight: 700;
+  font-size: ${({ theme }) => theme.typography.body};
+  color: ${({ theme }) => theme.colors.green[500]};
+`
+
+const MatchMembers = styled.div`
+  font-size: ${({ theme }) => theme.typography.caption};
+  color: ${({ theme }) => theme.colors.text[380]};
+`
+
+const MatchViewBtn = styled.button`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  font-family: inherit;
+  border-radius: ${({ theme }) => theme.radii.pill};
+  transition: all ${({ theme }) => theme.animation.duration.normal}s;
+  min-height: 36px;
+  min-width: 36px;
+  white-space: nowrap;
+  line-height: 1;
+  padding: 0.4rem 0.9rem;
+  font-size: ${({ theme }) => theme.typography.bodySmall};
+  background: linear-gradient(135deg, ${({ theme }) => theme.colors.green[580]}, ${({ theme }) => theme.colors.green[500]});
+  color: #0a1e08;
+  border: none;
+  cursor: pointer;
+  margin-top: 1rem;
+  width: 100%;
+
+  &:hover {
+    background: linear-gradient(135deg, ${({ theme }) => theme.colors.green[500]}, ${({ theme }) => theme.colors.green[300]});
+  }
+`
+
+const NotificationsContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.spacing.sm};
+`
+
+const NotificationRow = styled.div<{ $unread: boolean }>`
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing.md};
+  padding: ${({ theme }) => theme.spacing.md} ${({ theme }) => theme.spacing.lg};
+  background: ${({ $unread, theme }) => ($unread ? 'rgba(65, 162, 56, 0.04)' : theme.colors.bg[940])};
+  border-radius: ${({ theme }) => theme.radii.lg};
+  border: 1px solid ${({ $unread, theme }) => ($unread ? theme.colors.line : theme.colors.lineSoft)};
+  cursor: pointer;
+  transition: background 0.15s ease;
+
+  &:hover {
+    background: ${({ theme }) => theme.colors.bg[940]};
+  }
+
+  @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
+    flex-wrap: wrap;
+    padding: ${({ theme }) => theme.spacing.md};
+  }
+`
+
+const NotificationIcon = styled.div`
+  width: 40px;
+  height: 40px;
+  border-radius: ${({ theme }) => theme.radii.lg};
+  background: rgba(65, 162, 56, 0.12);
+  color: ${({ theme }) => theme.colors.green[580]};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  flex-shrink: 0;
+`
+
+const NotificationBody = styled.div`
+  flex: 1;
+`
+
+const NotificationContent = styled.p`
+  color: ${({ theme }) => theme.colors.text[100]};
+  font-weight: 500;
+  font-size: ${({ theme }) => theme.typography.body};
+`
+
+const NotificationTimestamp = styled.p`
+  font-size: ${({ theme }) => theme.typography.caption};
+  opacity: 0.5;
+  margin-top: 0.2rem;
+  color: ${({ theme }) => theme.colors.text[380]};
+`
+
+const NotificationDot = styled.span`
+  position: absolute;
+  top: 0.9rem;
+  right: 0.9rem;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: ${({ theme }) => theme.colors.green[500]};
+  box-shadow: 0 0 6px rgba(23, 247, 2, 0.4);
+`
+
 export function ProfilePage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const user = useSelector((state: AuthStoreState) => state.auth.user)
@@ -239,8 +1264,7 @@ export function ProfilePage() {
       ? (requestedTab as ProfileTab)
       : 'identity'
   })
-  
-  // Sync activeTab with URL
+
   useEffect(() => {
     const requestedTab = searchParams.get('tab')
     const nextTab = requestedTab && profileTabs.some((tab) => tab.key === requestedTab)
@@ -263,7 +1287,7 @@ export function ProfilePage() {
     user?.groupSize ?? '',
   )
   const [isSaving, setIsSaving] = useState(false)
-  const [toast, setToast] = useState<FeedbackToastState | null>(null)
+  const { toasts, addToast, removeToast } = useToast()
   const [readNotificationIds, setReadNotificationIds] = useState<number[]>([])
   const [isMarkingNotificationId, setIsMarkingNotificationId] = useState<number | null>(null)
   const [isClearingNotifications, setIsClearingNotifications] = useState(false)
@@ -275,14 +1299,6 @@ export function ProfilePage() {
   const [isFetchingOffroadTrips, setIsFetchingOffroadTrips] = useState(false)
   const objectUrlRef = useRef<string | null>(null)
   const tabListRef = useRef<HTMLElement | null>(null)
-
-  const showToast = (message: string, tone: FeedbackToastTone) => {
-    setToast({
-      id: Date.now(),
-      message,
-      tone,
-    })
-  }
 
   const updateUserNotificationsAsRead = (notificationIds: number[]) => {
     if (!user || notificationIds.length === 0) {
@@ -313,8 +1329,6 @@ export function ProfilePage() {
       }),
     )
   }
-
-
 
   useEffect(() => {
     if (!user) {
@@ -347,11 +1361,7 @@ export function ProfilePage() {
       return
     }
 
-    setToast({
-      id: Date.now(),
-      message: 'You will be redirected in 2 seconds to login page',
-      tone: 'info',
-    })
+    addToast('You will be redirected in 2 seconds to login page', 'info')
 
     const timeoutId = window.setTimeout(() => {
       navigate('/login', { replace: true })
@@ -398,34 +1408,30 @@ export function ProfilePage() {
     [offroadTrips]
   )
 
-  // Combine classic trips and offroad trips for history (membership only)
   const allUserTrips = useMemo<TripWithType[]>(() => {
     const classicTrips = (user?.trips ?? []).map(t => ({ ...t, tripType: 'classic' as const }))
     const userOffroadTrips = memberOffroadTrips.map(t => ({ ...t, tripType: 'offroad' as const }))
     return [...classicTrips, ...userOffroadTrips]
   }, [user?.trips, memberOffroadTrips])
 
-  // Categorize trips by date: active, upcoming, past
   const categorizedTrips = useMemo(() => {
     const active = allUserTrips.filter(isActiveTrip)
     const upcoming = allUserTrips.filter(isUpcomingTrip)
     const past = allUserTrips.filter(isPastTrip)
 
-    // Sort each category by date
     const sortByDate = (a: TripWithType, b: TripWithType) =>
       new Date(a.startingDate).getTime() - new Date(b.startingDate).getTime()
 
     return {
       active: active.sort(sortByDate),
       upcoming: upcoming.sort(sortByDate),
-      past: past.sort((a, b) => new Date(b.endingDate).getTime() - new Date(a.endingDate).getTime()), // Most recent first
+      past: past.sort((a, b) => new Date(b.endingDate).getTime() - new Date(a.endingDate).getTime()),
     }
   }, [allUserTrips])
 
   const effectiveMaxGroupSize = typeof maxGroupSize === 'number' ? maxGroupSize : null
 
   const discoveryTrips = useMemo<PersonalizedTripCard[]>(() => {
-    // We filter ALL trips from the platform, excluding those the user is already in
     const userTripIds = new Set((user?.trips ?? []).map(t => String(t.id)))
     const userOffroadTripIds = new Set(memberOffroadTrips.map(t => String(t.id)))
 
@@ -435,7 +1441,6 @@ export function ProfilePage() {
         const tagsSafe = trip.tags ?? []
         const matchingTags = tagsSafe.filter((tag: string) => tripTypes.includes(tag))
 
-        // Calculate Interest Match (0-100)
         let interestScore = 0
         if (tripTypes.length > 0) {
           interestScore = (matchingTags.length / tripTypes.length) * 100
@@ -448,8 +1453,7 @@ export function ProfilePage() {
             : tripMax <= effectiveMaxGroupSize
               ? 10
               : -7
-        
-        // Final score: 80% Interests + 20% Group size/status alignment
+
         const matchScore = clamp(
           Math.round(interestScore * 0.8 + 20 + groupAlignment),
           0,
@@ -483,7 +1487,7 @@ export function ProfilePage() {
           matchReasons,
         }
       })
-      .filter(card => card.matchScore >= 50) // ONLY high matches
+      .filter(card => card.matchScore >= 50)
       .sort((first, second) => second.matchScore - first.matchScore)
   }, [allTrips, user?.trips, memberOffroadTrips, tripTypes, effectiveMaxGroupSize])
 
@@ -569,10 +1573,10 @@ export function ProfilePage() {
     }
     catch (err: unknown) {
       if (isQueuedRequestError(err)) {
-        showToast('Profile and preferences will be updated successfully.', 'success')
+        addToast('Profile and preferences will be updated successfully.', 'success')
       }
       else {
-        showToast('There was a problem updating your profile, please try again.', 'error')
+        addToast('There was a problem updating your profile, please try again.', 'error')
         console.error(err)
       }
     }
@@ -587,7 +1591,6 @@ export function ProfilePage() {
 
     setIsSaving(true)
 
-    // Optimistic Update: Update Redux state immediately
     if (user) {
       const optimisticUser: User = {
         ...user,
@@ -596,8 +1599,7 @@ export function ProfilePage() {
         groupSize: typeof maxGroupSize === 'number' ? maxGroupSize : user.groupSize
       }
       dispatch(setUser({ user: optimisticUser }))
-      
-      // Update the Service Worker's cache for /api/user/me so refresh works offline
+
       updateCachedResponse('api/user/me', optimisticUser)
     }
 
@@ -620,26 +1622,25 @@ export function ProfilePage() {
 
         setAvatarFileName(avatarFile ? avatarFile.name : 'No image uploaded yet')
         setAvatarFile(null)
-        showToast('Profile and preferences updated successfully.', 'success')
+        addToast('Profile and preferences updated successfully.', 'success')
       }
     }
     catch (err: unknown) {
       if (isQueuedRequestError(err)) {
-        showToast('Profile and preferences will be updated successfully.', 'success')
+        addToast('Profile and preferences will be updated successfully.', 'success')
       }
       else {
-        // Rollback on actual server error (not network error)
         if (user) {
           dispatch(setUser({ user }))
           updateCachedResponse('api/user/me', user)
         }
-        
+
         if (err instanceof AxiosError) {
           const message = err.response?.data?.message || err.response?.data || "There was a problem updating your profile, please try again later."
-          showToast(String(message), 'error')
+          addToast(String(message), 'error')
         }
         else {
-          showToast('Could not update profile. Please try again.', 'error')
+          addToast('Could not update profile. Please try again.', 'error')
         }
       }
     }
@@ -650,7 +1651,7 @@ export function ProfilePage() {
   }
 
   const selectTab = (nextTab: ProfileTab) => {
-    setActiveTab(nextTab) // Immediate UI update
+    setActiveTab(nextTab)
     const nextParams = new URLSearchParams(searchParams)
     nextParams.set('tab', nextTab)
     setSearchParams(nextParams, { replace: true })
@@ -761,8 +1762,7 @@ export function ProfilePage() {
         action: action === 'Accepted' ? 'accept' : 'decline',
       })
       if (response.status === 200) {
-        showToast(`Trip invite ${action.toLowerCase()}ed.`, 'success')
-        // Local state update for immediate feedback
+        addToast(`Trip invite ${action.toLowerCase()}ed.`, 'success')
         if (user) {
           const updatedTrips = user.trips.map(trip => {
             if (String(trip.id) === String(tripId)) {
@@ -785,7 +1785,6 @@ export function ProfilePage() {
 
     } catch (err: unknown) {
       if (isQueuedRequestError(err)) {
-        // Optimistic Update: Remove from local list so user sees it "worked"
         if (user) {
           const updatedTrips = user.trips.map(trip => {
             if (String(trip.id) === String(tripId)) {
@@ -801,10 +1800,10 @@ export function ProfilePage() {
           })
           dispatch(setUser({ user: { ...user, trips: updatedTrips } }))
         }
-        showToast(`Invite response will be sent when online.`, 'success')
+        addToast(`Invite response will be sent when online.`, 'success')
       } else {
         const fallbackMessage = `Failed to ${action.toLowerCase()} invite.`
-        showToast(getErrorMessage(err, fallbackMessage), 'error')
+        addToast(getErrorMessage(err, fallbackMessage), 'error')
       }
     } finally {
       setIsRespondingInviteId(null)
@@ -814,41 +1813,40 @@ export function ProfilePage() {
 
   if (!user) {
     return (
-      <section className="page profile-page">
-        <FeedbackToast toast={toast} clearToast={() => setToast(null)} />
-        <div className="discovery-empty-state">
-          <img src="/newstickers/sticker5.png" alt="" className="discovery-empty-sticker" />
-          <h1>You are not logged in</h1>
-          <p>Log in to edit your profile and unlock personalized trip discovery.</p>
-          <Link className="btn btn-primary" to="/login">
+      <Page>
+        <ToastContainer toasts={toasts} removeToast={removeToast} />
+        <UnauthedWrapper>
+          <UnauthedSticker src="/newstickers/sticker5.png" alt="" />
+          <UnauthedTitle>You are not logged in</UnauthedTitle>
+          <UnauthedDesc>Log in to edit your profile and unlock personalized trip discovery.</UnauthedDesc>
+          <UnauthedLink to="/login">
             Go to login
-          </Link>
-        </div>
-      </section>
+          </UnauthedLink>
+        </UnauthedWrapper>
+      </Page>
     )
   }
 
   return (
-    <section className="page profile-page-v2 container">
-      <FeedbackToast toast={toast} clearToast={() => setToast(null)} />
+    <Page>
+      <ToastContainer toasts={toasts} removeToast={removeToast} />
 
-      <header className="profile-header-v2">
-        <div>
-          <p className="eyebrow">Explorer Workspace</p>
-          <h1>Welcome, {user.username}</h1>
-        </div>
-        <nav
+      <Header>
+        <HeaderText>
+          <Eyebrow>Explorer Workspace</Eyebrow>
+          <HeaderTitle>Welcome, {user.username}</HeaderTitle>
+        </HeaderText>
+        <TabList
           ref={tabListRef}
-          className="profile-tab-bar-v2"
           aria-label="Profile sections"
           role="tablist"
         >
           {profileTabs.map((tab, index) => (
-            <button
+            <Tab
               key={tab.key}
               type="button"
               id={`profile-tab-${tab.key}`}
-              className={activeTab === tab.key ? 'profile-tab-btn-v2 is-active' : 'profile-tab-btn-v2'}
+              $active={activeTab === tab.key}
               role="tab"
               aria-selected={activeTab === tab.key}
               aria-controls={`profile-panel-${tab.key}`}
@@ -857,18 +1855,25 @@ export function ProfilePage() {
               onKeyDown={(event) => handleTabKeyDown(event, index)}
               title={tab.label}
             >
-              <span className="tab-label-desktop">{tab.label}</span>
-              <span className="tab-icon-mobile" aria-hidden="true">
+              <TabLabelDesktop>{tab.label}</TabLabelDesktop>
+              <TabIconMobile aria-hidden="true">
                 <tab.icon />
-              </span>
-            </button>
+              </TabIconMobile>
+              {activeTab === tab.key && (
+                <TabActiveBar
+                  layoutId="profile-tab-indicator"
+                  initial={false}
+                  transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+                />
+              )}
+            </Tab>
           ))}
-        </nav>
-      </header>
+        </TabList>
+      </Header>
 
       <AnimatePresence mode="popLayout" initial={false}>
         {activeTab === 'identity' ? (
-          <motion.div
+          <Panel
             key="identity"
             id="profile-panel-identity"
             role="tabpanel"
@@ -877,93 +1882,95 @@ export function ProfilePage() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -12 }}
             transition={revealTransition}
-            className="profile-identity-v2"
           >
-            <div className="profile-avatar-section-v2">
-              <label className="avatar-wrapper-v2" htmlFor="profile-avatar-file">
-                <img src={avatarUrl} alt="Profile" className="avatar-preview-v2" />
-                <div className="avatar-upload-overlay-v2">
-                  <FiUploadCloud size={24} />
-                  <span>Update photo</span>
-                </div>
-              </label>
-              <input
-                id="profile-avatar-file"
-                className="visually-hidden"
-                type="file"
-                accept="image/png,image/jpeg,image/webp"
-                disabled={isSaving}
-                onChange={handleAvatarUpload}
-              />
-              <img src="/newstickers/sticker2.png" alt="" className="profile-sticker-v2" style={{ width: '100%', maxWidth: '200px', marginTop: '2rem', opacity: 0.8 }} />
-            </div>
-
-            <form className="profile-form-v2" onSubmit={handleSave}>
-              <div className="profile-section-v2">
-                <h3>Identity Details</h3>
-                <label className="field-label" htmlFor="profile-description">
-                  About me / Bio
-                </label>
-                <textarea
-                  id="profile-description"
-                  className="input input-area"
-                  value={description}
-                  onChange={(event) => setDescription(event.target.value)}
+            <IdentityLayout
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.4 }}
+            >
+              <AvatarSection>
+                <AvatarWrapper htmlFor="profile-avatar-file">
+                  <AvatarImg src={avatarUrl} alt="Profile" />
+                  <AvatarOverlay>
+                    <FiUploadCloud size={24} />
+                    <span>Update photo</span>
+                  </AvatarOverlay>
+                </AvatarWrapper>
+                <HiddenInput
+                  id="profile-avatar-file"
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp"
                   disabled={isSaving}
-                  rows={4}
-                  placeholder="Tell us about your travel style..."
+                  onChange={handleAvatarUpload}
                 />
-              </div>
+                <AvatarSticker src="/newstickers/sticker2.png" alt="" />
+              </AvatarSection>
 
-              <div className="profile-section-v2">
-                <h3>Travel DNA</h3>
-                <div className="chip-row">
-                  {tripTypeOptions.map((tripType) => {
-                    const selected = tripTypes.includes(tripType)
-                    return (
-                      <button
-                        key={tripType}
-                        type="button"
-                        className={selected ? 'chip is-selected' : 'chip'}
-                        disabled={isSaving}
-                        onClick={() => setTripTypes((previous) => toggleTripType(previous, tripType))}
-                      >
-                        {tripType}
-                      </button>
-                    )
-                  })}
-                </div>
-
-                <div style={{ marginTop: '1rem' }}>
-                  <label className="field-label" htmlFor="profile-max-group">
-                    Ideal Group Size
-                  </label>
-                  <input
-                    id="profile-max-group"
-                    className="input"
-                    type="number"
-                    min={2}
-                    max={30}
-                    value={maxGroupSize}
+              <IdentityForm onSubmit={handleSave}>
+                <FormSection>
+                  <SectionTitle>Identity Details</SectionTitle>
+                  <FieldLabel htmlFor="profile-description">
+                    About me / Bio
+                  </FieldLabel>
+                  <TextArea
+                    id="profile-description"
+                    value={description}
+                    onChange={(event) => setDescription(event.target.value)}
                     disabled={isSaving}
-                    placeholder="Leave empty if not set"
-                    onChange={(event) => {
-                      const nextValue = event.target.value
-                      setMaxGroupSize(nextValue === '' ? '' : Number(nextValue))
-                    }}
+                    rows={4}
+                    placeholder="Tell us about your travel style..."
                   />
-                </div>
-              </div>
+                </FormSection>
 
-              <button className="btn btn-primary btn-lg" type="submit" disabled={isSaving}>
-                {isSaving ? 'Syncing...' : 'Save Profile Workspace'}
-              </button>
-            </form>
-          </motion.div>
+                <FormSection>
+                  <SectionTitle>Travel DNA</SectionTitle>
+                  <ChipRow>
+                    {tripTypeOptions.map((tripType) => {
+                      const selected = tripTypes.includes(tripType)
+                      return (
+                        <Chip
+                          key={tripType}
+                          type="button"
+                          $selected={selected}
+                          disabled={isSaving}
+                          onClick={() => setTripTypes((previous) => toggleTripType(previous, tripType))}
+                        >
+                          {tripType}
+                        </Chip>
+                      )
+                    })}
+                  </ChipRow>
+
+                  <div style={{ marginTop: '1rem' }}>
+                    <FieldLabel htmlFor="profile-max-group">
+                      Ideal Group Size
+                    </FieldLabel>
+                    <Input
+                      id="profile-max-group"
+                      type="number"
+                      min={2}
+                      max={30}
+                      value={maxGroupSize}
+                      disabled={isSaving}
+                      placeholder="Leave empty if not set"
+                      onChange={(event) => {
+                        const nextValue = event.target.value
+                        setMaxGroupSize(nextValue === '' ? '' : Number(nextValue))
+                      }}
+                    />
+                  </div>
+                </FormSection>
+
+                <PrimaryBtn type="submit" disabled={isSaving}>
+                  {isSaving ? 'Syncing...' : 'Save Profile Workspace'}
+                </PrimaryBtn>
+              </IdentityForm>
+            </IdentityLayout>
+          </Panel>
         ) : null}
 
         {activeTab === 'invites' ? (
-          <motion.div
+          <Panel
             key="invites"
             id="profile-panel-invites"
             role="tabpanel"
@@ -973,58 +1980,56 @@ export function ProfilePage() {
             exit={{ opacity: 0, y: -12 }}
             transition={revealTransition}
           >
-            <div className="profile-section-v2">
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                <div>
-                  <h3>Trip Invitations</h3>
-                  <p>Manage your pending trip invitations.</p>
-                </div>
-              </div>
+            <Section>
+              <SectionHeader>
+                <SectionHeaderLeft>
+                  <SectionTitle>Trip Invitations</SectionTitle>
+                  <SectionDesc>Manage your pending trip invitations.</SectionDesc>
+                </SectionHeaderLeft>
+              </SectionHeader>
 
-              <div className="profile-invites-v2">
+              <InvitesContainer>
                 {visibleInvites.length === 0 && (
-                  <div style={{ textAlign: 'center', padding: '3rem 0' }}>
-                    <img src="/newstickers/sticker4.png" alt="" style={{ width: '120px', marginBottom: '1rem', opacity: 0.6 }} />
-                    <p className="empty-note">No pending invitations.</p>
-                  </div>
+                  <EmptyState
+                    image="/newstickers/sticker4.png"
+                    title="No pending invitations."
+                  />
                 )}
                 {visibleInvites.map((invite) => (
-                  <div key={invite.tripId} className="invite-row-v2">
-                    <div className="invite-icon-v2">
+                  <InviteRow key={invite.tripId}>
+                    <InviteIcon>
                       <FiMail />
-                    </div>
-                    <div style={{ flex: 1 }}>
-                      <p style={{ color: 'var(--text-100)', fontWeight: 500 }}>Invitation to {invite.tripTitle}</p>
-                    </div>
-                    <div className="invite-actions-v2">
-                      <button
-                        className="btn btn-primary btn-sm"
+                    </InviteIcon>
+                    <InviteInfo>
+                      <InviteTitle>Invitation to {invite.tripTitle}</InviteTitle>
+                    </InviteInfo>
+                    <InviteActions>
+                      <SmallPrimaryBtn
                         disabled={isRespondingInviteId === invite.tripId}
                         onClick={() => handleInviteResponse(invite.tripId, 'Accepted')}
                       >
                         {isRespondingInviteId === invite.tripId && inviteResponseAction === 'Accepted'
                           ? 'Accepting...'
                           : 'Accept'}
-                      </button>
-                      <button
-                        className="btn btn-ghost btn-sm"
+                      </SmallPrimaryBtn>
+                      <GhostBtn
                         disabled={isRespondingInviteId === invite.tripId}
                         onClick={() => handleInviteResponse(invite.tripId, 'Declined')}
                       >
                         {isRespondingInviteId === invite.tripId && inviteResponseAction === 'Declined'
                           ? 'Declining...'
                           : 'Decline'}
-                      </button>
-                    </div>
-                  </div>
+                      </GhostBtn>
+                    </InviteActions>
+                  </InviteRow>
                 ))}
-              </div>
-            </div>
-          </motion.div>
+              </InvitesContainer>
+            </Section>
+          </Panel>
         ) : null}
 
         {activeTab === 'history' ? (
-          <motion.div
+          <Panel
             key="history"
             id="profile-panel-history"
             role="tabpanel"
@@ -1033,199 +2038,192 @@ export function ProfilePage() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -12 }}
             transition={revealTransition}
-            className="profile-history-v2"
           >
-            <div className="profile-section-v2">
-              <div className="profile-tab-header-v2">
-                <div>
-                  <h3>My Travels</h3>
-                  <p>Your journey through various territories.</p>
-                </div>
-                <img src="/newstickers/sticker3.png" alt="" style={{ width: '80px' }} className="header-sticker-v2" />
-              </div>
+            <Section>
+              <HistorySectionHeader>
+                <HistorySectionHeaderLeft>
+                  <SectionTitle>My Travels</SectionTitle>
+                  <SectionDesc>Your journey through various territories.</SectionDesc>
+                </HistorySectionHeaderLeft>
+                <HeaderSticker src="/newstickers/sticker3.png" alt="" />
+              </HistorySectionHeader>
 
-              <div className="profile-history-categories">
-                {/* Active Trips Section */}
-                <div className="history-category-section">
-                  <div className="history-category-header">
-                    <div className="history-category-title">
-                      <FiClock className="category-icon" />
-                      <h4>Active Trips</h4>
-                      <span className="history-category-count">{categorizedTrips.active.length}</span>
-                    </div>
-                  </div>
-                  <div className="history-category-content">
+              <HistoryLayout>
+                <HistoryCategorySection>
+                  <HistoryCategoryHeader>
+                    <HistoryCategoryTitle>
+                      <CategoryIcon><FiClock /></CategoryIcon>
+                      <CategoryTitle>Active Trips</CategoryTitle>
+                      <CategoryCount>{categorizedTrips.active.length}</CategoryCount>
+                    </HistoryCategoryTitle>
+                  </HistoryCategoryHeader>
+                  <HistoryCategoryContent>
                     {isFetchingOffroadTrips && categorizedTrips.active.length === 0 ? (
-                      <div className="history-loading-state">
-                        <div className="history-skeleton-row" />
-                        <div className="history-skeleton-row" />
-                      </div>
+                      <HistorySkeletonGroup>
+                        <HistorySkeletonRow />
+                        <HistorySkeletonRow />
+                      </HistorySkeletonGroup>
                     ) : categorizedTrips.active.length === 0 ? (
-                      <div className="history-empty-state">
-                        <img src="/newstickers/sticker3.png" alt="" className="history-empty-sticker" />
-                        <p className="empty-note">No active trips at the moment.</p>
-                      </div>
+                      <EmptyState image="/newstickers/sticker3.png" title="No active trips at the moment." />
                     ) : (
-                      <div className="history-list-v2">
+                      <HistoryList>
                         {categorizedTrips.active.map((trip) => (
-                          <Link
+                          <HistoryRow
                             key={`${trip.tripType}-${trip.id}`}
-                            className="history-row-v2 history-row-active"
+                            $active
                             to={trip.tripType === 'offroad' ? `/app/offroad/${trip.id}` : `/app/trip/${trip.id}`}
                           >
-                            <img src={trip.imageUrl} alt="" className="history-thumb-v2" />
-                            <div className="history-info-v2">
-                              <h4>
+                            <HistoryThumb src={trip.imageUrl} alt="" />
+                            <HistoryInfo>
+                              <HistoryTitleRow>
                                 {trip.title}
                                 {trip.tripType === 'offroad' && (
-                                  <span className="history-badge-offroad">Offroad</span>
+                                  <HistoryBadgeOffroad>Offroad</HistoryBadgeOffroad>
                                 )}
-                                <span className="history-badge-active">Active</span>
-                              </h4>
-                              <div className="history-meta-row">
-                                <span className="history-meta-item">
+                                <HistoryBadgeActive>Active</HistoryBadgeActive>
+                              </HistoryTitleRow>
+                              <HistoryMetaRow>
+                                <HistoryMetaItem>
                                   <FiCalendar size={12} />
                                   {formatDisplayDateRange(trip.startingDate, trip.endingDate)}
-                                </span>
-                                <span className="history-meta-item">
+                                </HistoryMetaItem>
+                                <HistoryMetaItem>
                                   <FiUsers size={12} />
                                   {trip.currentMembers}/{trip.maxParticipants} members
-                                </span>
-                              </div>
-                            </div>
+                                </HistoryMetaItem>
+                              </HistoryMetaRow>
+                            </HistoryInfo>
                             <FiChevronDown style={{ transform: 'rotate(-90deg)', opacity: 0.4 }} />
-                          </Link>
+                          </HistoryRow>
                         ))}
-                      </div>
+                      </HistoryList>
                     )}
-                  </div>
-                </div>
+                  </HistoryCategoryContent>
+                </HistoryCategorySection>
 
-                {/* Upcoming Trips Section */}
-                <div className="history-category-section">
-                  <div className="history-category-header">
-                    <div className="history-category-title">
-                      <FiCalendar className="category-icon" />
-                      <h4>Upcoming Trips</h4>
-                      <span className="history-category-count">{categorizedTrips.upcoming.length}</span>
-                    </div>
-                  </div>
-                  <div className="history-category-content">
+                <HistoryCategorySection>
+                  <HistoryCategoryHeader>
+                    <HistoryCategoryTitle>
+                      <CategoryIcon><FiCalendar /></CategoryIcon>
+                      <CategoryTitle>Upcoming Trips</CategoryTitle>
+                      <CategoryCount>{categorizedTrips.upcoming.length}</CategoryCount>
+                    </HistoryCategoryTitle>
+                  </HistoryCategoryHeader>
+                  <HistoryCategoryContent>
                     {isFetchingOffroadTrips && categorizedTrips.upcoming.length === 0 ? (
-                      <div className="history-loading-state">
-                        <div className="history-skeleton-row" />
-                        <div className="history-skeleton-row" />
-                      </div>
+                      <HistorySkeletonGroup>
+                        <HistorySkeletonRow />
+                        <HistorySkeletonRow />
+                      </HistorySkeletonGroup>
                     ) : categorizedTrips.upcoming.length === 0 ? (
-                      <div className="history-empty-state">
-                        <img src="/newstickers/sticker1.png" alt="" className="history-empty-sticker" />
-                        <p className="empty-note">No upcoming trips planned. Start exploring!</p>
-                        <Link to="/app/discover" className="btn btn-primary btn-sm" style={{ marginTop: '1rem' }}>
-                          <FiCompass /> Discover Trips
-                        </Link>
+                      <div>
+                        <EmptyState
+                          image="/newstickers/sticker1.png"
+                          title="No upcoming trips planned. Start exploring!"
+                          action={
+                            <DiscoverLink to="/app/discover">
+                              <FiCompass /> Discover Trips
+                            </DiscoverLink>
+                          }
+                        />
                       </div>
                     ) : (
-                      <div className="history-list-v2">
+                      <HistoryList>
                         {categorizedTrips.upcoming.map((trip) => (
-                          <Link
+                          <HistoryRow
                             key={`${trip.tripType}-${trip.id}`}
-                            className="history-row-v2"
                             to={trip.tripType === 'offroad' ? `/app/offroad/${trip.id}` : `/app/trip/${trip.id}`}
                           >
-                            <img src={trip.imageUrl} alt="" className="history-thumb-v2" />
-                            <div className="history-info-v2">
-                              <h4>
+                            <HistoryThumb src={trip.imageUrl} alt="" />
+                            <HistoryInfo>
+                              <HistoryTitleRow>
                                 {trip.title}
                                 {trip.tripType === 'offroad' && (
-                                  <span className="history-badge-offroad">Offroad</span>
+                                  <HistoryBadgeOffroad>Offroad</HistoryBadgeOffroad>
                                 )}
-                                <span className={`history-badge-status ${isUpcomingTripStatus(trip.status) ? 'status-upcoming' : ''}`}>
+                                <HistoryBadgeStatus $upcoming={isUpcomingTripStatus(trip.status)}>
                                   {getTripStatusLabel(trip.status)}
-                                </span>
-                              </h4>
-                              <div className="history-meta-row">
-                                <span className="history-meta-item">
+                                </HistoryBadgeStatus>
+                              </HistoryTitleRow>
+                              <HistoryMetaRow>
+                                <HistoryMetaItem>
                                   <FiCalendar size={12} />
                                   {formatDisplayDateRange(trip.startingDate, trip.endingDate)}
-                                </span>
-                                <span className="history-meta-item">
+                                </HistoryMetaItem>
+                                <HistoryMetaItem>
                                   <FiUsers size={12} />
                                   {trip.currentMembers}/{trip.maxParticipants} members
-                                </span>
-                              </div>
-                            </div>
+                                </HistoryMetaItem>
+                              </HistoryMetaRow>
+                            </HistoryInfo>
                             <FiChevronDown style={{ transform: 'rotate(-90deg)', opacity: 0.4 }} />
-                          </Link>
+                          </HistoryRow>
                         ))}
-                      </div>
+                      </HistoryList>
                     )}
-                  </div>
-                </div>
+                  </HistoryCategoryContent>
+                </HistoryCategorySection>
 
-                {/* Past Trips Section */}
-                <div className="history-category-section">
-                  <div className="history-category-header">
-                    <div className="history-category-title">
-                      <FiZap className="category-icon" />
-                      <h4>Past Trips</h4>
-                      <span className="history-category-count">{categorizedTrips.past.length}</span>
-                    </div>
-                  </div>
-                  <div className="history-category-content">
+                <HistoryCategorySection>
+                  <HistoryCategoryHeader>
+                    <HistoryCategoryTitle>
+                      <CategoryIcon><FiZap /></CategoryIcon>
+                      <CategoryTitle>Past Trips</CategoryTitle>
+                      <CategoryCount>{categorizedTrips.past.length}</CategoryCount>
+                    </HistoryCategoryTitle>
+                  </HistoryCategoryHeader>
+                  <HistoryCategoryContent>
                     {isFetchingOffroadTrips && categorizedTrips.past.length === 0 ? (
-                      <div className="history-loading-state">
-                        <div className="history-skeleton-row" />
-                        <div className="history-skeleton-row" />
-                      </div>
+                      <HistorySkeletonGroup>
+                        <HistorySkeletonRow />
+                        <HistorySkeletonRow />
+                      </HistorySkeletonGroup>
                     ) : categorizedTrips.past.length === 0 ? (
-                      <div className="history-empty-state">
-                        <img src="/newstickers/sticker4.png" alt="" className="history-empty-sticker" />
-                        <p className="empty-note">Your history is currently a blank map.</p>
-                      </div>
+                      <EmptyState image="/newstickers/sticker4.png" title="Your history is currently a blank map." />
                     ) : (
-                      <div className="history-list-v2">
+                      <HistoryList>
                         {categorizedTrips.past.map((trip) => (
-                          <Link
+                          <HistoryRow
                             key={`${trip.tripType}-${trip.id}`}
-                            className="history-row-v2 history-row-past"
+                            $past
                             to={trip.tripType === 'offroad' ? `/app/offroad/${trip.id}` : `/app/trip/${trip.id}`}
                           >
-                            <img src={trip.imageUrl} alt="" className="history-thumb-v2" />
-                            <div className="history-info-v2">
-                              <h4>
+                            <HistoryThumb src={trip.imageUrl} alt="" />
+                            <HistoryInfo>
+                              <HistoryTitleRow>
                                 {trip.title}
                                 {trip.tripType === 'offroad' && (
-                                  <span className="history-badge-offroad">Offroad</span>
+                                  <HistoryBadgeOffroad>Offroad</HistoryBadgeOffroad>
                                 )}
-                                <span className={`history-badge-status ${isFinishedTripStatus(trip.status) ? 'status-past' : ''}`}>
+                                <HistoryBadgeStatus $past={isFinishedTripStatus(trip.status)}>
                                   {getTripStatusLabel(trip.status)}
-                                </span>
-                              </h4>
-                              <div className="history-meta-row">
-                                <span className="history-meta-item">
+                                </HistoryBadgeStatus>
+                              </HistoryTitleRow>
+                              <HistoryMetaRow>
+                                <HistoryMetaItem>
                                   <FiCalendar size={12} />
                                   {formatDisplayDateRange(trip.startingDate, trip.endingDate)}
-                                </span>
-                                <span className="history-meta-item">
+                                </HistoryMetaItem>
+                                <HistoryMetaItem>
                                   <FiUsers size={12} />
                                   {trip.currentMembers}/{trip.maxParticipants} members
-                                </span>
-                              </div>
-                            </div>
+                                </HistoryMetaItem>
+                              </HistoryMetaRow>
+                            </HistoryInfo>
                             <FiChevronDown style={{ transform: 'rotate(-90deg)', opacity: 0.4 }} />
-                          </Link>
+                          </HistoryRow>
                         ))}
-                      </div>
+                      </HistoryList>
                     )}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </motion.div>
+                  </HistoryCategoryContent>
+                </HistoryCategorySection>
+              </HistoryLayout>
+            </Section>
+          </Panel>
         ) : null}
 
         {activeTab === 'matches' ? (
-          <motion.div
+          <Panel
             key="matches"
             id="profile-panel-matches"
             role="tabpanel"
@@ -1235,66 +2233,67 @@ export function ProfilePage() {
             exit={{ opacity: 0, y: -12 }}
             transition={revealTransition}
           >
-            <div className="profile-section-v2">
-              <div className="profile-tab-header-v2">
-                <div>
-                  <h3>Match Intelligence</h3>
-                  <p>Trips that resonate with your travel DNA.</p>
-                </div>
-                <Link className="btn btn-ghost" to="/app/discover">
+            <Section>
+              <SectionHeader>
+                <SectionHeaderLeft>
+                  <SectionTitle>Match Intelligence</SectionTitle>
+                  <SectionDesc>Trips that resonate with your travel DNA.</SectionDesc>
+                </SectionHeaderLeft>
+                <GhostLink to="/app/discover">
                   <FiCompass /> Full Discovery
-                </Link>
-              </div>
+                </GhostLink>
+              </SectionHeader>
 
-              <div className="matches-grid-v2">
+              <MatchesGrid>
                 {isFetchingAllTrips ? (
                   Array.from({ length: 3 }).map((_, idx) => (
-                    <div key={idx} className="match-card-v2 discovery-trip-skeleton" style={{ height: '300px' }}>
-                       <div className="discovery-skeleton-block" style={{ height: '100%', width: '100%' }} />
-                    </div>
+                    <SkeletonCard key={idx} />
                   ))
                 ) : discoveryTrips.length === 0 ? (
-                  <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '4rem 0' }}>
-                    <img src="/newstickers/sticker5.png" alt="" style={{ width: '140px', opacity: 0.4, marginBottom: '1rem' }} />
-                    <p className="empty-note">No matches found. Try adjusting your preferences in Identity.</p>
-                  </div>
+                  <EmptyState
+                    image="/newstickers/sticker5.png"
+                    title="No matches found."
+                    description="Try adjusting your preferences in Identity."
+                  />
                 ) : (
                   discoveryTrips.slice(0, 6).map((trip) => (
-                  <Link key={trip.id} to={`/app/trip/${trip.id}`} className="match-card-v2">
-                    <div className="match-badge-v2">{trip.matchScore}% Match</div>
-                    <img src={trip.coverImage || '/newstickers/sticker1.png'} alt="" className="match-thumb-v2" />
+                    <MatchCard key={trip.id} to={`/app/trip/${trip.id}`}>
+                      <MatchThumbWrap>
+                        <MatchBadge>{trip.matchScore}% Match</MatchBadge>
+                        <MatchThumb src={trip.coverImage || '/newstickers/sticker1.png'} alt="" />
+                      </MatchThumbWrap>
 
-                    <div className="match-content-v2">
-                      <p className="eyebrow" style={{ color: 'var(--green-580)', fontSize: '0.7rem' }}>{trip.status}</p>
-                      <h3>{trip.title}</h3>
-                      <p className="match-desc-v2">{trip.description}</p>
+                      <MatchContent>
+                        <MatchEyebrow>{trip.status}</MatchEyebrow>
+                        <MatchTitle>{trip.title}</MatchTitle>
+                        <MatchDesc>{trip.description}</MatchDesc>
 
-                      <div className="match-reasons-v2">
-                        {trip.matchReasons.map((reason, idx) => (
-                          <div key={idx} className="match-reason-v2">
-                            <FiZap size={12} />
-                            <span>{reason}</span>
-                          </div>
-                        ))}
-                      </div>
+                        <MatchReasons>
+                          {trip.matchReasons.map((reason, idx) => (
+                            <MatchReason key={idx}>
+                              <FiZap size={12} />
+                              <span>{reason}</span>
+                            </MatchReason>
+                          ))}
+                        </MatchReasons>
 
-                      <div className="match-meta-v2">
-                        <div className="match-price-v2">{trip.price} EUR</div>
-                        <div className="match-members-v2">{trip.currentMembers}/{trip.maxMembers} Explorers</div>
-                      </div>
+                        <MatchMeta>
+                          <MatchPrice>{trip.price} EUR</MatchPrice>
+                          <MatchMembers>{trip.currentMembers}/{trip.maxMembers} Explorers</MatchMembers>
+                        </MatchMeta>
 
-                      <button className="btn btn-primary btn-sm" style={{ marginTop: '1.5rem', width: '100%' }}>View Workspace</button>
-                    </div>
-                  </Link>
-                ))
-              )}
-              </div>
-            </div>
-          </motion.div>
+                        <MatchViewBtn>View Workspace</MatchViewBtn>
+                      </MatchContent>
+                    </MatchCard>
+                  ))
+                )}
+              </MatchesGrid>
+            </Section>
+          </Panel>
         ) : null}
 
         {activeTab === 'notifications' ? (
-          <motion.div
+          <Panel
             key="notifications"
             id="profile-panel-notifications"
             role="tabpanel"
@@ -1304,52 +2303,50 @@ export function ProfilePage() {
             exit={{ opacity: 0, y: -12 }}
             transition={revealTransition}
           >
-            <div className="profile-section-v2">
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                <div>
-                  <h3>Intelligence Feed</h3>
-                  <p>Stay updated on trip changes.</p>
-                </div>
-                <button
-                  className="btn btn-ghost"
+            <Section>
+              <SectionHeader>
+                <SectionHeaderLeft>
+                  <SectionTitle>Intelligence Feed</SectionTitle>
+                  <SectionDesc>Stay updated on trip changes.</SectionDesc>
+                </SectionHeaderLeft>
+                <GhostBtn
                   disabled={isClearingNotifications || visibleNotifications.length === 0}
                   onClick={markNotificationsAsRead}
                 >
                   {isClearingNotifications ? 'Clearing...' : 'Clear all'}
-                </button>
-              </div>
+                </GhostBtn>
+              </SectionHeader>
 
-              <div className="profile-notifications-v2">
+              <NotificationsContainer>
                 {visibleNotifications.length === 0 && (
-                  <div style={{ textAlign: 'center', padding: '3rem 0' }}>
-                    <img src="/newstickers/sticker6.png" alt="" style={{ width: '120px', marginBottom: '1rem', opacity: 0.6 }} />
-                    <p className="empty-note">All quiet on the trip front.</p>
-                  </div>
+                  <EmptyState
+                    image="/newstickers/sticker6.png"
+                    title="All quiet on the trip front."
+                  />
                 )}
                 {visibleNotifications.map((notification) => {
                   const read = isNotificationRead(notification, readNotificationIds)
                   return (
-                    <div
+                    <NotificationRow
                       key={notification.id}
-                      className={read ? 'notification-row-v2' : 'notification-row-v2 unread'}
+                      $unread={!read}
                       onClick={() => {
                         if (!read && isMarkingNotificationId !== notification.id && !isClearingNotifications) {
                           markNotificationAsRead(notification.id)
                         }
                       }}
                     >
-                      <div className="notification-icon-v2">
+                      <NotificationIcon>
                         <FiBell />
-                      </div>
-                      <div style={{ flex: 1 }}>
-                        <p style={{ color: 'var(--text-100)', fontWeight: 500 }}>{notification.content}</p>
-                        <p style={{ fontSize: '0.75rem', opacity: 0.5, marginTop: '0.2rem' }}>
+                      </NotificationIcon>
+                      <NotificationBody>
+                        <NotificationContent>{notification.content}</NotificationContent>
+                        <NotificationTimestamp>
                           {formatNotificationTimestamp(notification)}
-                        </p>
-                      </div>
-                      <button
+                        </NotificationTimestamp>
+                      </NotificationBody>
+                      <GhostBtn
                         type="button"
-                        className="btn btn-ghost btn-sm"
                         disabled={read || isMarkingNotificationId === notification.id || isClearingNotifications}
                         onClick={(event) => {
                           event.stopPropagation()
@@ -1357,22 +2354,23 @@ export function ProfilePage() {
                             markNotificationAsRead(notification.id)
                           }
                         }}
+                        style={{ fontSize: '0.75rem', minHeight: '30px', padding: '0.25rem 0.7rem' }}
                       >
                         {read
                           ? 'Read'
                           : isMarkingNotificationId === notification.id
                             ? 'Marking...'
                             : 'Mark as read'}
-                      </button>
-                      {!read && <span className="notification-badge-dot" />}
-                    </div>
+                      </GhostBtn>
+                      {!read && <NotificationDot />}
+                    </NotificationRow>
                   )
                 })}
-              </div>
-            </div>
-          </motion.div>
+              </NotificationsContainer>
+            </Section>
+          </Panel>
         ) : null}
       </AnimatePresence>
-      </section>
-    )
-  }
+    </Page>
+  )
+}

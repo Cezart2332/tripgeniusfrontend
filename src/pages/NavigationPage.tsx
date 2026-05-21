@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import styled from 'styled-components'
 import maplibregl from 'maplibre-gl'
 import { FiArrowLeft, FiArrowUp, FiCornerUpLeft, FiCornerUpRight, FiFlag } from 'react-icons/fi'
 import api from '../data/api'
@@ -8,7 +9,6 @@ import { saveRouteToIndexedDB, getNearestCachedRoute, getAllRoutes } from '../ut
 import type { CachedRoute } from '../utils/db'
 import { OSM_STYLE } from '../map/osmStyle'
 
-// Reuse OSRM logic
 interface NavigationStep {
   instruction: string
   distance: number
@@ -105,7 +105,6 @@ export function NavigationPage() {
     return trip.timelines.find(t => t.startDay === dayNum) || trip.timelines[0]
   }, [trip, day])
 
-  // Fetch Trip Data
   useEffect(() => {
     const fetchTrip = async () => {
       try {
@@ -120,7 +119,6 @@ export function NavigationPage() {
     fetchTrip()
   }, [tripId])
 
-  // Initialize Map
   useEffect(() => {
     if (!containerRef.current || mapRef.current || !selectedStop) return
 
@@ -149,14 +147,12 @@ export function NavigationPage() {
     return () => map.remove()
   }, [selectedStop])
 
-  // Geolocation & User Dot
   useEffect(() => {
     const watchId = navigator.geolocation.watchPosition(
       (pos) => {
         const newLoc: [number, number] = [pos.coords.latitude, pos.coords.longitude]
         setUserLocation(newLoc)
 
-        // Update User Marker (The "Dot")
         if (mapRef.current) {
           if (!userMarkerRef.current) {
             const el = document.createElement('div')
@@ -168,7 +164,6 @@ export function NavigationPage() {
             userMarkerRef.current.setLngLat([newLoc[1], newLoc[0]])
           }
 
-          // Follow user
           mapRef.current.easeTo({ 
             center: [newLoc[1], newLoc[0]], 
             bearing: pos.coords.heading || 0,
@@ -176,7 +171,6 @@ export function NavigationPage() {
           })
         }
 
-        // 500m Re-cache logic
         if (lastCacheLocation) {
           const distSinceLastCache = calculateDistance(newLoc[0], newLoc[1], lastCacheLocation[0], lastCacheLocation[1])
           if (distSinceLastCache >= 500) {
@@ -186,7 +180,6 @@ export function NavigationPage() {
           setLastCacheLocation(newLoc)
         }
 
-        // Arrival Check
         if (selectedStop) {
           const dist = calculateDistance(newLoc[0], newLoc[1], selectedStop.toCoords[0], selectedStop.toCoords[1])
           if (dist < 20) setArrivalDetected(true)
@@ -237,7 +230,6 @@ export function NavigationPage() {
       const firstRoute = data.routes?.[0]
       if (firstRoute) {
         processRouteData(firstRoute)
-        // Save to IndexedDB
         saveRouteToIndexedDB(
           { lat: from[0], lng: from[1] },
           { lat: to[0], lng: to[1] },
@@ -289,7 +281,6 @@ export function NavigationPage() {
     })
   }
 
-  // Route Updates
   useEffect(() => {
     if (!userLocation || !selectedStop) return
 
@@ -299,150 +290,325 @@ export function NavigationPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- updateRoute is stable for location/stop changes
   }, [userLocation, selectedStop])
 
-  if (isLoading) return <div className="nav-page-loading">Loading navigation system...</div>
+  if (isLoading) return <LoadingScreen>Loading navigation system...</LoadingScreen>
 
   return (
-    <div className="navigation-screen" style={{ position: 'fixed', inset: 0, zIndex: 1000, background: '#000' }}>
+    <Screen>
       <div ref={containerRef} data-lenis-prevent style={{ width: '100%', height: '100%' }} />
 
-      {/* Back Button */}
-      <button 
-        onClick={() => navigate(-1)}
-        style={{ 
-          position: 'absolute', 
-          top: '1.5rem', 
-          left: '1.5rem', 
-          zIndex: 1010, 
-          background: '#2563eb', 
-          border: 'none', 
-          color: '#fff', 
-          width: '50px', 
-          height: '50px', 
-          borderRadius: '50%', 
-          display: 'flex', 
-          alignItems: 'center', 
-          justifyContent: 'center',
-          boxShadow: '0 4px 15px rgba(0,0,0,0.3)'
-        }}
-      >
+      <NavBackButton onClick={() => navigate(-1)}>
         <FiArrowLeft size={28} />
-      </button>
+      </NavBackButton>
 
-      {/* Navigation HUD */}
       {navData && navData.steps && navData.steps.length > 0 && (
-        <div className="nav-hud-v2" style={{ position: 'absolute', top: '4rem', left: '1rem', right: '1rem', zIndex: 1010 }}>
-          <div style={{ background: 'var(--surface-900)', color: 'var(--text-100)', padding: '1.25rem', borderRadius: '16px', boxShadow: 'var(--shadow)', display: 'flex', alignItems: 'center', gap: '1rem', border: '1px solid var(--line)', backdropFilter: 'blur(12px)' }}>
-            <div className="maneuver-icon" style={{ fontSize: '2.5rem', color: 'var(--green-580)' }}>
+        <NavHud>
+          <NavHudCard>
+            <ManeuverIcon>
               {getManeuverIcon(navData.steps[0].type, navData.steps[0].modifier)}
-            </div>
-            <div style={{ flex: 1 }}>
-              <div className="h1-style" style={{ fontSize: '1.4rem', fontWeight: 800 }}>{navData.steps[0].instruction}</div>
-              <div style={{ fontSize: '1rem', color: 'var(--text-380)' }}>In {Math.round(navData.steps[0].distance)} m</div>
-            </div>
+            </ManeuverIcon>
+            <NavHudInfo>
+              <NavInstruction>{navData.steps[0].instruction}</NavInstruction>
+              <NavDistance>In {Math.round(navData.steps[0].distance)} m</NavDistance>
+            </NavHudInfo>
             {isOffline && (
-              <div style={{ background: 'var(--danger-500)', color: 'var(--text-100)', padding: '0.3rem 0.6rem', borderRadius: '8px', fontSize: '0.7rem', fontWeight: 900, textTransform: 'uppercase' }}>
+              <OfflineBadge>
                 Offline
-              </div>
+              </OfflineBadge>
             )}
-          </div>
+          </NavHudCard>
           
           {offlineWarning && isOffline && (
-            <div style={{ background: 'rgba(219, 74, 91, 0.2)', color: 'var(--danger-500)', border: '1px solid rgba(219, 74, 91, 0.3)', padding: '0.5rem 1rem', borderRadius: '12px', marginTop: '0.5rem', fontSize: '0.85rem', textAlign: 'center', backdropFilter: 'blur(8px)' }}>
+            <OfflineWarningBar>
               {offlineWarning}
-            </div>
+            </OfflineWarningBar>
           )}
 
-          <div style={{ marginTop: '0.75rem', display: 'flex', gap: '0.75rem' }}>
-             <div style={{ background: 'var(--surface-900)', color: 'var(--text-100)', border: '1px solid var(--line-soft)', padding: '0.6rem 1.2rem', borderRadius: '20px', fontSize: '0.9rem', fontWeight: 700, backdropFilter: 'blur(8px)' }}>
+          <NavStatsRow>
+             <NavStatPill>
                 {(navData.distanceMeters! / 1000).toFixed(1)} km left
-             </div>
-             <div style={{ background: 'var(--surface-900)', color: 'var(--text-100)', border: '1px solid var(--line-soft)', padding: '0.6rem 1.2rem', borderRadius: '20px', fontSize: '0.9rem', fontWeight: 700, backdropFilter: 'blur(8px)' }}>
+             </NavStatPill>
+             <NavStatPill>
                 ETA: {Math.round(navData.durationSeconds! / 60)} min
-             </div>
-          </div>
-        </div>
+             </NavStatPill>
+          </NavStatsRow>
+        </NavHud>
       )}
 
-      {/* Offline Banner */}
       {isOffline && (
-        <div id="offline-banner" style={{ position: 'absolute', bottom: '2rem', left: '1rem', right: '1rem', zIndex: 1050, background: 'var(--surface-900)', color: 'var(--text-100)', padding: '1.5rem', borderRadius: '20px', boxShadow: 'var(--shadow)', border: '1px solid rgba(219, 74, 91, 0.4)', backdropFilter: 'blur(12px)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
-            <span style={{ fontSize: '1.5rem' }}>⚠️</span>
-            <div style={{ fontSize: '1.2rem', fontWeight: 800 }}>You are offline</div>
-          </div>
+        <OfflineBanner>
+          <OfflineBannerHeader>
+            <OfflineBannerEmoji>⚠️</OfflineBannerEmoji>
+            <OfflineBannerTitle>You are offline</OfflineBannerTitle>
+          </OfflineBannerHeader>
           
-          <div style={{ fontSize: '0.9rem', color: 'var(--text-380)', marginBottom: '1rem' }}>Recently cached routes:</div>
+          <OfflineBannerSub>Recently cached routes:</OfflineBannerSub>
           
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+          <CachedRoutesList>
             {recentRoutes.length > 0 ? recentRoutes.map((r) => (
-              <button 
+              <CachedRouteBtn 
                 key={r.id} 
                 onClick={() => {
                   processRouteData(r.routeData as OsrmRoute)
                   setOfflineWarning("Route may be inaccurate — reconnect to recalculate")
                 }}
-                className="btn btn-ghost"
-                style={{ background: 'var(--surface-860)', border: '1px solid var(--line-soft)', color: 'var(--text-100)', padding: '0.75rem 1rem', borderRadius: '12px', textAlign: 'left', fontSize: '0.85rem' }}
               >
                 To {r.end.lat.toFixed(4)}, {r.end.lng.toFixed(4)} ({new Date(r.timestamp).toLocaleTimeString('en-US')})
-              </button>
+              </CachedRouteBtn>
             )) : (
-              <div style={{ fontSize: '0.85rem', color: 'var(--text-380)' }}>No saved routes found.</div>
+              <NoRoutesMsg>No saved routes found.</NoRoutesMsg>
             )}
-          </div>
-        </div>
+          </CachedRoutesList>
+        </OfflineBanner>
       )}
 
       {arrivalDetected && (
-        <div style={{ position: 'absolute', inset: 0, zIndex: 2000, background: 'var(--bg-940)', color: 'var(--text-100)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '2rem', backdropFilter: 'blur(10px)' }}>
+        <ArrivalScreen>
            <FiFlag size={80} style={{ marginBottom: '1.5rem' }} />
-           <h1 style={{ fontSize: '2.5rem' }}>You have arrived!</h1>
-           <button 
-             className="btn btn-primary" 
-             style={{ marginTop: '2rem', background: 'var(--text-100)', color: 'var(--green-700)', padding: '1rem 3rem', fontSize: '1.2rem' }} 
-             onClick={() => navigate(-1)}
-           >
+           <ArrivalTitle>You have arrived!</ArrivalTitle>
+           <ArrivalCloseBtn onClick={() => navigate(-1)}>
              Close
-           </button>
-        </div>
+           </ArrivalCloseBtn>
+        </ArrivalScreen>
       )}
-
-      <style>{`
-        .user-waze-dot {
-          width: 24px;
-          height: 24px;
-          background: #17f702;
-          border: 3px solid #fff;
-          border-radius: 50%;
-          box-shadow: 0 0 20px rgba(23, 247, 2, 0.8);
-          position: relative;
-        }
-        .user-waze-dot::after {
-          content: '';
-          position: absolute;
-          top: -12px;
-          left: 50%;
-          transform: translateX(-50%);
-          border-left: 8px solid transparent;
-          border-right: 8px solid transparent;
-          border-bottom: 12px solid #17f702;
-        }
-        @media (max-width: 600px) {
-          .nav-hud-v2 {
-            top: 1rem !important;
-          }
-          .nav-hud-v2 > div {
-            padding: 0.75rem !important;
-            gap: 0.75rem !important;
-          }
-          .nav-hud-v2 h1, .nav-hud-v2 .h1-style {
-            font-size: 1.1rem !important;
-          }
-          .nav-hud-v2 .maneuver-icon {
-            font-size: 1.8rem !important;
-          }
-        }
-      `}</style>
-    </div>
+    </Screen>
   )
 }
+
+// --- Styled Components ---
+
+const LoadingScreen = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100dvh;
+  color: ${({ theme }) => theme.colors.text[380]};
+  font-size: ${({ theme }) => theme.typography.body};
+`
+
+const Screen = styled.div`
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: #000;
+`
+
+const NavBackButton = styled.button`
+  position: absolute;
+  top: 1.5rem;
+  left: 1.5rem;
+  z-index: 1010;
+  background: #2563eb;
+  border: none;
+  color: #fff;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+  cursor: pointer;
+`
+
+const NavHud = styled.div`
+  position: absolute;
+  top: 4rem;
+  left: 1rem;
+  right: 1rem;
+  z-index: 1010;
+
+  @media (max-width: 600px) {
+    top: 1rem;
+  }
+`
+
+const NavHudCard = styled.div`
+  background: ${({ theme }) => theme.colors.surface[900]};
+  color: ${({ theme }) => theme.colors.text[100]};
+  padding: 1.25rem;
+  border-radius: 16px;
+  box-shadow: ${({ theme }) => theme.shadows.md};
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  border: 1px solid ${({ theme }) => theme.colors.line};
+  backdrop-filter: blur(12px);
+
+  @media (max-width: 600px) {
+    padding: 0.75rem;
+    gap: 0.75rem;
+  }
+`
+
+const ManeuverIcon = styled.div`
+  font-size: 2.5rem;
+  color: ${({ theme }) => theme.colors.green[580]};
+
+  @media (max-width: 600px) {
+    font-size: 1.8rem;
+  }
+`
+
+const NavHudInfo = styled.div`
+  flex: 1;
+`
+
+const NavInstruction = styled.div`
+  font-size: 1.4rem;
+  font-weight: 800;
+
+  @media (max-width: 600px) {
+    font-size: 1.1rem;
+  }
+`
+
+const NavDistance = styled.div`
+  font-size: 1rem;
+  color: ${({ theme }) => theme.colors.text[380]};
+`
+
+const OfflineBadge = styled.div`
+  background: ${({ theme }) => theme.colors.danger[500]};
+  color: ${({ theme }) => theme.colors.text[100]};
+  padding: 0.3rem 0.6rem;
+  border-radius: 8px;
+  font-size: 0.7rem;
+  font-weight: 900;
+  text-transform: uppercase;
+`
+
+const OfflineWarningBar = styled.div`
+  background: rgba(219, 74, 91, 0.2);
+  color: ${({ theme }) => theme.colors.danger[500]};
+  border: 1px solid rgba(219, 74, 91, 0.3);
+  padding: 0.5rem 1rem;
+  border-radius: 12px;
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+  text-align: center;
+  backdrop-filter: blur(8px);
+`
+
+const NavStatsRow = styled.div`
+  margin-top: 0.75rem;
+  display: flex;
+  gap: 0.75rem;
+`
+
+const NavStatPill = styled.div`
+  background: ${({ theme }) => theme.colors.surface[900]};
+  color: ${({ theme }) => theme.colors.text[100]};
+  border: 1px solid ${({ theme }) => theme.colors.lineSoft};
+  padding: 0.6rem 1.2rem;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  backdrop-filter: blur(8px);
+`
+
+const OfflineBanner = styled.div`
+  position: absolute;
+  bottom: 2rem;
+  left: 1rem;
+  right: 1rem;
+  z-index: 1050;
+  background: ${({ theme }) => theme.colors.surface[900]};
+  color: ${({ theme }) => theme.colors.text[100]};
+  padding: 1.5rem;
+  border-radius: 20px;
+  box-shadow: ${({ theme }) => theme.shadows.md};
+  border: 1px solid rgba(219, 74, 91, 0.4);
+  backdrop-filter: blur(12px);
+`
+
+const OfflineBannerHeader = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+`
+
+const OfflineBannerEmoji = styled.span`
+  font-size: 1.5rem;
+`
+
+const OfflineBannerTitle = styled.div`
+  font-size: 1.2rem;
+  font-weight: 800;
+`
+
+const OfflineBannerSub = styled.div`
+  font-size: 0.9rem;
+  color: ${({ theme }) => theme.colors.text[380]};
+  margin-bottom: 1rem;
+`
+
+const CachedRoutesList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+`
+
+const CachedRouteBtn = styled.button`
+  background: ${({ theme }) => theme.colors.surface[860]};
+  border: 1px solid ${({ theme }) => theme.colors.lineSoft};
+  color: ${({ theme }) => theme.colors.text[100]};
+  padding: 0.75rem 1rem;
+  border-radius: 12px;
+  text-align: left;
+  font-size: 0.85rem;
+  cursor: pointer;
+
+  &:hover {
+    background: rgba(65, 162, 56, 0.08);
+  }
+`
+
+const NoRoutesMsg = styled.div`
+  font-size: 0.85rem;
+  color: ${({ theme }) => theme.colors.text[380]};
+`
+
+const ArrivalScreen = styled.div`
+  position: absolute;
+  inset: 0;
+  z-index: 2000;
+  background: ${({ theme }) => theme.colors.bg[940]};
+  color: ${({ theme }) => theme.colors.text[100]};
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 2rem;
+  backdrop-filter: blur(10px);
+`
+
+const ArrivalTitle = styled.h1`
+  font-size: 2.5rem;
+`
+
+const ArrivalCloseBtn = styled.button`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  border-radius: ${({ theme }) => theme.radii.pill};
+  transition: all ${({ theme }) => theme.animation.duration.normal}s ${({ theme }) => theme.animation.easeOut.join(',')};
+  min-height: 44px;
+  min-width: 44px;
+  white-space: nowrap;
+  line-height: 1;
+  margin-top: 2rem;
+  background: ${({ theme }) => theme.colors.text[100]};
+  color: ${({ theme }) => theme.colors.green[700]};
+  padding: 1rem 3rem;
+  font-size: 1.2rem;
+  border: none;
+  cursor: pointer;
+
+  &:hover {
+    background: ${({ theme }) => theme.colors.text[220]};
+  }
+`

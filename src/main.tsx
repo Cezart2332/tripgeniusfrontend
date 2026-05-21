@@ -14,10 +14,10 @@ import { GoogleOAuthProvider } from '@react-oauth/google'
 import { Provider } from 'react-redux'
 import { PersistGate } from 'redux-persist/integration/react'
 import { BrowserRouter } from 'react-router-dom'
+import { ThemeProvider } from 'styled-components'
 import 'maplibre-gl/dist/maplibre-gl.css'
-import './index.css'
-import './adventure.css'
-import './offroad.css'
+import GlobalStyles from './styles/globalStyles'
+import theme from './styles/theme'
 import App from './App.tsx'
 import { persistor, store } from './data/store'
 
@@ -28,7 +28,10 @@ createRoot(document.getElementById('root')!).render(
     <Provider store={store}>
       <PersistGate loading={null} persistor={persistor}>
         <BrowserRouter>
-          <App />
+          <ThemeProvider theme={theme}>
+            <GlobalStyles />
+            <App />
+          </ThemeProvider>
         </BrowserRouter>
       </PersistGate>
     </Provider>

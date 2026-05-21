@@ -39,6 +39,7 @@ function App() {
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/verify-email" element={<VerifyEmailPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
+      <Route path="/ai" element={<Navigate replace to="/app/ai" />} />
 
       <Route path="/app" element={<AppLayout />}>
         <Route index element={<DiscoveryPage />} />

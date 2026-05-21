@@ -12,6 +12,7 @@ import { getTripStatusLabel } from '../utils/tripStatus'
 import { getErrorMessage } from '../utils/errorMessage'
 import { downloadBlob } from '../utils/gpx'
 import { getAvatarUrl } from '../utils/userUtils'
+import styled from 'styled-components'
 
 interface OffroadTripModalProps {
   trip: OffroadTrip | null
@@ -24,9 +25,582 @@ interface AuthStoreState {
   auth: { user: User | null; token: string | null }
 }
 
-type ModalTab = 'details' | 'routes' | 'members' | 'chat'
+type ModalTab = 'details' | 'members' | 'chat'
 
 const roleOrder: Record<MemberRole, number> = { owner: 0, admin: 1, member: 2 }
+
+const Scrim = styled(motion.div)`
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+`
+
+const ModalCard = styled(motion.div)`
+  background: ${({ theme }) => theme.glass.bgStrong};
+  border: 1px solid ${({ theme }) => theme.glass.border};
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-radius: ${({ theme }) => theme.radii.xl};
+  width: 100%;
+  max-width: 640px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: ${({ theme }) => theme.shadows.xl};
+
+  @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
+    max-height: 92vh;
+    border-radius: ${({ theme }) => theme.radii.lg};
+  }
+`
+
+const ModalHeader = styled.div`
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: ${({ theme }) => theme.spacing.lg};
+  gap: ${({ theme }) => theme.spacing.md};
+  border-bottom: 1px solid ${({ theme }) => theme.colors.lineSoft};
+`
+
+const HeaderContent = styled.div`
+  flex: 1;
+  min-width: 0;
+`
+
+const OffroadBadge = styled.span`
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.2rem 0.65rem;
+  font-size: ${({ theme }) => theme.typography.eyebrow};
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-radius: ${({ theme }) => theme.radii.pill};
+  background: ${({ theme }) => theme.colors.offroad.accentSoft};
+  color: ${({ theme }) => theme.colors.offroad.accent};
+  border: 1px solid rgba(201, 162, 39, 0.3);
+  margin-bottom: 0.5rem;
+`
+
+const ModalTitle = styled.h2`
+  font-size: ${({ theme }) => theme.typography.h2};
+  color: ${({ theme }) => theme.colors.text[100]};
+  margin-bottom: 0.25rem;
+`
+
+const ModalDescription = styled.p`
+  color: ${({ theme }) => theme.colors.text[380]};
+  font-size: ${({ theme }) => theme.typography.bodySmall};
+  margin-bottom: 0.5rem;
+`
+
+const ModalMeta = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: ${({ theme }) => theme.typography.caption};
+  color: ${({ theme }) => theme.colors.text[500]};
+`
+
+const CloseButton = styled.button`
+  width: 36px;
+  height: 36px;
+  border-radius: ${({ theme }) => theme.radii.full};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(243, 255, 241, 0.06);
+  color: ${({ theme }) => theme.colors.text[380]};
+  border: none;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: rgba(243, 255, 241, 0.12);
+    color: ${({ theme }) => theme.colors.text[100]};
+  }
+`
+
+const JoinBanner = styled.div`
+  padding: ${({ theme }) => theme.spacing.md} ${({ theme }) => theme.spacing.lg};
+  background: rgba(201, 162, 39, 0.06);
+  border-bottom: 1px solid ${({ theme }) => theme.colors.lineSoft};
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: ${({ theme }) => theme.spacing.md};
+  flex-wrap: wrap;
+
+  p {
+    font-size: ${({ theme }) => theme.typography.bodySmall};
+    color: ${({ theme }) => theme.colors.text[220]};
+    margin: 0;
+    flex: 1;
+  }
+`
+
+const PrimaryBtn = styled.button`
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 1rem;
+  font-size: ${({ theme }) => theme.typography.bodySmall};
+  font-weight: 600;
+  border: none;
+  border-radius: ${({ theme }) => theme.radii.md};
+  background: ${({ theme }) => theme.colors.green[580]};
+  color: ${({ theme }) => theme.colors.text[100]};
+  cursor: pointer;
+  transition: background 0.2s ease;
+  white-space: nowrap;
+
+  &:hover { background: ${({ theme }) => theme.colors.green[700]}; }
+  &:disabled { opacity: 0.5; cursor: not-allowed; }
+`
+
+const ErrorText = styled.p`
+  color: ${({ theme }) => theme.colors.danger[400]};
+  font-size: ${({ theme }) => theme.typography.caption};
+  margin-top: 0.35rem;
+`
+
+const SuccessText = styled.p`
+  color: ${({ theme }) => theme.colors.green[500]};
+  font-size: ${({ theme }) => theme.typography.caption};
+  margin-top: 0.35rem;
+`
+
+const TabsRow = styled.div`
+  display: flex;
+  border-bottom: 1px solid ${({ theme }) => theme.colors.lineSoft};
+  padding: 0 ${({ theme }) => theme.spacing.sm};
+`
+
+const Tab = styled.button<{ $active: boolean }>`
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.7rem 1rem;
+  font-size: ${({ theme }) => theme.typography.bodySmall};
+  font-weight: ${({ $active }) => $active ? 700 : 500};
+  color: ${({ $active, theme }) => $active ? theme.colors.text[100] : theme.colors.text[380]};
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid ${({ $active, theme }) => $active ? theme.colors.green[580] : 'transparent'};
+  cursor: pointer;
+  transition: color 0.2s ease, border-color 0.2s ease;
+  white-space: nowrap;
+
+  &:hover {
+    color: ${({ theme }) => theme.colors.text[220]};
+  }
+`
+
+const ModalContent = styled.div`
+  flex: 1;
+  overflow-y: auto;
+  padding: ${({ theme }) => theme.spacing.md} ${({ theme }) => theme.spacing.lg};
+`
+
+const MapWrap = styled.div`
+  margin-bottom: ${({ theme }) => theme.spacing.md};
+  border-radius: ${({ theme }) => theme.radii.md};
+  overflow: hidden;
+`
+
+const SectionHeader = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: ${({ theme }) => theme.spacing.md};
+  gap: ${({ theme }) => theme.spacing.sm};
+
+  h3 {
+    font-size: ${({ theme }) => theme.typography.h3};
+    color: ${({ theme }) => theme.colors.text[100]};
+  }
+
+  h4 {
+    font-size: ${({ theme }) => theme.typography.body};
+    color: ${({ theme }) => theme.colors.text[100]};
+  }
+`
+
+const EmptyState = styled.div`
+  text-align: center;
+  padding: ${({ theme }) => theme.spacing.xl} 0;
+
+  p {
+    color: ${({ theme }) => theme.colors.text[380]};
+    font-size: ${({ theme }) => theme.typography.bodySmall};
+    margin-bottom: ${({ theme }) => theme.spacing.md};
+  }
+`
+
+const RouteList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+`
+
+const RouteCard = styled.div<{ $selected: boolean }>`
+  background: ${({ theme }) => theme.glass.bg};
+  border: 1px solid ${({ $selected, theme }) => $selected ? theme.colors.offroad.accent : theme.glass.border};
+  border-radius: ${({ theme }) => theme.radii.md};
+  padding: ${({ theme }) => theme.spacing.md};
+  transition: border-color 0.2s ease;
+`
+
+const RouteCardHeader = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.4rem;
+
+  h4 {
+    font-size: ${({ theme }) => theme.typography.body};
+    color: ${({ theme }) => theme.colors.text[100]};
+  }
+`
+
+const RouteSource = styled.span<{ $drawn: boolean }>`
+  font-size: ${({ theme }) => theme.typography.eyebrow};
+  font-weight: 600;
+  text-transform: uppercase;
+  padding: 0.15rem 0.5rem;
+  border-radius: ${({ theme }) => theme.radii.pill};
+  background: rgba(169, 200, 163, 0.1);
+  color: ${({ theme }) => theme.colors.text[380]};
+
+  ${({ $drawn, theme }) => $drawn && `
+    background: ${theme.colors.offroad.accentSoft};
+    color: ${theme.colors.offroad.accent};
+  `}
+`
+
+const RouteMeta = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  font-size: ${({ theme }) => theme.typography.caption};
+  color: ${({ theme }) => theme.colors.text[380]};
+
+  strong {
+    color: ${({ theme }) => theme.colors.text[100]};
+  }
+`
+
+const MutedText = styled.p`
+  font-size: ${({ theme }) => theme.typography.caption};
+  color: ${({ theme }) => theme.colors.text[500]};
+  margin-top: 0.35rem;
+`
+
+const RouteActions = styled.div`
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.65rem;
+  flex-wrap: wrap;
+`
+
+const GhostBtn = styled.button<{ $danger?: boolean }>`
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.4rem 0.7rem;
+  font-size: ${({ theme }) => theme.typography.caption};
+  font-weight: 500;
+  border: none;
+  border-radius: ${({ theme }) => theme.radii.sm};
+  background: rgba(243, 255, 241, 0.06);
+  color: ${({ $danger, theme }) => $danger ? theme.colors.danger[500] : theme.colors.text[380]};
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-decoration: none;
+  white-space: nowrap;
+
+  &:hover {
+    background: rgba(243, 255, 241, 0.12);
+    color: ${({ $danger, theme }) => $danger ? theme.colors.danger[400] : theme.colors.text[100]};
+  }
+`
+
+const GhostLink = styled(Link)<{ $danger?: boolean }>`
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.4rem 0.7rem;
+  font-size: ${({ theme }) => theme.typography.caption};
+  font-weight: 500;
+  border: none;
+  border-radius: ${({ theme }) => theme.radii.sm};
+  background: rgba(243, 255, 241, 0.06);
+  color: ${({ $danger, theme }) => $danger ? theme.colors.danger[500] : theme.colors.text[380]};
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-decoration: none;
+  white-space: nowrap;
+
+  &:hover {
+    background: rgba(243, 255, 241, 0.12);
+    color: ${({ $danger, theme }) => $danger ? theme.colors.danger[400] : theme.colors.text[100]};
+  }
+`
+
+const PrimaryLink = styled(Link)`
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 1rem;
+  font-size: ${({ theme }) => theme.typography.bodySmall};
+  font-weight: 600;
+  border: none;
+  border-radius: ${({ theme }) => theme.radii.md};
+  background: ${({ theme }) => theme.colors.green[580]};
+  color: ${({ theme }) => theme.colors.text[100]};
+  cursor: pointer;
+  transition: background 0.2s ease;
+  text-decoration: none;
+  white-space: nowrap;
+  margin-top: 1rem;
+
+  &:hover { background: ${({ theme }) => theme.colors.green[700]}; }
+`
+
+const InviteForm = styled.form`
+  margin-bottom: ${({ theme }) => theme.spacing.lg};
+  padding: ${({ theme }) => theme.spacing.md};
+  background: ${({ theme }) => theme.glass.bg};
+  border: 1px solid ${({ theme }) => theme.glass.border};
+  border-radius: ${({ theme }) => theme.radii.md};
+
+  h4 {
+    font-size: ${({ theme }) => theme.typography.body};
+    color: ${({ theme }) => theme.colors.text[100]};
+    margin-bottom: ${({ theme }) => theme.spacing.sm};
+  }
+`
+
+const InviteInputGroup = styled.div`
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: ${({ theme }) => theme.spacing.sm};
+`
+
+const StyledInput = styled.input`
+  flex: 1;
+  padding: 0.55rem 0.75rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid ${({ theme }) => theme.colors.lineSoft};
+  border-radius: ${({ theme }) => theme.radii.md};
+  color: ${({ theme }) => theme.colors.text[100]};
+  font-size: ${({ theme }) => theme.typography.bodySmall};
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.2s ease;
+
+  &:focus {
+    border-color: ${({ theme }) => theme.colors.green[580]};
+  }
+
+  &::placeholder {
+    color: ${({ theme }) => theme.colors.text[500]};
+  }
+
+  &:disabled {
+    opacity: 0.5;
+  }
+`
+
+const StyledSelect = styled.select`
+  padding: 0.3rem 0.5rem;
+  font-size: ${({ theme }) => theme.typography.caption};
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid ${({ theme }) => theme.colors.lineSoft};
+  border-radius: ${({ theme }) => theme.radii.sm};
+  color: ${({ theme }) => theme.colors.text[100]};
+  font-family: inherit;
+  cursor: pointer;
+
+  &:focus {
+    outline: none;
+    border-color: ${({ theme }) => theme.colors.green[580]};
+  }
+`
+
+const PendingSection = styled.div`
+  margin-bottom: ${({ theme }) => theme.spacing.lg};
+`
+
+const MembersSection = styled.div`
+  h4 {
+    font-size: ${({ theme }) => theme.typography.body};
+    color: ${({ theme }) => theme.colors.text[100]};
+    margin-bottom: ${({ theme }) => theme.spacing.sm};
+  }
+`
+
+const MemberCard = styled.div<{ $pending?: boolean }>`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.6rem 0.8rem;
+  background: ${({ theme }) => theme.glass.bg};
+  border: 1px solid ${({ theme }) => theme.glass.border};
+  border-radius: ${({ theme }) => theme.radii.md};
+  margin-bottom: 0.5rem;
+  gap: ${({ theme }) => theme.spacing.sm};
+  flex-wrap: wrap;
+
+  ${({ $pending, theme }) => $pending && `
+    border-color: ${theme.colors.offroad.accentSoft};
+  `}
+`
+
+const MemberInfo = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex: 1;
+  min-width: 0;
+`
+
+const MemberAvatar = styled.img`
+  width: 36px;
+  height: 36px;
+  border-radius: ${({ theme }) => theme.radii.full};
+  object-fit: cover;
+  flex-shrink: 0;
+`
+
+const MemberNameGroup = styled.div`
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+
+  strong {
+    font-size: ${({ theme }) => theme.typography.bodySmall};
+    color: ${({ theme }) => theme.colors.text[100]};
+  }
+`
+
+const MemberRole = styled.span<{ $role?: string }>`
+  font-size: ${({ theme }) => theme.typography.eyebrow};
+  text-transform: capitalize;
+  color: ${({ theme }) => theme.colors.text[500]};
+
+  ${({ $role, theme }) => $role === 'owner' && `color: ${theme.colors.offroad.accent};`}
+  ${({ $role, theme }) => $role === 'admin' && `color: ${theme.colors.green[500]};`}
+`
+
+const MemberActions = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+`
+
+const ChatLocked = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: ${({ theme }) => theme.spacing.xl} 0;
+  text-align: center;
+  gap: ${({ theme }) => theme.spacing.md};
+  color: ${({ theme }) => theme.colors.text[500]};
+
+  p {
+    color: ${({ theme }) => theme.colors.text[380]};
+    font-size: ${({ theme }) => theme.typography.bodySmall};
+  }
+`
+
+const ChatMessages = styled.div`
+  flex: 1;
+  overflow-y: auto;
+  max-height: 320px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  margin-bottom: ${({ theme }) => theme.spacing.sm};
+  padding-right: ${({ theme }) => theme.spacing.xs};
+`
+
+const ChatEmpty = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: ${({ theme }) => theme.spacing.lg};
+  color: ${({ theme }) => theme.colors.text[380]};
+  font-size: ${({ theme }) => theme.typography.bodySmall};
+  text-align: center;
+`
+
+const ChatBubble = styled.div<{ $self: boolean }>`
+  padding: 0.6rem 0.8rem;
+  border-radius: ${({ theme }) => theme.radii.md};
+  background: ${({ $self, theme }) => $self ? 'rgba(23, 247, 2, 0.08)' : theme.glass.bg};
+  border: 1px solid ${({ $self, theme }) => $self ? 'rgba(23, 247, 2, 0.15)' : theme.glass.border};
+  margin-left: ${({ $self }) => $self ? 'auto' : '0'};
+  margin-right: ${({ $self }) => $self ? '0' : 'auto'};
+  max-width: 85%;
+
+  p {
+    color: ${({ theme }) => theme.colors.text[100]};
+    font-size: ${({ theme }) => theme.typography.bodySmall};
+    margin: 0;
+    word-break: break-word;
+  }
+`
+
+const ChatBubbleHeader = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.2rem;
+
+  strong {
+    font-size: ${({ theme }) => theme.typography.caption};
+    color: ${({ theme }) => theme.colors.text[220]};
+  }
+`
+
+const ChatAvatar = styled.img`
+  width: 20px;
+  height: 20px;
+  border-radius: ${({ theme }) => theme.radii.full};
+  object-fit: cover;
+  flex-shrink: 0;
+`
+
+const ChatTime = styled.span`
+  font-size: ${({ theme }) => theme.typography.eyebrow};
+  color: ${({ theme }) => theme.colors.text[500]};
+  margin-left: auto;
+`
+
+const ChatCompose = styled.div`
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+
+  ${StyledInput} {
+    flex: 1;
+  }
+`
 
 export function OffroadTripModal({ trip, isOpen, onClose, onTripUpdate }: OffroadTripModalProps) {
   const user = useSelector((state: AuthStoreState) => state.auth.user)
@@ -50,7 +624,6 @@ export function OffroadTripModal({ trip, isOpen, onClose, onTripUpdate }: Offroa
   const isMember = trip?.members.some((m) => m.id === String(user?.id)) ?? false
   const pendingRequests = trip?.members.filter((m) => m.status === 'pending') ?? []
 
-  // Reset tab when modal opens
   useEffect(() => {
     if (isOpen) {
       setActiveTab('details')
@@ -61,7 +634,6 @@ export function OffroadTripModal({ trip, isOpen, onClose, onTripUpdate }: Offroa
     }
   }, [isOpen])
 
-  // Load chat messages and connect to SignalR
   useEffect(() => {
     if (!isOpen || !trip || !token) {
       setChatMessages([])
@@ -112,7 +684,6 @@ export function OffroadTripModal({ trip, isOpen, onClose, onTripUpdate }: Offroa
     }
   }, [isOpen, trip, token, baseURL])
 
-  // Scroll to bottom of chat
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [chatMessages, activeTab])
@@ -147,7 +718,6 @@ export function OffroadTripModal({ trip, isOpen, onClose, onTripUpdate }: Offroa
     setJoinError(null)
     try {
       await api.post('api/OffroadTrip/membership-request', { tripId: Number(trip.id) })
-      // Refresh trip data
       const res = await api.get(`api/OffroadTrip/get-offroad-trip/${trip.id}`)
       onTripUpdate(res.data)
     } catch (err) {
@@ -165,7 +735,6 @@ export function OffroadTripModal({ trip, isOpen, onClose, onTripUpdate }: Offroa
         memberId: Number(memberId),
         accept,
       })
-      // Refresh trip data
       const res = await api.get(`api/OffroadTrip/get-offroad-trip/${trip.id}`)
       onTripUpdate(res.data)
     } catch (err) {
@@ -177,7 +746,6 @@ export function OffroadTripModal({ trip, isOpen, onClose, onTripUpdate }: Offroa
     if (!trip || !window.confirm('Are you sure you want to remove this member?')) return
     try {
       await api.delete(`api/OffroadTrip/remove-member/${trip.id}/${memberId}`)
-      // Refresh trip data
       const res = await api.get(`api/OffroadTrip/get-offroad-trip/${trip.id}`)
       onTripUpdate(res.data)
     } catch (err) {
@@ -193,7 +761,6 @@ export function OffroadTripModal({ trip, isOpen, onClose, onTripUpdate }: Offroa
         memberId: Number(memberId),
         newRole,
       })
-      // Refresh trip data
       const res = await api.get(`api/OffroadTrip/get-offroad-trip/${trip.id}`)
       onTripUpdate(res.data)
     } catch (err) {
@@ -214,7 +781,6 @@ export function OffroadTripModal({ trip, isOpen, onClose, onTripUpdate }: Offroa
       })
       setInviteSuccess(`Invitation sent to ${inviteUsername}`)
       setInviteUsername('')
-      // Refresh trip data
       const res = await api.get(`api/OffroadTrip/get-offroad-trip/${trip.id}`)
       onTripUpdate(res.data)
     } catch (err) {
@@ -237,30 +803,27 @@ export function OffroadTripModal({ trip, isOpen, onClose, onTripUpdate }: Offroa
   return (
     <AnimatePresence>
       {isOpen && trip && (
-        <motion.div
-          className="modal-scrim offroad-modal-scrim"
+        <Scrim
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           onClick={onClose}
         >
-          <motion.div
-            className="offroad-trip-modal"
+          <ModalCard
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Modal Header */}
-            <div className="offroad-modal-header">
-              <div className="offroad-modal-header-content">
-                <span className="discovery-offroad-badge">
+            <ModalHeader>
+              <HeaderContent>
+                <OffroadBadge>
                   <FiMap aria-hidden /> {getTripStatusLabel(trip.status)}
-                </span>
-                <h2>{trip.title}</h2>
-                <p className="offroad-modal-description">{trip.description}</p>
-                <div className="offroad-modal-meta">
+                </OffroadBadge>
+                <ModalTitle>{trip.title}</ModalTitle>
+                <ModalDescription>{trip.description}</ModalDescription>
+                <ModalMeta>
                   <span>{formatDisplayDate(trip.startingDate)} – {formatDisplayDate(trip.endingDate)}</span>
                   <span>·</span>
                   <span>{trip.currentMembers}/{trip.maxParticipants} members</span>
@@ -268,334 +831,283 @@ export function OffroadTripModal({ trip, isOpen, onClose, onTripUpdate }: Offroa
                   <span>{trip.price} RON</span>
                   <span>·</span>
                   <span>{totalKm.toFixed(1)} km total</span>
-                </div>
-              </div>
-              <button type="button" className="btn btn-ghost btn-sm offroad-modal-close" onClick={onClose}>
+                </ModalMeta>
+              </HeaderContent>
+              <CloseButton onClick={onClose}>
                 <FiX />
-              </button>
-            </div>
+              </CloseButton>
+            </ModalHeader>
 
-            {/* Join Button for non-members */}
             {!isMember && (
-              <div className="offroad-modal-join-banner">
+              <JoinBanner>
                 <p>Join this offroad adventure to access routes and chat with the crew.</p>
-                <button
-                  type="button"
-                  className="btn btn-primary"
+                <PrimaryBtn
                   onClick={requestMembership}
                   disabled={isJoining}
                 >
                   {isJoining ? 'Requesting...' : 'Request to join'}
-                </button>
-                {joinError && <p className="error-text">{joinError}</p>}
-              </div>
+                </PrimaryBtn>
+                {joinError && <ErrorText>{joinError}</ErrorText>}
+              </JoinBanner>
             )}
 
-            {/* Tabs */}
-            <div className="offroad-modal-tabs">
-              <button
-                type="button"
-                className={`offroad-modal-tab ${activeTab === 'details' ? 'is-active' : ''}`}
+            <TabsRow>
+              <Tab
+                $active={activeTab === 'details'}
                 onClick={() => setActiveTab('details')}
               >
                 <FiMap /> Routes
-              </button>
-              <button
-                type="button"
-                className={`offroad-modal-tab ${activeTab === 'members' ? 'is-active' : ''}`}
+              </Tab>
+              <Tab
+                $active={activeTab === 'members'}
                 onClick={() => setActiveTab('members')}
               >
                 <FiUsers /> Members ({trip.members.length})
-              </button>
-              <button
-                type="button"
-                className={`offroad-modal-tab ${activeTab === 'chat' ? 'is-active' : ''}`}
+              </Tab>
+              <Tab
+                $active={activeTab === 'chat'}
                 onClick={() => setActiveTab('chat')}
               >
                 <FiMessageSquare /> Chat
-              </button>
-            </div>
+              </Tab>
+            </TabsRow>
 
-            {/* Tab Content */}
-            <div className="offroad-modal-content">
-              {/* Routes Tab */}
+            <ModalContent>
               {activeTab === 'details' && (
-                <div className="offroad-modal-routes">
-                  <div className="offroad-modal-map">
+                <div>
+                  <MapWrap>
                     <OffroadRouteMap routes={trip.routes} selectedRouteId={selectedRouteId} height="240px" />
-                  </div>
+                  </MapWrap>
 
-                  <div className="offroad-modal-routes-header">
+                  <SectionHeader>
                     <h3>Trip Routes ({trip.routes.length})</h3>
                     {trip.routes.length > 0 && (
-                      <button type="button" className="btn btn-ghost btn-sm" onClick={exportTripGpx}>
+                      <GhostBtn onClick={exportTripGpx}>
                         <FiDownload /> Export all GPX
-                      </button>
+                      </GhostBtn>
                     )}
-                  </div>
+                  </SectionHeader>
 
                   {trip.routes.length === 0 ? (
-                    <div className="offroad-empty-routes">
+                    <EmptyState>
                       <p>No routes yet. Import a GPX file or draw a track on the map.</p>
                       {isAdmin && (
-                        <Link className="btn btn-primary" to={`/app/offroad/${trip.id}/route/new`} onClick={onClose}>
+                        <PrimaryLink to={`/app/offroad/${trip.id}/route/new`} onClick={onClose}>
                           <FiPlus /> Add first route
-                        </Link>
+                        </PrimaryLink>
                       )}
-                    </div>
+                    </EmptyState>
                   ) : (
-                    <div className="offroad-modal-route-list">
+                    <RouteList>
                       {trip.routes.map((route) => (
-                        <div
+                        <RouteCard
                           key={route.id}
-                          className={`offroad-route-card ${selectedRouteId === route.id ? 'is-selected' : ''}`}
+                          $selected={selectedRouteId === route.id}
                         >
-                          <div className="offroad-route-card-header">
+                          <RouteCardHeader>
                             <h4>{route.name}</h4>
-                            <span
-                              className={`offroad-route-source ${route.source === 'Drawn' ? 'offroad-route-source--drawn' : ''}`}
-                            >
+                            <RouteSource $drawn={route.source === 'Drawn'}>
                               {route.source}
-                            </span>
-                          </div>
-                          <div className="offroad-route-meta">
+                            </RouteSource>
+                          </RouteCardHeader>
+                          <RouteMeta>
                             <span>Days <strong>{route.startDay}–{route.endDay}</strong></span>
                             <span><strong>{(route.distanceMeters / 1000).toFixed(1)} km</strong></span>
                             {route.elevationGainMeters > 0 && (
                               <span><strong>{Math.round(route.elevationGainMeters)} m</strong> elev.</span>
                             )}
-                          </div>
-                          {route.note && <p className="muted">{route.note}</p>}
-                          <div className="offroad-route-actions">
-                            <button
-                              type="button"
-                              className="btn btn-ghost btn-sm"
-                              onClick={() => setSelectedRouteId(route.id)}
-                            >
+                          </RouteMeta>
+                          {route.note && <MutedText>{route.note}</MutedText>}
+                          <RouteActions>
+                            <GhostBtn onClick={() => setSelectedRouteId(route.id)}>
                               Show on map
-                            </button>
-                            <button
-                              type="button"
-                              className="btn btn-ghost btn-sm"
-                              onClick={() => exportRouteGpx(route.id)}
-                            >
+                            </GhostBtn>
+                            <GhostBtn onClick={() => exportRouteGpx(route.id)}>
                               <FiDownload /> GPX
-                            </button>
+                            </GhostBtn>
                             {isAdmin && (
                               <>
-                                <Link
-                                  className="btn btn-ghost btn-sm"
+                                <GhostLink
                                   to={`/app/offroad/${trip.id}/route/${route.id}/edit`}
                                   onClick={onClose}
                                 >
                                   <FiEdit2 />
-                                </Link>
-                                <Link
-                                  className="btn btn-ghost btn-sm"
+                                </GhostLink>
+                                <GhostLink
                                   to={`/app/offroad/${trip.id}/route/${route.id}/edit`}
                                   onClick={onClose}
-                                  style={{ color: 'var(--danger)' }}
+                                  $danger
                                 >
                                   <FiTrash2 />
-                                </Link>
+                                </GhostLink>
                               </>
                             )}
-                          </div>
-                        </div>
+                          </RouteActions>
+                        </RouteCard>
                       ))}
-                    </div>
+                    </RouteList>
                   )}
 
                   {isAdmin && trip.routes.length > 0 && (
-                    <Link
-                      className="btn btn-primary"
+                    <PrimaryLink
                       to={`/app/offroad/${trip.id}/route/new`}
                       onClick={onClose}
-                      style={{ marginTop: '1rem' }}
                     >
                       <FiPlus /> Add route
-                    </Link>
+                    </PrimaryLink>
                   )}
                 </div>
               )}
 
-              {/* Members Tab */}
               {activeTab === 'members' && (
-                <div className="offroad-modal-members">
-                  {/* Invite Section - Only for admins */}
+                <div>
                   {isAdmin && (
-                    <form className="offroad-invite-form" onSubmit={inviteMember}>
+                    <InviteForm onSubmit={inviteMember}>
                       <h4>Invite Member</h4>
-                      <div className="offroad-invite-input-group">
-                        <input
+                      <InviteInputGroup>
+                        <StyledInput
                           type="text"
-                          className="input"
                           placeholder="Enter username..."
                           value={inviteUsername}
                           onChange={(e) => setInviteUsername(e.target.value)}
                           disabled={isInviting}
                         />
-                        <button type="submit" className="btn btn-primary" disabled={isInviting || !inviteUsername.trim()}>
+                        <PrimaryBtn type="submit" disabled={isInviting || !inviteUsername.trim()}>
                           <FiUserPlus /> {isInviting ? 'Inviting...' : 'Invite'}
-                        </button>
-                      </div>
-                      {inviteError && <p className="error-text">{inviteError}</p>}
-                      {inviteSuccess && <p className="success-text">{inviteSuccess}</p>}
-                    </form>
+                        </PrimaryBtn>
+                      </InviteInputGroup>
+                      {inviteError && <ErrorText>{inviteError}</ErrorText>}
+                      {inviteSuccess && <SuccessText>{inviteSuccess}</SuccessText>}
+                    </InviteForm>
                   )}
 
-                  {/* Pending Requests Section - Only for admins */}
                   {isAdmin && pendingRequests.length > 0 && (
-                    <div className="offroad-pending-requests">
+                    <PendingSection>
                       <h4>Pending Requests ({pendingRequests.length})</h4>
                       {pendingRequests.map((member) => (
-                        <div key={member.id} className="offroad-member-card offroad-member-card--pending">
-                          <div className="offroad-member-info">
-                            <img
+                        <MemberCard key={member.id} $pending>
+                          <MemberInfo>
+                            <MemberAvatar
                               src={getAvatarUrl(member.username, member.avatarUrl)}
                               alt={member.username}
-                              className="offroad-member-avatar"
                             />
-                            <div>
+                            <MemberNameGroup>
                               <strong>{member.username}</strong>
-                              <span className="offroad-member-role">Wants to join</span>
-                            </div>
-                          </div>
-                          <div className="offroad-member-actions">
-                            <button
-                              type="button"
-                              className="btn btn-primary btn-sm"
-                              onClick={() => respondToRequest(member.id, true)}
-                            >
+                              <MemberRole>Wants to join</MemberRole>
+                            </MemberNameGroup>
+                          </MemberInfo>
+                          <MemberActions>
+                            <PrimaryBtn onClick={() => respondToRequest(member.id, true)}>
                               <FiCheck /> Accept
-                            </button>
-                            <button
-                              type="button"
-                              className="btn btn-ghost btn-sm"
-                              onClick={() => respondToRequest(member.id, false)}
-                            >
+                            </PrimaryBtn>
+                            <GhostBtn onClick={() => respondToRequest(member.id, false)}>
                               <FiX /> Decline
-                            </button>
-                          </div>
-                        </div>
+                            </GhostBtn>
+                          </MemberActions>
+                        </MemberCard>
                       ))}
-                    </div>
+                    </PendingSection>
                   )}
 
-                  {/* Members List */}
-                  <div className="offroad-members-list">
+                  <MembersSection>
                     <h4>Members</h4>
                     {sortedMembers
                       .filter((m) => m.status === 'accepted' || m.status === 'active')
                       .map((member) => (
-                        <div key={member.id} className="offroad-member-card">
-                          <div className="offroad-member-info">
-                            <img
+                        <MemberCard key={member.id}>
+                          <MemberInfo>
+                            <MemberAvatar
                               src={getAvatarUrl(member.username, member.avatarUrl)}
                               alt={member.username}
-                              className="offroad-member-avatar"
                             />
-                            <div>
+                            <MemberNameGroup>
                               <strong>{member.username}</strong>
-                              <span className={`offroad-member-role offroad-member-role--${member.role}`}>
+                              <MemberRole $role={member.role}>
                                 {member.role}
-                              </span>
-                            </div>
-                          </div>
-                          <div className="offroad-member-actions">
-                            {/* Role change - only owner can change roles, can't change owner */}
+                              </MemberRole>
+                            </MemberNameGroup>
+                          </MemberInfo>
+                          <MemberActions>
                             {isOwner && member.role !== 'owner' && (
-                              <select
-                                className="input input-sm"
+                              <StyledSelect
                                 value={member.role}
                                 onChange={(e) => changeMemberRole(member.id, e.target.value as MemberRole)}
                                 title="Change role"
                               >
                                 <option value="admin">Admin</option>
                                 <option value="member">Member</option>
-                              </select>
+                              </StyledSelect>
                             )}
-                            {/* Remove member - owner can remove anyone except themselves, admin can remove members */}
                             {((isOwner && member.role !== 'owner') || (isAdmin && member.role === 'member')) && (
-                              <button
-                                type="button"
-                                className="btn btn-ghost btn-sm"
-                                onClick={() => removeMember(member.id)}
-                                title="Remove member"
-                              >
+                              <GhostBtn onClick={() => removeMember(member.id)} title="Remove member">
                                 <FiTrash2 />
-                              </button>
+                              </GhostBtn>
                             )}
-                          </div>
-                        </div>
+                          </MemberActions>
+                        </MemberCard>
                       ))}
-                  </div>
+                  </MembersSection>
                 </div>
               )}
 
-              {/* Chat Tab */}
               {activeTab === 'chat' && (
-                <div className="offroad-modal-chat">
+                <div>
                   {!isMember ? (
-                    <div className="offroad-chat-locked">
+                    <ChatLocked>
                       <FiMessageSquare size={48} />
                       <p>Join this trip to access the crew chat.</p>
-                      <button
-                        type="button"
-                        className="btn btn-primary"
+                      <PrimaryBtn
                         onClick={requestMembership}
                         disabled={isJoining}
                       >
                         {isJoining ? 'Requesting...' : 'Request to join'}
-                      </button>
-                    </div>
+                      </PrimaryBtn>
+                    </ChatLocked>
                   ) : (
                     <>
-                      <div className="offroad-modal-chat-messages">
+                      <ChatMessages>
                         {chatMessages.length === 0 ? (
-                          <p className="muted">No messages yet. Say hello to the crew!</p>
+                          <ChatEmpty>No messages yet. Say hello to the crew!</ChatEmpty>
                         ) : (
                           chatMessages.map((msg) => (
-                            <div
+                            <ChatBubble
                               key={msg.id}
-                              className={`offroad-chat-bubble ${msg.username === user?.username ? 'is-self' : ''}`}
+                              $self={msg.username === user?.username}
                             >
-                              <div className="offroad-chat-bubble-header">
-                                <img
+                              <ChatBubbleHeader>
+                                <ChatAvatar
                                   src={getAvatarUrl(msg.username, msg.profileUrl)}
                                   alt={msg.username}
-                                  className="offroad-chat-avatar"
                                 />
                                 <strong>{msg.username}</strong>
-                                <span className="offroad-chat-time">
+                                <ChatTime>
                                   {new Date(msg.sentAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                </span>
-                              </div>
+                                </ChatTime>
+                              </ChatBubbleHeader>
                               <p>{msg.content}</p>
-                            </div>
+                            </ChatBubble>
                           ))
                         )}
                         <div ref={messagesEndRef} />
-                      </div>
-                      <div className="offroad-modal-chat-compose">
-                        <input
-                          className="input"
+                      </ChatMessages>
+                      <ChatCompose>
+                        <StyledInput
                           value={newMessage}
                           onChange={(e) => setNewMessage(e.target.value)}
                           placeholder="Message the crew..."
                           onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
                         />
-                        <button type="button" className="btn btn-primary" onClick={sendMessage} disabled={!newMessage.trim()}>
+                        <PrimaryBtn onClick={sendMessage} disabled={!newMessage.trim()}>
                           Send
-                        </button>
-                      </div>
+                        </PrimaryBtn>
+                      </ChatCompose>
                     </>
                   )}
                 </div>
               )}
-            </div>
-          </motion.div>
-        </motion.div>
+            </ModalContent>
+          </ModalCard>
+        </Scrim>
       )}
     </AnimatePresence>
   )

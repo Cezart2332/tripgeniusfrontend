@@ -2,9 +2,9 @@ import { useState, useEffect, useRef } from "react"
 import { FiArrowLeft, FiTarget, FiDownloadCloud, FiLoader, FiAlertTriangle } from "react-icons/fi"
 import { Link, useNavigate } from "react-router-dom"
 import { useSelector } from "react-redux"
+import styled, { keyframes } from 'styled-components'
 import maplibregl from 'maplibre-gl'
-import { FeedbackToast } from "../components/FeedbackToast"
-import type { FeedbackToastState } from "../components/FeedbackToast"
+import { useToast, ToastContainer } from "../components/shared/Toast"
 import { usePlaces } from "../hooks/usePlaces"
 import { useMapTilePrefetch } from "../hooks/useMapTilePrefetch"
 import { subscribeForNotifications } from "../utils/notifications"
@@ -12,7 +12,7 @@ import { OSM_STYLE } from "../map/osmStyle"
 import { createMarkerElement, getPoiColor } from "../utils/mapMarkers"
 import { prefetchWorldBase, isWorldMapCached } from "../utils/mapTileCache"
 import type { User } from "../types/models"
-import { MobileBottomNav } from "../components/MobileBottomNav"
+import { MobileBottomNav } from "../components/layout/MobileBottomNav"
 
 interface AuthStoreState {
     auth: {
@@ -27,8 +27,8 @@ export function MapPage() {
     const [isDownloading, setIsDownloading] = useState(false)
     const [downloadProgress, setDownloadProgress] = useState(0)
     const [currentAddress, setCurrentAddress] = useState("Locating...")
-    const [toast, setToast] = useState<FeedbackToastState | null>(null)
     const [mapInstance, setMapInstance] = useState<maplibregl.Map | null>(null)
+    const { toasts, addToast, removeToast } = useToast()
     const navigate = useNavigate();
     const mapContainer = useRef<HTMLDivElement>(null);
     const map = useRef<maplibregl.Map | null>(null);
@@ -42,17 +42,12 @@ export function MapPage() {
 
     const shouldRedirectToLogin = !user
 
-    // Redirect unauthenticated users in 2 seconds
     useEffect(() => {
         if (!shouldRedirectToLogin) {
             return
         }
 
-        setToast({
-            id: Date.now(),
-            message: 'You must be logged in to view the map. Redirecting to login...',
-            tone: 'info',
-        })
+        addToast('You must be logged in to view the map. Redirecting to login...', 'info')
 
         const timeoutId = window.setTimeout(() => {
             navigate('/login', { replace: true })
@@ -74,7 +69,7 @@ export function MapPage() {
         map.current = new maplibregl.Map({
             container: mapContainer.current,
             style: OSM_STYLE,
-            center: [12.4534, 41.9029], // Vatican City
+            center: [12.4534, 41.9029],
             zoom: 14,
             cooperativeGestures: true
         });
@@ -176,92 +171,75 @@ export function MapPage() {
 
             const cachedNow = await isWorldMapCached()
             setWorldMapCached(cachedNow)
-            setToast({
-                id: Date.now(),
-                message: `Success! Global base map cached for offline use.`,
-                tone: 'success'
-            });
+            addToast('Success! Global base map cached for offline use.', 'success')
         } catch {
-            setToast({
-                id: Date.now(),
-                message: 'Failed to download global map. Please try again.',
-                tone: 'error'
-            });
+            addToast('Failed to download global map. Please try again.', 'error')
         } finally {
             setIsDownloading(false);
         }
     };
 
-    // If user is not logged in, render the clean, premium unauthenticated screen
     if (!user) {
         return (
-            <section className="page container" style={{ minHeight: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <FeedbackToast toast={toast} clearToast={() => setToast(null)} />
-                <div className="discovery-empty-state" style={{ textCombineUpright: 'none' }}>
-                    <img src="/newstickers/sticker5.png" alt="" className="discovery-empty-sticker" style={{ width: '120px', marginBottom: '1.5rem', display: 'block', marginInline: 'auto' }} />
-                    <h1 style={{ color: 'var(--text-100)', marginBottom: '0.75rem', fontSize: '1.8rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
+            <FullScreenCentered>
+                <ToastContainer toasts={toasts} removeToast={removeToast} />
+                <EmptyStateWrap>
+                    <Sticker src="/newstickers/sticker5.png" alt="" />
+                    <UnauthTitle>
                         <FiAlertTriangle style={{ color: 'var(--danger-500)' }} /> You are not logged in
-                    </h1>
-                    <p style={{ color: 'var(--text-380)', marginBottom: '1.5rem', maxWidth: '400px', marginInline: 'auto', lineHeight: 1.5 }}>
+                    </UnauthTitle>
+                    <UnauthDesc>
                         Please log in to access the interactive safety map, explore locations, and download offline cached maps.
-                    </p>
-                    <Link className="btn btn-primary" to="/login">
+                    </UnauthDesc>
+                    <PrimaryLink to="/login">
                         Go to login
-                    </Link>
-                </div>
-            </section>
+                    </PrimaryLink>
+                </EmptyStateWrap>
+            </FullScreenCentered>
         )
     }
 
     return (
-        <section className="page full-map-page" id="map-page" style={{ height: '100dvh', position: 'relative', overflow: 'hidden' }}>
-            <FeedbackToast toast={toast} clearToast={() => setToast(null)} />
+        <FullMapPage id="map-page">
+            <ToastContainer toasts={toasts} removeToast={removeToast} />
             
-            <div className="map-overlay" style={{ pointerEvents: 'none', zIndex: 10 }}>
-                <div className="map-header-bar" style={{ paddingTop: 'calc(0.75rem + env(safe-area-inset-top))', pointerEvents: 'none' }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', width: '100%', pointerEvents: 'none' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', marginBottom: '0.5rem', pointerEvents: 'auto', paddingLeft: '1rem', paddingRight: '1rem' }}>
-                            <button onClick={() => navigate(-1)} className="btn btn-ghost btn-sm" style={{ marginRight: '0.75rem', color: 'var(--text-100)', background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(10px)', width: '40px', height: '40px', padding: 0, minWidth: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <MapOverlay>
+                <MapHeaderBar>
+                    <MapHeaderInner>
+                        <MapHeaderRow>
+                            <BackButton onClick={() => navigate(-1)}>
                                 <FiArrowLeft size={24} />
-                            </button>
-                            <div className="input-group" style={{ flexGrow: 1, maxWidth: '600px', position: 'relative' }}>
-                                <span className="input-prefix" style={{ left: '0.85rem', top: '50%', transform: 'translateY(-50%)', position: 'absolute', color: 'var(--text-380)', display: 'flex', alignItems: 'center' }}>
+                            </BackButton>
+                            <SearchGroup>
+                                <SearchIconPrefix>
                                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                                </span>
-                                <input type="text" value={currentAddress} readOnly className="input" placeholder="Where to?" style={{ fontSize: '0.9rem', paddingLeft: '2.4rem', background: 'rgba(17, 34, 26, 0.85)', backdropFilter: 'blur(10px)', border: '1px solid var(--line-soft)', height: '40px', borderRadius: '12px' }} />
-                            </div>
-                        </div>
-                        <div className="chip-row" style={{ paddingLeft: '1rem', gap: '0.5rem', flexWrap: 'nowrap', overflowX: 'auto', paddingRight: '1.5rem', pointerEvents: 'auto' }}>
-                            <span className="chip" style={{ background: 'rgba(23, 247, 2, 0.2)', border: '1px solid var(--green-500)', color: 'var(--green-500)' }}>🔍 Exploring {currentAddress.split(',')[0]}</span>
+                                </SearchIconPrefix>
+                                <AddressInput type="text" value={currentAddress} readOnly className="input" placeholder="Where to?" />
+                            </SearchGroup>
+                        </MapHeaderRow>
+                        <ChipsRow>
+                            <ExploreChip>🔍 Exploring {currentAddress.split(',')[0]}</ExploreChip>
                             {placesLoading && (
-                                <span className="chip" style={{ background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                                    <FiLoader className="spin" size={14} />
+                                <LoadingChip>
+                                    <SpinningLoader size={14} />
                                     Loading places...
-                                </span>
+                                </LoadingChip>
                             )}
                             {isPrefetching && !isDownloading && (
-                                <span className="chip" style={{ background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                                    <FiLoader className="spin" size={14} />
+                                <LoadingChip>
+                                    <SpinningLoader size={14} />
                                     Caching map…
-                                </span>
+                                </LoadingChip>
                             )}
                             {!worldMapCached && (
-                            <button 
+                            <DownloadChip 
                                 onClick={downloadWorldwideBaseMap}
                                 disabled={isDownloading}
-                                className="chip" 
-                                style={{ 
-                                    background: isDownloading ? 'rgba(23, 247, 2, 0.4)' : 'rgba(23, 247, 2, 0.1)', 
-                                    border: '1px solid var(--green-580)',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '0.4rem',
-                                    color: 'var(--text-100)'
-                                }}
+                                $downloading={isDownloading}
                             >
                                 {isDownloading ? (
                                     <>
-                                        <FiLoader className="spin" size={14} />
+                                        <SpinningLoader size={14} />
                                         Caching World {downloadProgress}%
                                     </>
                                 ) : (
@@ -270,96 +248,297 @@ export function MapPage() {
                                         Download World Map
                                     </>
                                 )}
-                            </button>
+                            </DownloadChip>
                             )}
                             {worldMapCached && (
-                                <span className="chip" style={{ background: 'rgba(23, 247, 2, 0.15)', border: '1px solid var(--green-580)', color: 'var(--green-500)' }}>
+                                <CachedChip>
                                     World map cached offline
-                                </span>
+                                </CachedChip>
                             )}
-                        </div>
-                    </div>
-                </div>
-            </div>
+                        </ChipsRow>
+                    </MapHeaderInner>
+                </MapHeaderBar>
+            </MapOverlay>
 
-            <div ref={mapContainer} style={{ position: 'absolute', inset: 0, background: '#0d0f0d' }}></div>
+            <MapContainer ref={mapContainer} />
 
-            <button 
-                onClick={centerOnUser}
-                className="center-user-btn"
-                style={{
-                    background: 'var(--green-580)',
-                    color: '#fff',
-                    borderRadius: '50%',
-                    width: '50px',
-                    height: '50px',
-                    border: 'none',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    boxShadow: '0 4px 15px rgba(0,0,0,0.4)',
-                    cursor: 'pointer'
-                }}
-            >
+            <CenterUserBtn onClick={centerOnUser}>
                 <FiTarget size={24} />
-            </button>
+            </CenterUserBtn>
 
             <MobileBottomNav />
-
-            <style>{`
-                .user-dot-marker {
-                    width: 18px;
-                    height: 18px;
-                    background: var(--green-500);
-                    border: 3px solid white;
-                    border-radius: 50%;
-                    box-shadow: 0 0 15px var(--green-500);
-                }
-                .full-map-page .map-cards-container {
-                    position: absolute;
-                    bottom: 0;
-                    left: 0;
-                    right: 0;
-                    z-index: 15;
-                }
-                #map-page .input-group {
-                    position: relative;
-                }
-                .spin {
-                    animation: spin 1s linear infinite;
-                }
-                @keyframes spin {
-                    from { transform: rotate(0deg); }
-                    to { transform: rotate(360deg); }
-                }
-                .center-user-btn {
-                    position: absolute;
-                    bottom: 2rem;
-                    right: 1.5rem;
-                    z-index: 20;
-                    transition: transform 0.2s ease, bottom 0.3s ease;
-                }
-                .center-user-btn:hover {
-                    transform: scale(1.05);
-                }
-                .full-map-page .chip-row::-webkit-scrollbar {
-                    display: none;
-                }
-                .full-map-page .chip-row {
-                    -ms-overflow-style: none;
-                    scrollbar-width: none;
-                }
-                @media (max-width: 850px) {
-                    .center-user-btn {
-                        bottom: calc(75px + env(safe-area-inset-bottom)) !important;
-                        right: 1rem !important;
-                    }
-                    .full-map-page .maplibregl-ctrl-bottom-right {
-                        bottom: calc(70px + env(safe-area-inset-bottom)) !important;
-                        right: 1rem !important;
-                    }
-                }
-            `}</style>
-        </section>
+        </FullMapPage>
     )
 }
+
+const spinAnim = keyframes`
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+`
+
+const FullScreenCentered = styled.section`
+  width: min(1200px, 100% - 2rem);
+  margin: 0 auto;
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-top: ${({ theme }) => theme.spacing.lg};
+  padding-bottom: ${({ theme }) => theme.spacing['3xl']};
+
+  @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
+    width: min(1200px, 100% - 1rem);
+    padding-bottom: 7rem;
+  }
+`
+
+const EmptyStateWrap = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+`
+
+const Sticker = styled.img`
+  width: 120px;
+  margin-bottom: 1.5rem;
+  display: block;
+  margin-inline: auto;
+`
+
+const UnauthTitle = styled.h1`
+  color: ${({ theme }) => theme.colors.text[100]};
+  margin-bottom: 0.75rem;
+  font-size: 1.8rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+`
+
+const UnauthDesc = styled.p`
+  color: ${({ theme }) => theme.colors.text[380]};
+  margin-bottom: 1.5rem;
+  max-width: 400px;
+  margin-inline: auto;
+  line-height: 1.5;
+`
+
+const PrimaryLink = styled(Link)`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  border-radius: ${({ theme }) => theme.radii.pill};
+  transition: all ${({ theme }) => theme.animation.duration.normal}s ${({ theme }) => theme.animation.easeOut.join(',')};
+  min-height: 44px;
+  min-width: 44px;
+  white-space: nowrap;
+  text-decoration: none;
+  line-height: 1;
+  padding: 0.65rem 1.5rem;
+  background: linear-gradient(135deg, ${({ theme }) => theme.colors.green[580]}, ${({ theme }) => theme.colors.green[500]});
+  color: #0a1e08;
+  box-shadow: ${({ theme }) => theme.shadows.glowGreen};
+
+  &:hover {
+    background: linear-gradient(135deg, ${({ theme }) => theme.colors.green[500]}, ${({ theme }) => theme.colors.green[300]});
+    transform: translateY(-1px);
+  }
+`
+
+const FullMapPage = styled.section`
+  height: 100dvh;
+  position: relative;
+  overflow: hidden;
+`
+
+const MapOverlay = styled.div`
+  pointer-events: none;
+  z-index: 10;
+  position: absolute;
+  inset: 0;
+`
+
+const MapHeaderBar = styled.div`
+  padding-top: calc(0.75rem + env(safe-area-inset-top));
+  pointer-events: none;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+`
+
+const MapHeaderInner = styled.div`
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  pointer-events: none;
+`
+
+const MapHeaderRow = styled.div`
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.5rem;
+  pointer-events: auto;
+  padding-left: 1rem;
+  padding-right: 1rem;
+`
+
+const BackButton = styled.button`
+  margin-right: 0.75rem;
+  color: ${({ theme }) => theme.colors.text[100]};
+  background: rgba(0,0,0,0.5);
+  backdrop-filter: blur(10px);
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  min-width: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+`
+
+const SearchGroup = styled.div`
+  flex-grow: 1;
+  max-width: 600px;
+  position: relative;
+`
+
+const SearchIconPrefix = styled.span`
+  left: 0.85rem;
+  top: 50%;
+  transform: translateY(-50%);
+  position: absolute;
+  display: flex;
+  align-items: center;
+  color: ${({ theme }) => theme.colors.text[380]};
+  z-index: 1;
+`
+
+const AddressInput = styled.input`
+  font-size: 0.9rem;
+  padding-left: 2.4rem;
+  background: rgba(17, 34, 26, 0.85);
+  backdrop-filter: blur(10px);
+  border: 1px solid ${({ theme }) => theme.colors.lineSoft};
+  height: 40px;
+  border-radius: 12px;
+  width: 100%;
+  color: ${({ theme }) => theme.colors.text[100]};
+  outline: none;
+
+  &::placeholder { color: ${({ theme }) => theme.colors.text[500]}; }
+`
+
+const ChipsRow = styled.div`
+  padding-left: 1rem;
+  gap: 0.5rem;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  padding-right: 1.5rem;
+  pointer-events: auto;
+  display: flex;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar { display: none; }
+`
+
+const ExploreChip = styled.span`
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.4rem 0.9rem;
+  border-radius: ${({ theme }) => theme.radii.pill};
+  font-size: ${({ theme }) => theme.typography.bodySmall};
+  font-weight: 600;
+  background: rgba(23, 247, 2, 0.2);
+  border: 1px solid ${({ theme }) => theme.colors.green[500]};
+  color: ${({ theme }) => theme.colors.green[500]};
+  white-space: nowrap;
+`
+
+const LoadingChip = styled.span`
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.9rem;
+  border-radius: ${({ theme }) => theme.radii.pill};
+  font-size: ${({ theme }) => theme.typography.bodySmall};
+  background: rgba(255,255,255,0.05);
+  color: ${({ theme }) => theme.colors.text[220]};
+  white-space: nowrap;
+`
+
+const DownloadChip = styled.button<{ $downloading: boolean }>`
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.9rem;
+  border-radius: ${({ theme }) => theme.radii.pill};
+  font-size: ${({ theme }) => theme.typography.bodySmall};
+  font-weight: 600;
+  background: ${({ $downloading }) => $downloading ? 'rgba(23, 247, 2, 0.4)' : 'rgba(23, 247, 2, 0.1)'};
+  border: 1px solid ${({ theme }) => theme.colors.green[580]};
+  color: ${({ theme }) => theme.colors.text[100]};
+  white-space: nowrap;
+  cursor: pointer;
+
+  &:disabled { opacity: 0.7; }
+`
+
+const CachedChip = styled.span`
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.9rem;
+  border-radius: ${({ theme }) => theme.radii.pill};
+  font-size: ${({ theme }) => theme.typography.bodySmall};
+  font-weight: 600;
+  background: rgba(23, 247, 2, 0.15);
+  border: 1px solid ${({ theme }) => theme.colors.green[580]};
+  color: ${({ theme }) => theme.colors.green[500]};
+  white-space: nowrap;
+`
+
+const SpinningLoader = styled(FiLoader)`
+  animation: ${spinAnim} 1s linear infinite;
+`
+
+const MapContainer = styled.div`
+  position: absolute;
+  inset: 0;
+  background: #0d0f0d;
+`
+
+const CenterUserBtn = styled.button`
+  background: ${({ theme }) => theme.colors.green[580]};
+  color: #fff;
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+  cursor: pointer;
+  position: absolute;
+  bottom: 2rem;
+  right: 1.5rem;
+  z-index: 20;
+  transition: transform 0.2s ease, bottom 0.3s ease;
+
+  &:hover { transform: scale(1.05); }
+
+  @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
+    bottom: calc(75px + env(safe-area-inset-bottom)) !important;
+    right: 1rem !important;
+  }
+`

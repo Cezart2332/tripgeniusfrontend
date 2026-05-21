@@ -1,7 +1,8 @@
 import { motion } from 'framer-motion'
 import { useEffect, useState } from 'react'
 import { FiMap, FiPlusCircle, FiSliders, FiZap } from 'react-icons/fi'
-import { Link, NavLink, useLocation } from 'react-router-dom'
+import { Link } from 'react-router-dom'
+import styled from 'styled-components'
 import { useDebouncedCallback } from 'use-debounce'
 import { tripTypeOptions } from '../data/tripTypeOptions'
 import type { OffroadTrip, User } from '../types/models'
@@ -11,36 +12,13 @@ import { formatDisplayDate } from '../utils/dateDisplay'
 import { getTripStatusLabel } from '../utils/tripStatus'
 import { putAllOffroadTrips } from '../utils/offroadTripCache'
 import { isNetworkError as isNetworkErrorUtil } from '../utils/errorMessage'
+import { SkeletonCard } from '../components/shared/SkeletonCard'
+import { DiscoveryModeTabs } from '../components/layout/DiscoveryModeTabs'
 
 const revealTransition = { duration: 0.55, ease: [0.22, 1, 0.36, 1] as const }
 
 interface AuthStoreState {
   auth: { user: User | null; token: string | null }
-}
-
-export function DiscoveryModeTabs() {
-  const location = useLocation()
-  const isOffroad = location.pathname.startsWith('/app/offroad')
-
-  return (
-    <nav className="discovery-mode-tabs" aria-label="Trip discovery mode">
-      <NavLink
-        to="/app"
-        end
-        className={() =>
-          `discovery-mode-tab discovery-mode-tab--classic ${!isOffroad ? 'is-active' : ''}`
-        }
-      >
-        Classic
-      </NavLink>
-      <NavLink
-        to="/app/offroad"
-        className={() => `discovery-mode-tab ${isOffroad ? 'is-active' : ''}`}
-      >
-        Offroad
-      </NavLink>
-    </nav>
-  )
 }
 
 export function OffroadDiscoveryPage() {
@@ -112,51 +90,49 @@ export function OffroadDiscoveryPage() {
 
   if (!user) {
     return (
-      <section className="page discovery-page discovery-page-offroad">
-        <div className="discovery-empty-state discovery-auth-empty">
+      <OffroadPage>
+        <EmptyAuthState>
           <h1>Sign in to discover offroad trips</h1>
-          <p className="lead">Browse GPX route adventures and join trail groups.</p>
-          <Link className="btn btn-primary" to="/login">
+          <LeadText>Browse GPX route adventures and join trail groups.</LeadText>
+          <PrimaryLink to="/login">
             Go to login
-          </Link>
-        </div>
-      </section>
+          </PrimaryLink>
+        </EmptyAuthState>
+      </OffroadPage>
     )
   }
 
   return (
-    <section className="page discovery-page-v2 discovery-page-offroad">
+    <OffroadPage>
       <DiscoveryModeTabs />
 
-      <motion.header
-        className="discovery-header-v2"
+      <DiscoveryHeader
         initial={{ opacity: 0, y: 18 }}
         animate={{ opacity: 1, y: 0 }}
         transition={revealTransition}
       >
         <div>
-          <span className="discovery-offroad-badge">
+          <OffroadBadge>
             <FiMap aria-hidden /> GPX routes
-          </span>
-          <h1>Offroad trips</h1>
-          <p className="lead">
+          </OffroadBadge>
+          <Title>Offroad trips</Title>
+          <LeadText>
             Multi-day trail adventures built from imported or hand-drawn GPS tracks.
-          </p>
+          </LeadText>
         </div>
-        <div className="discovery-header-actions">
-          <Link className="btn btn-ghost" to="/app/offroad/ai-planner" style={{ borderColor: 'var(--offroad-accent, #c9a227)', color: 'var(--offroad-accent, #c9a227)' }}>
+        <HeaderActions>
+          <AiPlannerLink to="/app/offroad/ai-planner">
             <FiZap aria-hidden="true" /> AI Trail Planner
-          </Link>
-          <Link className="btn btn-primary" to="/app/offroad/create">
+          </AiPlannerLink>
+          <PrimaryLink to="/app/offroad/create">
             <FiPlusCircle aria-hidden="true" /> Create offroad trip
-          </Link>
-        </div>
-      </motion.header>
+          </PrimaryLink>
+        </HeaderActions>
+      </DiscoveryHeader>
 
-      <div className="discovery-toolbar-v2">
-        <div className="discovery-search-group">
-          <input
-            className="input"
+      <Toolbar>
+        <SearchGroup>
+          <SearchInput
             placeholder="Search offroad trips..."
             value={search}
             onChange={(e) => {
@@ -164,156 +140,484 @@ export function OffroadDiscoveryPage() {
               handleSearch(e.target.value)
             }}
           />
-        </div>
-        <button
-          type="button"
-          className="btn btn-ghost btn-sm"
-          onClick={() => setShowFilters((v) => !v)}
-        >
+        </SearchGroup>
+        <FiltersBtn type="button" onClick={() => setShowFilters((v) => !v)}>
           <FiSliders aria-hidden /> {showFilters ? 'Hide filters' : 'Filters'}
-        </button>
-      </div>
+        </FiltersBtn>
+      </Toolbar>
 
       {showFilters && (
-        <motion.div
-          className="discovery-filters-v2"
+        <FiltersPanel
           initial={{ opacity: 0, height: 0 }}
           animate={{ opacity: 1, height: 'auto' }}
           transition={{ duration: 0.25 }}
         >
-          <div className="discovery-filter-item">
-            <label className="discovery-pref-toggle">
+          <FilterItem>
+            <PrefToggle>
               <input
                 type="checkbox"
                 checked={autoApplyPreferences}
                 onChange={(e) => setAutoApplyPreferences(e.target.checked)}
               />
               <span>Match my preferences</span>
-            </label>
-          </div>
-          <div className="discovery-filter-item">
-            <label className="field-label" htmlFor="offroad-type">
-              Trip type
-            </label>
-            <select
-              id="offroad-type"
-              className="input"
-              value={selectedType}
-              onChange={(e) => setSelectedType(e.target.value)}
-            >
+            </PrefToggle>
+          </FilterItem>
+          <FilterItem>
+            <FilterLabel htmlFor="offroad-type">Trip type</FilterLabel>
+            <FilterSelect id="offroad-type" value={selectedType} onChange={(e) => setSelectedType(e.target.value)}>
               <option value="all">All types</option>
               {tripTypeOptions.map((tag) => (
-                <option key={tag} value={tag}>
-                  {tag}
-                </option>
+                <option key={tag} value={tag}>{tag}</option>
               ))}
-            </select>
-          </div>
-          <div className="discovery-filter-item">
-            <label className="field-label" htmlFor="offroad-budget">
-              Budget up to {maxBudget} RON
-            </label>
-            <input
-              id="offroad-budget"
-              className="range"
-              type="range"
-              min={0}
-              max={2500}
-              step={50}
-              value={maxBudget}
-              onChange={(e) => setMaxBudget(Number(e.target.value))}
-            />
-          </div>
-        </motion.div>
+            </FilterSelect>
+          </FilterItem>
+          <FilterItem>
+            <FilterLabel htmlFor="offroad-budget">Budget up to {maxBudget} RON</FilterLabel>
+            <RangeInput id="offroad-budget" type="range" min={0} max={2500} step={50} value={maxBudget} onChange={(e) => setMaxBudget(Number(e.target.value))} />
+          </FilterItem>
+        </FiltersPanel>
       )}
 
-      <section className="discovery-results-v2" aria-live="polite" aria-busy={showSkeleton}>
-        <div className="discovery-results-meta">
+      <ResultsSection aria-live="polite" aria-busy={showSkeleton}>
+        <ResultsMeta>
           <h2>{showSkeleton ? 'Loading...' : `${trips.length} offroad trips`}</h2>
-        </div>
+        </ResultsMeta>
 
-        <div className="discovery-trip-list">
+        <TripList>
           {showSkeleton
-            ? Array.from({ length: 3 }, (_, i) => (
-                <article
-                  key={`sk-${i}`}
-                  className="discovery-trip-row discovery-trip-row--offroad discovery-trip-skeleton"
-                  aria-hidden
-                >
-                  <div className="discovery-trip-thumb discovery-skeleton-block" />
-                  <div className="discovery-trip-info">
-                    <div className="discovery-skeleton-block" style={{ height: '1rem', width: 100 }} />
-                    <div className="discovery-skeleton-block" style={{ height: '1.4rem', width: 260 }} />
-                  </div>
-                </article>
-              ))
+            ? Array.from({ length: 3 }, (_, i) => <SkeletonCard key={`sk-${i}`} />)
             : trips.map((trip, index) => (
-                <motion.article
+                <TripRow
                   key={trip.id}
-                  className="discovery-trip-row discovery-trip-row--offroad"
                   initial={{ opacity: 0, y: 16 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ ...revealTransition, delay: index * 0.04 }}
                 >
                   {trip.imageUrl ? (
-                    <img src={trip.imageUrl} alt="" className="discovery-trip-thumb" />
+                    <TripThumb src={trip.imageUrl} alt="" />
                   ) : (
-                    <div
-                      className="discovery-trip-thumb"
-                      style={{
-                        background:
-                          'linear-gradient(135deg, rgba(201,162,39,0.25), rgba(44,51,43,0.9))',
-                        display: 'grid',
-                        placeItems: 'center',
-                      }}
-                    >
-                      <FiMap size={32} color="var(--offroad-accent)" aria-hidden />
-                    </div>
+                    <TripThumbPlaceholder>
+                      <FiMap size={32} style={{ opacity: 0.6 }} />
+                    </TripThumbPlaceholder>
                   )}
-                  <div className="discovery-trip-info">
-                    <span className="discovery-trip-status">{getTripStatusLabel(trip.status)}</span>
-                    <h3>{trip.title}</h3>
-                    <p className="discovery-trip-desc">{trip.description}</p>
-                    <div className="discovery-trip-meta-row">
-                      <span className="discovery-trip-route-pill">
+                  <TripInfo>
+                    <TripStatus>{getTripStatusLabel(trip.status)}</TripStatus>
+                    <TripTitle>{trip.title}</TripTitle>
+                    <TripDesc>{trip.description}</TripDesc>
+                    <TripMetaRow>
+                      <RoutePill>
                         <FiMap aria-hidden /> {trip.routes?.length ?? 0} routes
-                      </span>
-                      <span>·</span>
-                      <span>
-                        {formatDisplayDate(trip.startingDate)} – {formatDisplayDate(trip.endingDate)}
-                      </span>
-                      <span>·</span>
-                      <span>
-                        {trip.currentMembers}/{trip.maxParticipants} members
-                      </span>
-                      <span>·</span>
+                      </RoutePill>
+                      <DotSep />
+                      <span>{formatDisplayDate(trip.startingDate)} – {formatDisplayDate(trip.endingDate)}</span>
+                      <DotSep />
+                      <span>{trip.currentMembers}/{trip.maxParticipants} members</span>
+                      <DotSep />
                       <span>{trip.price} RON</span>
-                    </div>
-                    <div className="discovery-trip-tags">
+                    </TripMetaRow>
+                    <TripTags>
                       {trip.tags.map((tag) => (
-                        <span key={tag} className="chip chip-static chip-sm">
-                          {tag}
-                        </span>
+                        <Tag key={tag}>{tag}</Tag>
                       ))}
-                    </div>
-                  </div>
-                  <Link className="btn btn-primary btn-sm discovery-trip-cta" to={`/app/offroad/${trip.id}`}>
-                    View
-                  </Link>
-                </motion.article>
+                    </TripTags>
+                  </TripInfo>
+                  <ViewLink to={`/app/offroad/${trip.id}`}>View</ViewLink>
+                </TripRow>
               ))}
-
-          {!showSkeleton && trips.length === 0 && (
-            <div className="discovery-no-results offroad-empty-routes">
-              <h3>No offroad trips match these filters.</h3>
-              <p>Try a wider budget or create the first trail adventure.</p>
-              <Link className="btn btn-primary" to="/app/offroad/create">
-                Create offroad trip
-              </Link>
-            </div>
-          )}
-        </div>
-      </section>
-    </section>
+        </TripList>
+      </ResultsSection>
+    </OffroadPage>
   )
 }
+
+// --- Styled Components ---
+
+const OffroadPage = styled.section`
+  width: min(1200px, 100% - 2rem);
+  margin: 0 auto;
+  padding-top: ${({ theme }) => theme.spacing.lg};
+  padding-bottom: ${({ theme }) => theme.spacing['3xl']};
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.spacing.lg};
+
+  @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
+    width: min(1200px, 100% - 1rem);
+    padding-bottom: 7rem;
+    gap: ${({ theme }) => theme.spacing.md};
+  }
+`
+
+const EmptyAuthState = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: ${({ theme }) => theme.spacing['3xl']} ${({ theme }) => theme.spacing.lg};
+  gap: ${({ theme }) => theme.spacing.md};
+
+  h1 { color: ${({ theme }) => theme.colors.text[100]}; }
+`
+
+const LeadText = styled.p`
+  color: ${({ theme }) => theme.colors.text[380]};
+  max-width: 480px;
+  line-height: 1.6;
+`
+
+const PrimaryLink = styled(Link)`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  border-radius: ${({ theme }) => theme.radii.pill};
+  transition: all ${({ theme }) => theme.animation.duration.normal}s ${({ theme }) => theme.animation.easeOut.join(',')};
+  min-height: 44px;
+  min-width: 44px;
+  white-space: nowrap;
+  text-decoration: none;
+  line-height: 1;
+  padding: 0.65rem 1.5rem;
+  background: linear-gradient(135deg, ${({ theme }) => theme.colors.green[580]}, ${({ theme }) => theme.colors.green[500]});
+  color: #0a1e08;
+  box-shadow: ${({ theme }) => theme.shadows.glowGreen};
+
+  &:hover {
+    background: linear-gradient(135deg, ${({ theme }) => theme.colors.green[500]}, ${({ theme }) => theme.colors.green[300]});
+    transform: translateY(-1px);
+    box-shadow: 0 0 40px rgba(23, 247, 2, 0.3), 0 0 80px rgba(23, 247, 2, 0.1);
+  }
+`
+
+const AiPlannerLink = styled(Link)`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  border-radius: ${({ theme }) => theme.radii.pill};
+  transition: all ${({ theme }) => theme.animation.duration.normal}s ${({ theme }) => theme.animation.easeOut.join(',')};
+  min-height: 44px;
+  min-width: 44px;
+  white-space: nowrap;
+  text-decoration: none;
+  line-height: 1;
+  padding: 0.55rem 1.2rem;
+  background: transparent;
+  color: ${({ theme }) => theme.colors.offroad.accent};
+  border: 1px solid ${({ theme }) => theme.colors.offroad.line};
+
+  &:hover {
+    background: rgba(201, 162, 39, 0.08);
+    border-color: ${({ theme }) => theme.colors.offroad.accent};
+  }
+`
+
+const DiscoveryHeader = styled(motion.header)`
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: ${({ theme }) => theme.spacing.md};
+  padding: ${({ theme }) => theme.spacing.lg} 0;
+`
+
+const OffroadBadge = styled.span`
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: ${({ theme }) => theme.radii.pill};
+  font-size: ${({ theme }) => theme.typography.caption};
+  font-weight: 600;
+  background: ${({ theme }) => theme.colors.offroad.accentSoft};
+  color: ${({ theme }) => theme.colors.offroad.accent};
+  margin-bottom: 0.5rem;
+`
+
+const Title = styled.h1`
+  color: ${({ theme }) => theme.colors.text[100]};
+  margin-top: 0.25rem;
+`
+
+const HeaderActions = styled.div`
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+`
+
+const Toolbar = styled.div`
+  display: flex;
+  gap: ${({ theme }) => theme.spacing.sm};
+  align-items: center;
+  flex-wrap: wrap;
+`
+
+const SearchGroup = styled.div`
+  flex: 1;
+  min-width: 200px;
+`
+
+const SearchInput = styled.input`
+  width: 100%;
+  padding: 0.7rem 1rem;
+  border-radius: ${({ theme }) => theme.radii.lg};
+  border: 1px solid ${({ theme }) => theme.colors.lineSoft};
+  background: ${({ theme }) => theme.glass.bg};
+  color: ${({ theme }) => theme.colors.text[100]};
+  font-size: ${({ theme }) => theme.typography.body};
+  transition: border-color ${({ theme }) => theme.animation.duration.fast}s ease;
+  min-height: 44px;
+  backdrop-filter: blur(${({ theme }) => theme.glass.blur});
+
+  &::placeholder { color: ${({ theme }) => theme.colors.text[500]}; }
+  &:focus {
+    outline: none;
+    border-color: ${({ theme }) => theme.colors.green[500]};
+    box-shadow: 0 0 0 3px rgba(23, 247, 2, 0.1);
+  }
+`
+
+const FiltersBtn = styled.button`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  border-radius: ${({ theme }) => theme.radii.pill};
+  transition: all ${({ theme }) => theme.animation.duration.normal}s ${({ theme }) => theme.animation.easeOut.join(',')};
+  min-height: 44px;
+  min-width: 44px;
+  white-space: nowrap;
+  line-height: 1;
+  padding: 0.55rem 1.2rem;
+  background: transparent;
+  color: ${({ theme }) => theme.colors.text[220]};
+  border: 1px solid ${({ theme }) => theme.colors.lineSoft};
+
+  &:hover {
+    background: rgba(65, 162, 56, 0.08);
+    border-color: ${({ theme }) => theme.colors.line};
+    color: ${({ theme }) => theme.colors.text[100]};
+  }
+`
+
+const FiltersPanel = styled(motion.div)`
+  display: flex;
+  gap: ${({ theme }) => theme.spacing.md};
+  flex-wrap: wrap;
+  align-items: flex-end;
+  overflow: hidden;
+  padding-bottom: ${({ theme }) => theme.spacing.sm};
+`
+
+const FilterItem = styled.div`
+  flex: 1;
+  min-width: 180px;
+`
+
+const PrefToggle = styled.label`
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: ${({ theme }) => theme.typography.bodySmall};
+  color: ${({ theme }) => theme.colors.text[220]};
+  cursor: pointer;
+  padding: 0.65rem 0;
+
+  input[type="checkbox"] {
+    accent-color: ${({ theme }) => theme.colors.green[580]};
+  }
+`
+
+const FilterLabel = styled.label`
+  display: block;
+  font-size: ${({ theme }) => theme.typography.bodySmall};
+  color: ${({ theme }) => theme.colors.text[380]};
+  margin-bottom: 0.35rem;
+  font-weight: 500;
+`
+
+const FilterSelect = styled.select`
+  width: 100%;
+  padding: 0.7rem 1rem;
+  border-radius: ${({ theme }) => theme.radii.lg};
+  border: 1px solid ${({ theme }) => theme.colors.lineSoft};
+  background: ${({ theme }) => theme.glass.bg};
+  color: ${({ theme }) => theme.colors.text[100]};
+  font-size: ${({ theme }) => theme.typography.body};
+  min-height: 44px;
+  backdrop-filter: blur(${({ theme }) => theme.glass.blur});
+
+  &:focus { outline: none; border-color: ${({ theme }) => theme.colors.green[500]}; }
+`
+
+const RangeInput = styled.input`
+  width: 100%;
+  accent-color: ${({ theme }) => theme.colors.green[580]};
+  margin-top: 0.35rem;
+`
+
+const ResultsSection = styled.section`
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.spacing.md};
+`
+
+const ResultsMeta = styled.div`
+  h2 {
+    color: ${({ theme }) => theme.colors.text[220]};
+  }
+`
+
+const TripList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.spacing.md};
+`
+
+const TripRow = styled(motion.article)`
+  display: flex;
+  gap: ${({ theme }) => theme.spacing.md};
+  padding: ${({ theme }) => theme.spacing.lg};
+  background: ${({ theme }) => theme.glass.bg};
+  border: 1px solid ${({ theme }) => theme.glass.border};
+  border-radius: ${({ theme }) => theme.radii.xl};
+  backdrop-filter: blur(${({ theme }) => theme.glass.blur});
+  align-items: center;
+
+  @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
+    flex-direction: column;
+    align-items: stretch;
+  }
+`
+
+const TripThumb = styled.img`
+  width: 180px;
+  height: 120px;
+  object-fit: cover;
+  border-radius: ${({ theme }) => theme.radii.md};
+  flex-shrink: 0;
+
+  @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
+    width: 100%;
+    height: 160px;
+  }
+`
+
+const TripThumbPlaceholder = styled.div`
+  width: 180px;
+  height: 120px;
+  background: linear-gradient(135deg, rgba(201,162,39,0.25), rgba(44,51,43,0.9));
+  display: grid;
+  place-items: center;
+  border-radius: ${({ theme }) => theme.radii.md};
+  flex-shrink: 0;
+
+  @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
+    width: 100%;
+    height: 160px;
+  }
+`
+
+const TripInfo = styled.div`
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+`
+
+const TripStatus = styled.span`
+  font-size: ${({ theme }) => theme.typography.caption};
+  color: ${({ theme }) => theme.colors.green[580]};
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+`
+
+const TripTitle = styled.h3`
+  color: ${({ theme }) => theme.colors.text[100]};
+`
+
+const TripDesc = styled.p`
+  color: ${({ theme }) => theme.colors.text[380]};
+  font-size: ${({ theme }) => theme.typography.bodySmall};
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+`
+
+const TripMetaRow = styled.div`
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+  font-size: ${({ theme }) => theme.typography.caption};
+  color: ${({ theme }) => theme.colors.text[380]};
+`
+
+const RoutePill = styled.span`
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: ${({ theme }) => theme.radii.pill};
+  background: rgba(201, 162, 39, 0.12);
+  color: ${({ theme }) => theme.colors.offroad.accent};
+  font-weight: 600;
+`
+
+const DotSep = styled.span`
+  opacity: 0.4;
+  &::before { content: '·'; }
+`
+
+const TripTags = styled.div`
+  display: flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+  margin-top: 0.25rem;
+`
+
+const Tag = styled.span`
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.6rem;
+  border-radius: ${({ theme }) => theme.radii.pill};
+  font-size: ${({ theme }) => theme.typography.caption};
+  font-weight: 600;
+  border: 1px solid ${({ theme }) => theme.colors.lineSoft};
+  color: ${({ theme }) => theme.colors.text[220]};
+  background: rgba(65, 162, 56, 0.08);
+`
+
+const ViewLink = styled(Link)`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  border-radius: ${({ theme }) => theme.radii.pill};
+  transition: all ${({ theme }) => theme.animation.duration.normal}s ${({ theme }) => theme.animation.easeOut.join(',')};
+  min-height: 36px;
+  min-width: 36px;
+  white-space: nowrap;
+  text-decoration: none;
+  line-height: 1;
+  padding: 0.4rem 0.9rem;
+  font-size: ${({ theme }) => theme.typography.bodySmall};
+  background: linear-gradient(135deg, ${({ theme }) => theme.colors.green[580]}, ${({ theme }) => theme.colors.green[500]});
+  color: #0a1e08;
+  box-shadow: ${({ theme }) => theme.shadows.glowGreen};
+  flex-shrink: 0;
+
+  &:hover {
+    background: linear-gradient(135deg, ${({ theme }) => theme.colors.green[500]}, ${({ theme }) => theme.colors.green[300]});
+    transform: translateY(-1px);
+  }
+`

@@ -11,14 +11,14 @@ import {
   FiNavigation
 } from 'react-icons/fi'
 import { Link, useNavigate } from 'react-router-dom'
+import styled from 'styled-components'
 import { useSelector } from 'react-redux'
 import api from '../data/api'
 import { tripTypeOptions } from '../data/tripTypeOptions'
 import type { User } from '../types/models'
-import { FeedbackToast } from '../components/FeedbackToast'
+import { useToast, ToastContainer } from '../components/shared/Toast'
 import { getErrorMessage, isQueuedRequestError } from '../utils/errorMessage'
-import type { FeedbackToastState } from '../components/FeedbackToast'
-import { DiscoveryModeTabs } from './OffroadDiscoveryPage'
+import { DiscoveryModeTabs } from '../components/layout/DiscoveryModeTabs'
 import { ModalSurface } from '../components/ModalSurface'
 import waitForBackendButtonUnlock from '../utils/interactionDelay'
 
@@ -42,11 +42,6 @@ const builderSteps: Array<{ key: BuilderStep; label: string; description: string
   { key: 'routes', label: 'Routes', description: 'Add daily trail segments' },
   { key: 'overview', label: 'Review', description: 'Final inspection before launch' },
 ]
-
-const builderPaneTransition = {
-  duration: 0.35,
-  ease: [0.22, 1, 0.36, 1] as const,
-}
 
 type CalendarTarget = { kind: 'trip'; field: 'startDate' | 'endDate' }
 
@@ -117,6 +112,7 @@ const createRouteDraft = (index: number): RouteDraft => ({
 export function CreateOffroadTripPage() {
   const navigate = useNavigate()
   const user = useSelector((state: AuthStoreState) => state.auth.user)
+  const { toasts, addToast, removeToast } = useToast()
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [startDate, setStartDate] = useState('')
@@ -127,7 +123,6 @@ export function CreateOffroadTripPage() {
   const [image, setImage] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string>('')
   const [loading, setLoading] = useState(false)
-  const [toast, setToast] = useState<FeedbackToastState | null>(null)
   const [calendarState, setCalendarState] = useState<CalendarState | null>(null)
   const [activeStep, setActiveStep] = useState<BuilderStep>('details')
   const [routes, setRoutes] = useState<RouteDraft[]>([createRouteDraft(0)])
@@ -158,10 +153,10 @@ export function CreateOffroadTripPage() {
 
   if (!user) {
     return (
-      <section className="page discovery-page-offroad">
+      <OffroadPageSection>
         <p>Please sign in to create an offroad trip.</p>
-        <Link to="/login" className="btn btn-primary">Login</Link>
-      </section>
+        <PrimaryLink to="/login">Login</PrimaryLink>
+      </OffroadPageSection>
     )
   }
 
@@ -205,7 +200,6 @@ export function CreateOffroadTripPage() {
       tags.forEach((tag, i) => form.append(`Tags[${i}]`, tag))
       if (image) form.append('Image', image)
 
-      // Add routes to the form data
       routes.forEach((route, i) => {
         form.append(`Routes[${i}].Name`, route.name)
         form.append(`Routes[${i}].StartDay`, String(route.startDay))
@@ -215,14 +209,14 @@ export function CreateOffroadTripPage() {
       })
 
       await api.post('api/OffroadTrip/create-offroad-trip', form)
-      setToast({ id: Date.now(), message: 'Offroad trip created successfully!', tone: 'success' })
+      addToast('Offroad trip created successfully!', 'success')
       setTimeout(() => navigate('/app/offroad'), 1500)
     } catch (err) {
       if (isQueuedRequestError(err)) {
-        setToast({ id: Date.now(), message: 'Trip creation will be saved when online!', tone: 'success' })
+        addToast('Trip creation will be saved when online!', 'success')
         setTimeout(() => navigate('/app/offroad'), 1500)
       } else {
-        setToast({ id: Date.now(), message: getErrorMessage(err, 'Failed to create trip'), tone: 'error' })
+        addToast(getErrorMessage(err, 'Failed to create trip'), 'error')
       }
     } finally {
       await waitForBackendButtonUnlock()
@@ -231,120 +225,109 @@ export function CreateOffroadTripPage() {
   }
 
   return (
-    <section className="page offroad-create-page-v2 discovery-page-offroad">
+    <OffroadPageSection>
+      <ToastContainer toasts={toasts} removeToast={removeToast} />
       <DiscoveryModeTabs />
-      <Link to="/app/offroad" className="btn btn-ghost offroad-back-btn">
+      <BackLink to="/app/offroad">
         <FiArrowLeft aria-hidden /> Back to offroad
-      </Link>
+      </BackLink>
 
-      <motion.header
-        className="offroad-create-hero-v2"
+      <OffroadCreateHero
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
       >
-        <span className="discovery-offroad-badge">
+        <OffroadBadge>
           <FiMap aria-hidden /> New Trail
-        </span>
+        </OffroadBadge>
         <h1>{builderSteps[activeIndex].label}</h1>
-        <p className="lead">
-          {builderSteps[activeIndex].description}
-        </p>
-      </motion.header>
+        <LeadText>{builderSteps[activeIndex].description}</LeadText>
+      </OffroadCreateHero>
 
-      <div className="builder-steps-v2 offroad-builder-steps">
+      <BuilderStepsRow>
         {builderSteps.map((s, i) => (
-          <div key={s.key} className={activeIndex === i ? 'step-indicator-v2 is-active' : 'step-indicator-v2'} />
+          <StepIndicator key={s.key} $active={activeIndex === i} />
         ))}
-      </div>
+      </BuilderStepsRow>
 
-      <motion.form className="offroad-form-container" onSubmit={e => e.preventDefault()} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+      <OffroadFormContainer onSubmit={e => e.preventDefault()} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
         <AnimatePresence mode="wait">
           {activeStep === 'details' && (
             <motion.div
               key="details"
-              className="offroad-form-panel-v2"
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
-              transition={builderPaneTransition}
+              transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
             >
-              <div className="builder-section-v2">
-                <h3><FiNavigation aria-hidden /> Core Identity</h3>
-                <label className="field-label" style={{ marginTop: '1.5rem' }}>
+              <BuilderSection>
+                <SectionHeading><FiNavigation aria-hidden /> Core Identity</SectionHeading>
+                <FieldLabel style={{ marginTop: '1.5rem' }}>
                   Title
-                  <input className="input" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Carpathian loop, Alpine traverse..." />
-                </label>
-                <label className="field-label" style={{ marginTop: '1rem' }}>
+                  <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Carpathian loop, Alpine traverse..." />
+                </FieldLabel>
+                <FieldLabel style={{ marginTop: '1rem' }}>
                   Description
-                  <textarea
-                    className="input input-area"
+                  <Textarea
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     rows={4}
                     placeholder="Terrain, difficulty, vehicle requirements, what to expect..."
                   />
-                </label>
-              </div>
+                </FieldLabel>
+              </BuilderSection>
 
-              <div className="builder-grid-v2">
-                <div className="builder-section-v2">
-                  <h3><FiCalendar aria-hidden /> Schedule</h3>
-                  <label className="field-label" style={{ marginTop: '1rem' }}>
+              <BuilderGrid>
+                <BuilderSection>
+                  <SectionHeading><FiCalendar aria-hidden /> Schedule</SectionHeading>
+                  <FieldLabel style={{ marginTop: '1rem' }}>
                     Start date
-                    <button type="button" className="input input-trigger" onClick={() => openCalendar('startDate')}>
+                    <InputTrigger type="button" onClick={() => openCalendar('startDate')}>
                       <span>{formatDateLabel(startDate)}</span>
                       <FiCalendar />
-                    </button>
-                  </label>
-                  <label className="field-label" style={{ marginTop: '1rem' }}>
+                    </InputTrigger>
+                  </FieldLabel>
+                  <FieldLabel style={{ marginTop: '1rem' }}>
                     End date
-                    <button type="button" className="input input-trigger" onClick={() => openCalendar('endDate')}>
+                    <InputTrigger type="button" onClick={() => openCalendar('endDate')}>
                       <span>{formatDateLabel(endDate)}</span>
                       <FiCalendar />
-                    </button>
-                  </label>
-                </div>
+                    </InputTrigger>
+                  </FieldLabel>
+                </BuilderSection>
 
-                <div className="builder-section-v2">
-                  <h3><FiMap aria-hidden /> Capacity</h3>
-                  <label className="field-label" style={{ marginTop: '1rem' }}>
+                <BuilderSection>
+                  <SectionHeading><FiMap aria-hidden /> Capacity</SectionHeading>
+                  <FieldLabel style={{ marginTop: '1rem' }}>
                     Max participants
-                    <input
-                      className="input"
-                      type="number"
-                      min={1}
-                      max={50}
-                      value={maxParticipants}
-                      onChange={(e) => setMaxParticipants(Number(e.target.value))}
-                    />
-                  </label>
-                  <label className="field-label" style={{ marginTop: '1rem' }}>
+                    <Input type="number" min={1} max={50} value={maxParticipants} onChange={(e) => setMaxParticipants(Number(e.target.value))} />
+                  </FieldLabel>
+                  <FieldLabel style={{ marginTop: '1rem' }}>
                     Price (RON)
-                    <input className="input" type="number" min={0} value={price} onChange={(e) => setPrice(Number(e.target.value))} />
-                  </label>
-                </div>
-              </div>
+                    <Input type="number" min={0} value={price} onChange={(e) => setPrice(Number(e.target.value))} />
+                  </FieldLabel>
+                </BuilderSection>
+              </BuilderGrid>
 
-              <div className="builder-section-v2">
-                <h3>Visual Identity</h3>
-                <label className="upload-dropzone" htmlFor="offroad-cover-upload" style={{ background: 'rgba(255,255,255,0.02)', border: '2px dashed var(--offroad-line)', height: '200px', borderRadius: 'var(--radius-md)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', marginTop: '1rem' }}>
+              <BuilderSection>
+                <SectionHeading>Visual Identity</SectionHeading>
+                <OffroadUploadDropzone htmlFor="offroad-cover-upload">
                   {imagePreview ? (
-                    <img src={imagePreview} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 'calc(var(--radius-md) - 2px)' }} />
+                    <CoverPreviewImg src={imagePreview} alt="" />
                   ) : (
                     <>
-                      <FiUploadCloud size={40} style={{ opacity: 0.3, marginBottom: '1rem', color: 'var(--offroad-accent)' }} />
-                      <p style={{ opacity: 0.5 }}>Click to upload cover image</p>
+                      <FiUploadCloud size={40} style={{ opacity: 0.3, marginBottom: '1rem' }} />
+                      <UploadHint>Click to upload cover image</UploadHint>
                     </>
                   )}
-                </label>
-                <input id="offroad-cover-upload" type="file" className="visually-hidden" accept="image/*" onChange={handleImageUpload} />
-              </div>
+                </OffroadUploadDropzone>
+                <VisuallyHiddenInput id="offroad-cover-upload" type="file" accept="image/*" onChange={handleImageUpload} />
+              </BuilderSection>
 
-              <div className="builder-section-v2">
-                <h3>Tags</h3>
-                <div className="offroad-tag-grid-v2" style={{ marginTop: '1rem' }}>
+              <BuilderSection>
+                <SectionHeading>Tags</SectionHeading>
+                <OffroadTagGrid>
                   {tripTypeOptions.map((tag) => (
-                    <label key={tag} className={`offroad-tag-chip-v2 ${tags.includes(tag) ? 'is-selected' : ''}`}>
+                    <OffroadTagChip key={tag} $selected={tags.includes(tag)}>
                       <input
                         type="checkbox"
                         checked={tags.includes(tag)}
@@ -353,112 +336,97 @@ export function CreateOffroadTripPage() {
                         }}
                       />
                       {tag}
-                    </label>
+                    </OffroadTagChip>
                   ))}
-                </div>
-              </div>
+                </OffroadTagGrid>
+              </BuilderSection>
             </motion.div>
           )}
 
           {activeStep === 'routes' && (
             <motion.div
               key="routes"
-              className="offroad-form-panel-v2"
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
-              transition={builderPaneTransition}
+              transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
             >
-              <div className="builder-section-v2">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <h3><FiNavigation aria-hidden /> Route Segments</h3>
-                  <button type="button" className="btn btn-ghost btn-sm" onClick={addRoute}>
+              <BuilderSection>
+                <RoutesHeader>
+                  <SectionHeading><FiNavigation aria-hidden /> Route Segments</SectionHeading>
+                  <GhostBtnSm type="button" onClick={addRoute}>
                     <FiPlusCircle /> Add route
-                  </button>
-                </div>
-                <p className="eyebrow" style={{ marginTop: '0.5rem' }}>
+                  </GhostBtnSm>
+                </RoutesHeader>
+                <Eyebrow style={{ marginTop: '0.5rem' }}>
                   Define daily trail segments. You can import GPX files or draw routes later.
-                </p>
-              </div>
+                </Eyebrow>
+              </BuilderSection>
 
-              <div className="offroad-routes-list">
+              <OffroadRoutesList>
                 {routes.length === 0 && (
-                  <div className="offroad-empty-routes-mini">
+                  <OffroadEmptyRoutesMini>
                     <p>No routes defined yet. Add your first trail segment.</p>
-                    <button type="button" className="btn btn-primary" onClick={addRoute}>
+                    <PrimaryBtn type="button" onClick={addRoute}>
                       <FiPlusCircle /> Add first route
-                    </button>
-                  </div>
+                    </PrimaryBtn>
+                  </OffroadEmptyRoutesMini>
                 )}
 
                 {routes.map((route, index) => (
-                  <div key={route.id} className="offroad-route-card-editor">
-                    <div className="offroad-route-card-header">
-                      <span className="offroad-route-number">{index + 1}</span>
-                      <input
-                        className="input offroad-route-name-input"
+                  <RouteCardEditor key={route.id}>
+                    <RouteCardHeader>
+                      <RouteNumber>{index + 1}</RouteNumber>
+                      <RouteNameInput
                         value={route.name}
                         onChange={(e) => updateRoute(route.id, { name: e.target.value })}
                         placeholder="Route name"
                       />
                       {routes.length > 1 && (
-                        <button type="button" className="btn btn-ghost btn-sm" onClick={() => removeRoute(route.id)}>
+                        <GhostBtnSm type="button" onClick={() => removeRoute(route.id)}>
                           <FiTrash2 />
-                        </button>
+                        </GhostBtnSm>
                       )}
-                    </div>
+                    </RouteCardHeader>
 
-                    <div className="offroad-route-days">
-                      <div className="form-group">
-                        <label className="field-label">Start Day</label>
-                        <input
-                          type="number"
-                          className="input"
-                          min={1}
-                          value={route.startDay}
-                          onChange={(e) => updateRoute(route.id, { startDay: Number(e.target.value) })}
-                        />
-                      </div>
-                      <div className="form-group">
-                        <label className="field-label">End Day</label>
-                        <input
-                          type="number"
-                          className="input"
-                          min={1}
-                          value={route.endDay}
-                          onChange={(e) => updateRoute(route.id, { endDay: Number(e.target.value) })}
-                        />
-                      </div>
-                    </div>
+                    <RouteDaysRow>
+                      <FormGroup>
+                        <FieldLabel>Start Day</FieldLabel>
+                        <SmallInput type="number" min={1} value={route.startDay} onChange={(e) => updateRoute(route.id, { startDay: Number(e.target.value) })} />
+                      </FormGroup>
+                      <FormGroup>
+                        <FieldLabel>End Day</FieldLabel>
+                        <SmallInput type="number" min={1} value={route.endDay} onChange={(e) => updateRoute(route.id, { endDay: Number(e.target.value) })} />
+                      </FormGroup>
+                    </RouteDaysRow>
 
-                    <div className="form-group" style={{ marginTop: '1rem' }}>
-                      <label className="field-label">Navigation Note</label>
-                      <input
-                        className="input"
+                    <FormGroup style={{ marginTop: '1rem' }}>
+                      <FieldLabel>Navigation Note</FieldLabel>
+                      <Input
                         value={route.note}
                         onChange={(e) => updateRoute(route.id, { note: e.target.value })}
                         placeholder="Terrain notes, waypoints, difficulty..."
                       />
-                    </div>
+                    </FormGroup>
 
-                    <div className="offroad-route-import-option" style={{ marginTop: '1rem' }}>
-                      <label className="offroad-checkbox-label">
+                    <ImportOption>
+                      <CheckboxLabel>
                         <input
                           type="checkbox"
                           checked={route.importGpxLater}
                           onChange={(e) => updateRoute(route.id, { importGpxLater: e.target.checked })}
                         />
                         <span>Import GPX or draw later</span>
-                      </label>
-                    </div>
-                  </div>
+                      </CheckboxLabel>
+                    </ImportOption>
+                  </RouteCardEditor>
                 ))}
-              </div>
+              </OffroadRoutesList>
 
               {routes.length > 0 && (
-                <button type="button" className="btn btn-ghost" style={{ alignSelf: 'center', marginTop: '1rem' }} onClick={addRoute}>
+                <CenteredGhostBtn type="button" onClick={addRoute}>
                   <FiPlusCircle /> Add another route
-                </button>
+                </CenteredGhostBtn>
               )}
             </motion.div>
           )}
@@ -466,114 +434,692 @@ export function CreateOffroadTripPage() {
           {activeStep === 'overview' && (
             <motion.div
               key="overview"
-              className="offroad-form-panel-v2"
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
-              transition={builderPaneTransition}
+              transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
             >
-              <div className="builder-section-v2" style={{ textAlign: 'center' }}>
-                <FiCheckCircle size={48} style={{ color: 'var(--offroad-accent)', marginBottom: '1rem' }} />
-                <h3>Pre-Flight Check</h3>
+              <BuilderSection style={{ textAlign: 'center' }}>
+                <CheckIcon />
+                <SectionHeading>Pre-Flight Check</SectionHeading>
                 <p>Your offroad adventure is ready. Review the summary below.</p>
-              </div>
+              </BuilderSection>
 
-              <div className="offroad-stats-bar-v2">
-                <div className="offroad-stat-v2">
+              <OffroadStatsBar>
+                <OffroadStat>
                   <label>Mission</label>
                   <span>{title || 'Untitled'}</span>
-                </div>
-                <div className="offroad-stat-v2">
+                </OffroadStat>
+                <OffroadStat>
                   <label>Routes</label>
                   <span>{routes.length} segments</span>
-                </div>
-                <div className="offroad-stat-v2">
+                </OffroadStat>
+                <OffroadStat>
                   <label>Dates</label>
                   <span>{formatDateLabel(startDate)} - {formatDateLabel(endDate)}</span>
-                </div>
-                <div className="offroad-stat-v2">
+                </OffroadStat>
+                <OffroadStat>
                   <label>Capacity</label>
                   <span>{maxParticipants} explorers</span>
-                </div>
-              </div>
+                </OffroadStat>
+              </OffroadStatsBar>
 
               {imagePreview && (
-                <div className="builder-section-v2">
-                  <h3>Cover Preview</h3>
-                  <img src={imagePreview} alt="Cover preview" style={{ width: '100%', maxHeight: '200px', objectFit: 'cover', borderRadius: 'var(--radius-md)', marginTop: '1rem' }} />
-                </div>
+                <BuilderSection>
+                  <SectionHeading>Cover Preview</SectionHeading>
+                  <OverviewCoverImg src={imagePreview} alt="Cover preview" />
+                </BuilderSection>
               )}
 
-              <div className="builder-section-v2">
-                <h3>Mission Briefing</h3>
-                <p style={{ marginTop: '1rem', color: 'var(--text-380)', lineHeight: 1.6 }}>{description || 'No description provided.'}</p>
+              <BuilderSection>
+                <SectionHeading>Mission Briefing</SectionHeading>
+                <BriefingText>{description || 'No description provided.'}</BriefingText>
 
-                <div className="offroad-tag-preview" style={{ marginTop: '1.5rem' }}>
+                <OffroadTagPreview>
                   {tags.map(tag => (
-                    <span key={tag} className="offroad-tag-chip-static">{tag}</span>
+                    <OffroadTagChipStatic key={tag}>{tag}</OffroadTagChipStatic>
                   ))}
-                </div>
-              </div>
+                </OffroadTagPreview>
+              </BuilderSection>
 
-              <div className="builder-section-v2">
-                <h3>Route Summary</h3>
-                <div className="offroad-route-summary-list" style={{ marginTop: '1rem' }}>
+              <BuilderSection>
+                <SectionHeading>Route Summary</SectionHeading>
+                <OffroadRouteSummaryList>
                   {routes.map((route, idx) => (
-                    <div key={route.id} className="offroad-route-summary-item">
-                      <span className="offroad-route-summary-num">{idx + 1}</span>
-                      <div className="offroad-route-summary-info">
+                    <OffroadRouteSummaryItem key={route.id}>
+                      <OffroadRouteSummaryNum>{idx + 1}</OffroadRouteSummaryNum>
+                      <OffroadRouteSummaryInfo>
                         <strong>{route.name}</strong>
                         <span>Days {route.startDay}-{route.endDay} {route.importGpxLater ? '(GPX later)' : ''}</span>
-                      </div>
-                    </div>
+                      </OffroadRouteSummaryInfo>
+                    </OffroadRouteSummaryItem>
                   ))}
-                </div>
-              </div>
+                </OffroadRouteSummaryList>
+              </BuilderSection>
             </motion.div>
           )}
         </AnimatePresence>
 
-        <div className="create-actions offroad-create-actions" style={{ marginTop: '2rem', display: 'flex', gap: '1rem', justifyContent: 'center' }}>
+        <CreateActions>
           {!isFirst && (
-            <button type="button" className="btn btn-ghost btn-lg" disabled={loading} onClick={() => setActiveStep(builderSteps[activeIndex - 1].key)}>
+            <GhostBtnLg type="button" disabled={loading} onClick={() => setActiveStep(builderSteps[activeIndex - 1].key)}>
               Previous
-            </button>
+            </GhostBtnLg>
           )}
           {isLast ? (
-            <button type="button" onClick={submit} className="btn btn-primary btn-lg offroad-btn-primary" style={{ minWidth: '240px' }} disabled={loading || !title || !startDate || !endDate}>
+            <PrimaryBtnLg type="button" onClick={submit} $minWidth="240px" disabled={loading || !title || !startDate || !endDate}>
               {loading ? 'Creating...' : 'Create Offroad Trip'}
-            </button>
+            </PrimaryBtnLg>
           ) : (
-            <button type="button" className="btn btn-primary btn-lg offroad-btn-primary" style={{ minWidth: '240px' }} disabled={loading} onClick={() => setActiveStep(builderSteps[activeIndex + 1].key)}>
+            <PrimaryBtnLg type="button" $minWidth="240px" disabled={loading} onClick={() => setActiveStep(builderSteps[activeIndex + 1].key)}>
               Next
-            </button>
+            </PrimaryBtnLg>
           )}
-        </div>
-      </motion.form>
+        </CreateActions>
+      </OffroadFormContainer>
 
-      <FeedbackToast toast={toast} clearToast={() => setToast(null)} />
-
-      {/* Calendar Modal */}
       <ModalSurface isOpen={Boolean(calendarState)} title="Select Date" subtitle="Pick a date for your offroad trip" onClose={() => setCalendarState(null)}>
-        <div className="calendar-shell">
-          <div className="calendar-head" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-            <button type="button" className="btn btn-ghost btn-sm" onClick={() => shiftMonth(-1)}><FiArrowLeft /></button>
-            <h4 style={{ color: 'var(--text-100)' }}>{calendarState && monthFormatter.format(calendarState.monthCursor)}</h4>
-            <button type="button" className="btn btn-ghost btn-sm" onClick={() => shiftMonth(1)}><FiArrowLeft style={{ transform: 'rotate(180deg)' }} /></button>
-          </div>
-          <div className="calendar-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '0.4rem' }}>
-            {calendarCells.map((date, i) => {
-              if (!date) return <div key={i} />
-              const isSel = selectedCalendarDate && isSameDay(date, selectedCalendarDate)
-              return (
-                <button key={i} type="button" className={isSel ? 'calendar-day is-selected' : 'calendar-day'} style={{ padding: '0.8rem', borderRadius: '12px', border: 'none', background: isSel ? 'var(--offroad-accent)' : 'var(--surface-860)', color: isSel ? '#1a1408' : 'var(--text-100)', cursor: 'pointer' }} onClick={() => selectDate(date)}>
-                  {date.getDate()}
-                </button>
-              )
-            })}
-          </div>
-        </div>
+        <CalendarHead>
+          <GhostBtnSm type="button" onClick={() => shiftMonth(-1)}><FiArrowLeft /></GhostBtnSm>
+          <MonthLabel>{calendarState && monthFormatter.format(calendarState.monthCursor)}</MonthLabel>
+          <GhostBtnSm type="button" onClick={() => shiftMonth(1)}><FiArrowLeft style={{ transform: 'rotate(180deg)' }} /></GhostBtnSm>
+        </CalendarHead>
+        <CalendarGrid>
+          {calendarCells.map((date, i) => {
+            if (!date) return <div key={i} />
+            const isSel = selectedCalendarDate && isSameDay(date, selectedCalendarDate)
+            return (
+              <CalendarDay key={i} type="button" $selected={!!isSel} onClick={() => selectDate(date)}>
+                {date.getDate()}
+              </CalendarDay>
+            )
+          })}
+        </CalendarGrid>
       </ModalSurface>
-    </section>
+    </OffroadPageSection>
   )
 }
+
+// --- Styled Components ---
+
+const OffroadPageSection = styled.section`
+  width: min(1200px, 100% - 2rem);
+  margin: 0 auto;
+  padding-top: ${({ theme }) => theme.spacing.lg};
+  padding-bottom: ${({ theme }) => theme.spacing['3xl']};
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.spacing.lg};
+
+  @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
+    width: min(1200px, 100% - 1rem);
+    padding-bottom: 7rem;
+    gap: ${({ theme }) => theme.spacing.md};
+  }
+`
+
+const PrimaryLink = styled(Link)`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  border-radius: ${({ theme }) => theme.radii.pill};
+  transition: all ${({ theme }) => theme.animation.duration.normal}s ${({ theme }) => theme.animation.easeOut.join(',')};
+  min-height: 44px;
+  min-width: 44px;
+  white-space: nowrap;
+  text-decoration: none;
+  line-height: 1;
+  padding: 0.65rem 1.5rem;
+  background: linear-gradient(135deg, ${({ theme }) => theme.colors.green[580]}, ${({ theme }) => theme.colors.green[500]});
+  color: #0a1e08;
+  box-shadow: ${({ theme }) => theme.shadows.glowGreen};
+
+  &:hover {
+    background: linear-gradient(135deg, ${({ theme }) => theme.colors.green[500]}, ${({ theme }) => theme.colors.green[300]});
+    transform: translateY(-1px);
+  }
+`
+
+const BackLink = styled(Link)`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  border-radius: ${({ theme }) => theme.radii.pill};
+  transition: all ${({ theme }) => theme.animation.duration.normal}s ${({ theme }) => theme.animation.easeOut.join(',')};
+  min-height: 44px;
+  min-width: 44px;
+  white-space: nowrap;
+  text-decoration: none;
+  line-height: 1;
+  padding: 0.55rem 1.2rem;
+  background: transparent;
+  color: ${({ theme }) => theme.colors.text[220]};
+  border: 1px solid ${({ theme }) => theme.colors.lineSoft};
+
+  &:hover {
+    background: rgba(65, 162, 56, 0.08);
+    border-color: ${({ theme }) => theme.colors.line};
+    color: ${({ theme }) => theme.colors.text[100]};
+  }
+`
+
+const OffroadCreateHero = styled(motion.header)`
+  text-align: center;
+  padding: ${({ theme }) => theme.spacing.lg} 0;
+`
+
+const OffroadBadge = styled.span`
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: ${({ theme }) => theme.radii.pill};
+  font-size: ${({ theme }) => theme.typography.caption};
+  font-weight: 600;
+  background: ${({ theme }) => theme.colors.offroad.accentSoft};
+  color: ${({ theme }) => theme.colors.offroad.accent};
+  margin-bottom: 0.5rem;
+`
+
+const LeadText = styled.p`
+  color: ${({ theme }) => theme.colors.text[380]};
+  max-width: 480px;
+  margin: 0.5rem auto 0;
+  line-height: 1.6;
+`
+
+const BuilderStepsRow = styled.div`
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+  margin-bottom: ${({ theme }) => theme.spacing.md};
+`
+
+const StepIndicator = styled.div<{ $active: boolean }>`
+  width: ${({ $active }) => $active ? '4rem' : '1.5rem'};
+  height: 4px;
+  border-radius: 2px;
+  background: ${({ $active, theme }) => $active ? theme.colors.green[500] : theme.colors.lineSoft};
+  transition: all 0.3s ease;
+`
+
+const OffroadFormContainer = styled(motion.form)`
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.spacing.md};
+`
+
+const BuilderSection = styled.div`
+  background: ${({ theme }) => theme.glass.bg};
+  border: 1px solid ${({ theme }) => theme.glass.border};
+  border-radius: ${({ theme }) => theme.radii.xl};
+  padding: ${({ theme }) => theme.spacing.lg};
+  backdrop-filter: blur(${({ theme }) => theme.glass.blur});
+  margin-bottom: ${({ theme }) => theme.spacing.md};
+`
+
+const SectionHeading = styled.h3`
+  color: ${({ theme }) => theme.colors.text[100]};
+`
+
+const BuilderGrid = styled.div`
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: ${({ theme }) => theme.spacing.md};
+
+  @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
+    grid-template-columns: 1fr;
+  }
+`
+
+const FormGroup = styled.div`
+  margin-bottom: 0.25rem;
+`
+
+const FieldLabel = styled.label`
+  display: block;
+  font-size: ${({ theme }) => theme.typography.bodySmall};
+  color: ${({ theme }) => theme.colors.text[380]};
+  margin-bottom: 0.35rem;
+  font-weight: 500;
+`
+
+const Input = styled.input`
+  width: 100%;
+  padding: 0.7rem 1rem;
+  border-radius: ${({ theme }) => theme.radii.lg};
+  border: 1px solid ${({ theme }) => theme.colors.lineSoft};
+  background: ${({ theme }) => theme.glass.bg};
+  color: ${({ theme }) => theme.colors.text[100]};
+  font-size: ${({ theme }) => theme.typography.body};
+  transition: border-color ${({ theme }) => theme.animation.duration.fast}s ease;
+  min-height: 44px;
+  backdrop-filter: blur(${({ theme }) => theme.glass.blur});
+  display: block;
+
+  &::placeholder { color: ${({ theme }) => theme.colors.text[500]}; }
+  &:focus {
+    outline: none;
+    border-color: ${({ theme }) => theme.colors.green[500]};
+    box-shadow: 0 0 0 3px rgba(23, 247, 2, 0.1);
+  }
+`
+
+const SmallInput = styled(Input)`
+  font-size: 0.8rem;
+`
+
+const Textarea = styled.textarea`
+  width: 100%;
+  padding: 0.7rem 1rem;
+  border-radius: ${({ theme }) => theme.radii.lg};
+  border: 1px solid ${({ theme }) => theme.colors.lineSoft};
+  background: ${({ theme }) => theme.glass.bg};
+  color: ${({ theme }) => theme.colors.text[100]};
+  font-size: ${({ theme }) => theme.typography.body};
+  font-family: inherit;
+  transition: border-color ${({ theme }) => theme.animation.duration.fast}s ease;
+  min-height: 44px;
+  resize: vertical;
+  backdrop-filter: blur(${({ theme }) => theme.glass.blur});
+
+  &::placeholder { color: ${({ theme }) => theme.colors.text[500]}; }
+  &:focus {
+    outline: none;
+    border-color: ${({ theme }) => theme.colors.green[500]};
+    box-shadow: 0 0 0 3px rgba(23, 247, 2, 0.1);
+  }
+`
+
+const InputTrigger = styled.button`
+  width: 100%;
+  padding: 0.7rem 1rem;
+  border-radius: ${({ theme }) => theme.radii.lg};
+  border: 1px solid ${({ theme }) => theme.colors.lineSoft};
+  background: ${({ theme }) => theme.glass.bg};
+  color: ${({ theme }) => theme.colors.text[100]};
+  font-size: ${({ theme }) => theme.typography.body};
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 44px;
+  cursor: pointer;
+  backdrop-filter: blur(${({ theme }) => theme.glass.blur});
+  transition: border-color ${({ theme }) => theme.animation.duration.fast}s ease;
+
+  &:hover { border-color: ${({ theme }) => theme.colors.line}; }
+`
+
+const Eyebrow = styled.p`
+  font-size: ${({ theme }) => theme.typography.eyebrow};
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: ${({ theme }) => theme.colors.green[580]};
+  font-weight: 600;
+`
+
+const OffroadUploadDropzone = styled.label`
+  background: rgba(255,255,255,0.02);
+  border: 2px dashed ${({ theme }) => theme.colors.offroad.line};
+  height: 200px;
+  border-radius: ${({ theme }) => theme.radii.md};
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  margin-top: 1rem;
+`
+
+const CoverPreviewImg = styled.img`
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: calc(${({ theme }) => theme.radii.md} - 2px);
+`
+
+const UploadHint = styled.p`
+  opacity: 0.5;
+  color: ${({ theme }) => theme.colors.text[380]};
+`
+
+const VisuallyHiddenInput = styled.input`
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+`
+
+const OffroadTagGrid = styled.div`
+  margin-top: 1rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+`
+
+const OffroadTagChip = styled.label<{ $selected: boolean }>`
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.4rem 0.9rem;
+  border-radius: ${({ theme }) => theme.radii.pill};
+  font-size: ${({ theme }) => theme.typography.bodySmall};
+  font-weight: 600;
+  border: 1px solid ${({ $selected, theme }) => $selected ? theme.colors.offroad.accent : theme.colors.lineSoft};
+  background: ${({ $selected }) => $selected ? 'rgba(201, 162, 39, 0.15)' : 'transparent'};
+  color: ${({ $selected, theme }) => $selected ? theme.colors.offroad.accent : theme.colors.text[220]};
+  cursor: pointer;
+
+  input { display: none; }
+`
+
+const RoutesHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+`
+
+const GhostBtnSm = styled.button`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  border-radius: ${({ theme }) => theme.radii.pill};
+  transition: all ${({ theme }) => theme.animation.duration.normal}s ${({ theme }) => theme.animation.easeOut.join(',')};
+  min-height: 36px;
+  min-width: 36px;
+  white-space: nowrap;
+  line-height: 1;
+  padding: 0.4rem 0.9rem;
+  font-size: ${({ theme }) => theme.typography.bodySmall};
+  background: transparent;
+  color: ${({ theme }) => theme.colors.text[220]};
+  border: 1px solid ${({ theme }) => theme.colors.lineSoft};
+
+  &:hover {
+    background: rgba(65, 162, 56, 0.08);
+    border-color: ${({ theme }) => theme.colors.line};
+    color: ${({ theme }) => theme.colors.text[100]};
+  }
+  &:disabled { opacity: 0.4; cursor: not-allowed; }
+`
+
+const GhostBtnLg = styled(GhostBtnSm)`
+  padding: 0.85rem 2rem;
+  font-size: 1.05rem;
+  min-height: 52px;
+`
+
+const CenteredGhostBtn = styled(GhostBtnSm)`
+  align-self: center;
+  margin-top: 1rem;
+`
+
+const PrimaryBtn = styled.button`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  border-radius: ${({ theme }) => theme.radii.pill};
+  transition: all ${({ theme }) => theme.animation.duration.normal}s ${({ theme }) => theme.animation.easeOut.join(',')};
+  min-height: 44px;
+  min-width: 44px;
+  white-space: nowrap;
+  line-height: 1;
+  padding: 0.65rem 1.5rem;
+  background: linear-gradient(135deg, ${({ theme }) => theme.colors.green[580]}, ${({ theme }) => theme.colors.green[500]});
+  color: #0a1e08;
+  box-shadow: ${({ theme }) => theme.shadows.glowGreen};
+  border: none;
+  cursor: pointer;
+
+  &:hover {
+    background: linear-gradient(135deg, ${({ theme }) => theme.colors.green[500]}, ${({ theme }) => theme.colors.green[300]});
+    transform: translateY(-1px);
+  }
+  &:disabled { opacity: 0.5; transform: none; box-shadow: none; cursor: not-allowed; }
+`
+
+const PrimaryBtnLg = styled(PrimaryBtn)<{ $minWidth: string }>`
+  min-width: ${({ $minWidth }) => $minWidth};
+  padding: 0.85rem 2rem;
+  font-size: 1.05rem;
+  min-height: 52px;
+`
+
+const CreateActions = styled.div`
+  margin-top: 2rem;
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+`
+
+const CheckIcon = styled(FiCheckCircle).attrs({ size: 48 })`
+  color: ${({ theme }) => theme.colors.offroad.accent};
+  margin-bottom: 1rem;
+`
+
+const OffroadStatsBar = styled.div`
+  display: flex;
+  gap: ${({ theme }) => theme.spacing.md};
+  margin-bottom: ${({ theme }) => theme.spacing.md};
+  flex-wrap: wrap;
+`
+
+const OffroadStat = styled.div`
+  flex: 1;
+  min-width: 140px;
+  padding: ${({ theme }) => theme.spacing.md};
+  background: ${({ theme }) => theme.glass.bg};
+  border: 1px solid ${({ theme }) => theme.glass.border};
+  border-radius: ${({ theme }) => theme.radii.lg};
+  backdrop-filter: blur(${({ theme }) => theme.glass.blur});
+  text-align: center;
+
+  label {
+    display: block;
+    font-size: ${({ theme }) => theme.typography.caption};
+    color: ${({ theme }) => theme.colors.text[380]};
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.25rem;
+  }
+  span {
+    color: ${({ theme }) => theme.colors.text[100]};
+    font-size: ${({ theme }) => theme.typography.body};
+    font-weight: 600;
+  }
+`
+
+const OverviewCoverImg = styled.img`
+  width: 100%;
+  max-height: 200px;
+  object-fit: cover;
+  border-radius: ${({ theme }) => theme.radii.md};
+  margin-top: 1rem;
+`
+
+const BriefingText = styled.p`
+  margin-top: 1rem;
+  color: ${({ theme }) => theme.colors.text[380]};
+  line-height: 1.6;
+`
+
+const OffroadTagPreview = styled.div`
+  margin-top: 1.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+`
+
+const OffroadTagChipStatic = styled.span`
+  display: inline-flex;
+  align-items: center;
+  padding: 0.4rem 0.9rem;
+  border-radius: ${({ theme }) => theme.radii.pill};
+  font-size: ${({ theme }) => theme.typography.bodySmall};
+  font-weight: 600;
+  border: 1px solid ${({ theme }) => theme.colors.offroad.line};
+  color: ${({ theme }) => theme.colors.offroad.accent};
+  background: rgba(201, 162, 39, 0.08);
+`
+
+const OffroadRouteSummaryList = styled.div`
+  margin-top: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+`
+
+const OffroadRouteSummaryItem = styled.div`
+  display: flex;
+  gap: ${({ theme }) => theme.spacing.md};
+  padding: ${({ theme }) => theme.spacing.md};
+  background: rgba(255,255,255,0.02);
+  border: 1px solid ${({ theme }) => theme.colors.lineSoft};
+  border-radius: ${({ theme }) => theme.radii.md};
+`
+
+const OffroadRouteSummaryNum = styled.span`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: ${({ theme }) => theme.colors.offroad.accent};
+  color: #1a1408;
+  font-weight: 700;
+  font-size: 0.75rem;
+  flex-shrink: 0;
+`
+
+const OffroadRouteSummaryInfo = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+
+  strong { color: ${({ theme }) => theme.colors.text[100]}; }
+  span { color: ${({ theme }) => theme.colors.text[380]}; font-size: ${({ theme }) => theme.typography.caption}; }
+`
+
+const OffroadRoutesList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.spacing.md};
+`
+
+const OffroadEmptyRoutesMini = styled.div`
+  text-align: center;
+  padding: ${({ theme }) => theme.spacing.xl};
+  background: ${({ theme }) => theme.glass.bg};
+  border: 1px solid ${({ theme }) => theme.glass.border};
+  border-radius: ${({ theme }) => theme.radii.xl};
+  backdrop-filter: blur(${({ theme }) => theme.glass.blur});
+
+  p { color: ${({ theme }) => theme.colors.text[380]}; margin-bottom: ${({ theme }) => theme.spacing.md}; }
+`
+
+const RouteCardEditor = styled.div`
+  padding: ${({ theme }) => theme.spacing.lg};
+  background: ${({ theme }) => theme.glass.bg};
+  border: 1px solid ${({ theme }) => theme.glass.border};
+  border-radius: ${({ theme }) => theme.radii.xl};
+  backdrop-filter: blur(${({ theme }) => theme.glass.blur});
+`
+
+const RouteCardHeader = styled.div`
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing.sm};
+`
+
+const RouteNumber = styled.span`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: ${({ theme }) => theme.colors.offroad.accent};
+  color: #1a1408;
+  font-weight: 700;
+  font-size: 0.75rem;
+  flex-shrink: 0;
+`
+
+const RouteNameInput = styled.input`
+  flex: 1;
+  padding: 0.5rem 0.75rem;
+  border-radius: ${({ theme }) => theme.radii.sm};
+  border: 1px solid ${({ theme }) => theme.colors.lineSoft};
+  background: transparent;
+  color: ${({ theme }) => theme.colors.text[100]};
+  font-size: ${({ theme }) => theme.typography.bodySmall};
+  outline: none;
+
+  &::placeholder { color: ${({ theme }) => theme.colors.text[500]}; }
+  &:focus { border-color: ${({ theme }) => theme.colors.green[500]}; }
+`
+
+const RouteDaysRow = styled.div`
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  margin-top: 1rem;
+`
+
+const ImportOption = styled.div`
+  margin-top: 1rem;
+`
+
+const CheckboxLabel = styled.label`
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: ${({ theme }) => theme.typography.bodySmall};
+  color: ${({ theme }) => theme.colors.text[380]};
+  cursor: pointer;
+
+  input[type="checkbox"] { accent-color: ${({ theme }) => theme.colors.offroad.accent}; }
+`
+
+const CalendarHead = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+`
+
+const MonthLabel = styled.h4`
+  color: ${({ theme }) => theme.colors.text[100]};
+`
+
+const CalendarGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.4rem;
+`
+
+const CalendarDay = styled.button<{ $selected: boolean }>`
+  padding: 0.8rem;
+  border-radius: 12px;
+  border: none;
+  background: ${({ $selected, theme }) => $selected ? theme.colors.offroad.accent : theme.colors.surface[860]};
+  color: ${({ $selected, theme }) => $selected ? '#1a1408' : theme.colors.text[100]};
+  cursor: pointer;
+  font-size: ${({ theme }) => theme.typography.bodySmall};
+
+  &:hover { opacity: 0.85; }
+`

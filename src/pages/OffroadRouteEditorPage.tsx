@@ -3,6 +3,7 @@ import { motion } from 'framer-motion'
 import { useEffect, useRef, useState } from 'react'
 import { FiArrowLeft, FiSave, FiTrash2, FiUpload } from 'react-icons/fi'
 import { Link, useNavigate, useParams } from 'react-router-dom'
+import styled from 'styled-components'
 import api from '../data/api'
 import { OFFROAD_MAP_STYLE } from '../map/osmStyle'
 import {
@@ -14,6 +15,13 @@ import {
 import { fetchElevationsForLngLatPoints } from '../utils/elevationService'
 import { getErrorMessage } from '../utils/errorMessage'
 import { parseGpxBlob } from '../utils/gpx'
+import {
+  getOffroadRoute,
+  getOffroadTrip,
+  mergeRouteIntoCachedTrip,
+  putOffroadRoute,
+} from '../utils/offroadTripCache'
+import type { OffroadRoute } from '../types/models'
 
 export function OffroadRouteEditorPage() {
   const { tripId, routeId } = useParams<{ tripId: string; routeId?: string }>()
@@ -21,7 +29,7 @@ export function OffroadRouteEditorPage() {
   const isNew = routeId === 'new' || !routeId
   const mapContainer = useRef<HTMLDivElement | null>(null)
   const mapRef = useRef<maplibregl.Map | null>(null)
-  const [points, setPoints] = useState<[number, number][]>([]) // Stored as [lng, lat] for GeoJSON consistency
+  const [points, setPoints] = useState<[number, number][]>([])
   const [name, setName] = useState('')
   const [note, setNote] = useState('')
   const [startDay, setStartDay] = useState(1)
@@ -32,26 +40,46 @@ export function OffroadRouteEditorPage() {
   const [error, setError] = useState<string | null>(null)
   const [gpxPreview, setGpxPreview] = useState<{ file: File; preview: { trackGeoJson: string; pointCount: number; distanceMeters: number } } | null>(null)
 
-  // Load existing route data for editing
   useEffect(() => {
     if (isNew || !tripId || !routeId) return
-    api
-      .get(`api/OffroadTrip/route/${tripId}/${routeId}`)
-      .then((res) => {
+    let cancelled = false
+
+    const hydrateFromRoute = (route: OffroadRoute) => {
+      setName(route.name)
+      setNote(route.note)
+      setStartDay(route.startDay)
+      setEndDay(route.endDay)
+      setDistanceMeters(Math.round(route.distanceMeters))
+      const coords = lineStringToLngLatCoords(route.trackGeoJson)
+      setPoints(coords)
+    }
+
+    const load = async () => {
+      try {
+        const res = await api.get<OffroadRoute>(`api/OffroadTrip/route/${tripId}/${routeId}`)
+        if (cancelled) return
         const route = res.data
-        setName(route.name)
-        setNote(route.note)
-        setStartDay(route.startDay)
-        setEndDay(route.endDay)
-        setDistanceMeters(route.distanceMeters)
-        // lineStringToLngLatCoords returns [lng, lat] which is what we store
-        const coords = lineStringToLngLatCoords(route.trackGeoJson)
-        setPoints(coords)
-      })
-      .catch(() => {})
+        hydrateFromRoute(route)
+        await putOffroadRoute(tripId, route)
+        await mergeRouteIntoCachedTrip(tripId, route)
+      } catch {
+        let route = await getOffroadRoute(tripId, routeId)
+        if (!route) {
+          const trip = await getOffroadTrip(tripId)
+          route = trip?.routes?.find((r) => String(r.id) === routeId) ?? null
+        }
+        if (cancelled || !route) return
+        hydrateFromRoute(route)
+        await putOffroadRoute(tripId, route)
+      }
+    }
+
+    void load()
+    return () => {
+      cancelled = true
+    }
   }, [isNew, tripId, routeId])
 
-  // Initialize map
   useEffect(() => {
     if (!mapContainer.current || mapRef.current) return
     const map = new maplibregl.Map({
@@ -64,7 +92,6 @@ export function OffroadRouteEditorPage() {
     map.addControl(new maplibregl.NavigationControl(), 'top-right')
     mapRef.current = map
 
-    // Add source and layer when map is loaded
     const addSourceAndLayer = () => {
       if (map.getSource('draw-line')) return
       map.addSource('draw-line', {
@@ -92,7 +119,6 @@ export function OffroadRouteEditorPage() {
         layout: { 'line-join': 'round', 'line-cap': 'round' },
         paint: { 'line-color': '#c9a227', 'line-width': 2.5, 'line-dasharray': [2, 1] },
       })
-      // Add points markers layer
       map.addSource('draw-points', {
         type: 'geojson',
         data: { type: 'FeatureCollection', features: [] },
@@ -111,7 +137,6 @@ export function OffroadRouteEditorPage() {
       map.on('load', addSourceAndLayer)
     }
 
-    // Handle map clicks to add points
     map.on('click', (e) => {
       setPoints((prev) => {
         const newPoint: [number, number] = [e.lngLat.lng, e.lngLat.lat]
@@ -125,7 +150,6 @@ export function OffroadRouteEditorPage() {
     }
   }, [])
 
-  // Update map when points change
   useEffect(() => {
     const map = mapRef.current
     if (!map) return
@@ -152,7 +176,6 @@ export function OffroadRouteEditorPage() {
       })
     }
 
-    // Auto-fit bounds to show all points
     if (points.length >= 2) {
       const bounds = new maplibregl.LngLatBounds()
       points.forEach(([lng, lat]) => bounds.extend([lng, lat]))
@@ -160,12 +183,10 @@ export function OffroadRouteEditorPage() {
     }
   }, [points])
 
-  // Preview GPX file locally
   const onGpxFile = async (file: File) => {
     try {
       const preview = await parseGpxBlob(file)
       setGpxPreview({ file, preview })
-      // lineStringToLngLatCoords returns [lng, lat] coordinates
       const coords = lineStringToLngLatCoords(preview.trackGeoJson)
       setPoints(coords)
       setDistanceMeters(preview.distanceMeters)
@@ -177,7 +198,6 @@ export function OffroadRouteEditorPage() {
     }
   }
 
-  // Upload GPX directly to server (direct import without preview)
   const importGpxToServer = async (file: File) => {
     const form = new FormData()
     form.append('tripId', tripId!)
@@ -188,7 +208,9 @@ export function OffroadRouteEditorPage() {
     form.append('gpx', file)
     setSaving(true)
     try {
-      await api.post('api/OffroadTrip/import-route-gpx', form)
+      const res = await api.post<OffroadRoute>('api/OffroadTrip/import-route-gpx', form)
+      await putOffroadRoute(tripId!, res.data)
+      await mergeRouteIntoCachedTrip(tripId!, res.data)
       navigate(`/app/offroad/${tripId}`)
     } catch (err) {
       setError(getErrorMessage(err))
@@ -197,7 +219,6 @@ export function OffroadRouteEditorPage() {
     }
   }
 
-  // Save drawn route (fetch terrain elevation, then persist 3D track)
   const saveDrawn = async () => {
     if (points.length < 2) {
       setError('Add at least two points on the map.')
@@ -222,17 +243,18 @@ export function OffroadRouteEditorPage() {
         name: name || 'Drawn route',
         note,
         trackGeoJson,
-        source: 1, // 1 = Drawn
+        source: 1,
         distanceMeters: finalDistance,
         elevationGainMeters: elevStats.gainMeters,
       }
 
       setSavePhase('saving')
-      if (isNew) {
-        await api.post('api/OffroadTrip/add-route', payload)
-      } else {
-        await api.patch('api/OffroadTrip/update-route', { ...payload, id: Number(routeId) })
-      }
+      const res = isNew
+        ? await api.post<OffroadRoute>('api/OffroadTrip/add-route', payload)
+        : await api.patch<OffroadRoute>('api/OffroadTrip/update-route', { ...payload, id: Number(routeId) })
+      const saved = res.data
+      await putOffroadRoute(tripId!, saved)
+      await mergeRouteIntoCachedTrip(tripId!, saved)
       navigate(`/app/offroad/${tripId}`)
     } catch (err) {
       setError(getErrorMessage(err))
@@ -243,75 +265,68 @@ export function OffroadRouteEditorPage() {
   }
 
   return (
-    <section className="page offroad-editor-page discovery-page-offroad">
-      <Link to={`/app/offroad/${tripId}`} className="btn btn-ghost">
+    <PageSection>
+      <BackLink to={`/app/offroad/${tripId}`}>
         <FiArrowLeft aria-hidden /> Back to trip
-      </Link>
+      </BackLink>
 
-      <motion.header
-        className="offroad-create-hero"
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-      >
+      <EditorHeader initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
         <h1>{isNew ? 'Add route' : 'Edit route'}</h1>
-        <p className="lead">Click the map to place points, import GPX for preview, or upload GPX directly to the server.</p>
-      </motion.header>
+        <LeadText>Click the map to place points, import GPX for preview, or upload GPX directly to the server.</LeadText>
+      </EditorHeader>
 
-      <div className="offroad-editor-layout">
-        <aside className="offroad-editor-sidebar">
-          <p className="offroad-editor-hint">
+      <EditorLayout>
+        <EditorSidebar>
+          <HintText>
             Click on the map to add points. Need at least 2 points to save a drawn route.
-          </p>
+          </HintText>
 
-          <label>
+          <FieldLabel>
             Route name
-            <input className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder="Day 1 — forest climb" />
-          </label>
-          <label>
+            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Day 1 — forest climb" />
+          </FieldLabel>
+          <FieldLabel>
             Note
-            <input className="input" value={note} onChange={(e) => setNote(e.target.value)} placeholder="Mud, river crossing..." />
-          </label>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-            <label>
+            <Input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Mud, river crossing..." />
+          </FieldLabel>
+          <DaysGrid>
+            <FieldLabel>
               Start day
-              <input className="input" type="number" min={1} value={startDay} onChange={(e) => setStartDay(Number(e.target.value))} />
-            </label>
-            <label>
+              <Input type="number" min={1} value={startDay} onChange={(e) => setStartDay(Number(e.target.value))} />
+            </FieldLabel>
+            <FieldLabel>
               End day
-              <input className="input" type="number" min={1} value={endDay} onChange={(e) => setEndDay(Number(e.target.value))} />
-            </label>
-          </div>
+              <Input type="number" min={1} value={endDay} onChange={(e) => setEndDay(Number(e.target.value))} />
+            </FieldLabel>
+          </DaysGrid>
 
-          {/* GPX Preview Section */}
-          <div className="offroad-gpx-section">
-            <label className="field-label">
+          <GpxSection>
+            <GpxFieldLabel>
               <FiUpload aria-hidden /> Import GPX file
-            </label>
-            <input
-              className="input"
+            </GpxFieldLabel>
+            <GpxFileInput
               type="file"
               accept=".gpx,application/gpx+xml"
               onChange={(e) => {
                 const file = e.target.files?.[0]
                 if (file) {
                   void onGpxFile(file)
-                  e.target.value = '' // Reset input
+                  e.target.value = ''
                 }
               }}
             />
 
             {gpxPreview && (
-              <div className="offroad-gpx-preview">
-                <p className="offroad-gpx-preview-title">
+              <GpxPreviewCard>
+                <GpxPreviewTitle>
                   <FiUpload /> {gpxPreview.file.name}
-                </p>
-                <p className="muted">
+                </GpxPreviewTitle>
+                <MutedText>
                   {gpxPreview.preview.pointCount} points · {(gpxPreview.preview.distanceMeters / 1000).toFixed(1)} km
-                </p>
-                <div className="offroad-gpx-preview-actions">
-                  <button
+                </MutedText>
+                <GpxPreviewActions>
+                  <GhostBtnSm
                     type="button"
-                    className="btn btn-ghost btn-sm"
                     onClick={() => {
                       setGpxPreview(null)
                       setPoints([])
@@ -319,58 +334,318 @@ export function OffroadRouteEditorPage() {
                     }}
                   >
                     Clear
-                  </button>
-                  <button
+                  </GhostBtnSm>
+                  <PrimaryBtnSm
                     type="button"
-                    className="btn btn-primary btn-sm"
                     disabled={saving}
                     onClick={() => importGpxToServer(gpxPreview.file)}
                   >
                     {saving ? 'Uploading...' : 'Upload GPX'}
-                  </button>
-                </div>
-              </div>
+                  </PrimaryBtnSm>
+                </GpxPreviewActions>
+              </GpxPreviewCard>
             )}
-          </div>
+          </GpxSection>
 
           {distanceMeters > 0 && !gpxPreview && (
-            <p className="muted">Calculated distance: {(distanceMeters / 1000).toFixed(1)} km</p>
+            <DistanceLabel>Calculated distance: {(distanceMeters / 1000).toFixed(1)} km</DistanceLabel>
           )}
 
-          {/* Drawing controls */}
           {!gpxPreview && (
-            <div className="offroad-drawing-controls">
-              <p className="offroad-point-count">{points.length} map points</p>
-              <div className="offroad-drawing-actions">
-                <button type="button" className="btn btn-ghost btn-sm" onClick={() => setPoints([])} disabled={points.length === 0}>
+            <DrawingControls>
+              <PointCount>{points.length} map points</PointCount>
+              <DrawingActions>
+                <GhostBtnSm type="button" onClick={() => setPoints([])} disabled={points.length === 0}>
                   <FiTrash2 aria-hidden /> Clear
-                </button>
-                <button type="button" className="btn btn-ghost btn-sm" onClick={() => setPoints((p) => p.slice(0, -1))} disabled={points.length === 0}>
+                </GhostBtnSm>
+                <GhostBtnSm type="button" onClick={() => setPoints((p) => p.slice(0, -1))} disabled={points.length === 0}>
                   Undo
-                </button>
-              </div>
-            </div>
+                </GhostBtnSm>
+              </DrawingActions>
+            </DrawingControls>
           )}
 
-          {error && <p className="error-text">{error}</p>}
+          {error && <ErrorText>{error}</ErrorText>}
 
-          {/* Save button for drawn routes */}
           {!gpxPreview && (
-            <button type="button" className="btn btn-primary" disabled={saving || points.length < 2} onClick={saveDrawn}>
+            <PrimaryBtn type="button" disabled={saving || points.length < 2} onClick={saveDrawn}>
               <FiSave aria-hidden />{' '}
               {savePhase === 'elevation'
                 ? 'Fetching elevation...'
                 : saving
                   ? 'Saving...'
                   : 'Save drawn route'}
-            </button>
+            </PrimaryBtn>
           )}
-        </aside>
+        </EditorSidebar>
 
-        <div className="offroad-editor-map-wrap">
-          <div ref={mapContainer} className="offroad-editor-map" />
-        </div>
-      </div>
-    </section>
+        <EditorMapWrap>
+          <EditorMap ref={mapContainer} />
+        </EditorMapWrap>
+      </EditorLayout>
+    </PageSection>
   )
 }
+
+// --- Styled Components ---
+
+const PageSection = styled.section`
+  width: min(1200px, 100% - 2rem);
+  margin: 0 auto;
+  padding-top: ${({ theme }) => theme.spacing.lg};
+  padding-bottom: ${({ theme }) => theme.spacing['3xl']};
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.spacing.lg};
+
+  @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
+    width: min(1200px, 100% - 1rem);
+    padding-bottom: 7rem;
+    gap: ${({ theme }) => theme.spacing.md};
+  }
+`
+
+const BackLink = styled(Link)`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  border-radius: ${({ theme }) => theme.radii.pill};
+  transition: all ${({ theme }) => theme.animation.duration.normal}s ${({ theme }) => theme.animation.easeOut.join(',')};
+  min-height: 44px;
+  min-width: 44px;
+  white-space: nowrap;
+  text-decoration: none;
+  line-height: 1;
+  padding: 0.55rem 1.2rem;
+  background: transparent;
+  color: ${({ theme }) => theme.colors.text[220]};
+  border: 1px solid ${({ theme }) => theme.colors.lineSoft};
+  align-self: flex-start;
+
+  &:hover {
+    background: rgba(65, 162, 56, 0.08);
+    border-color: ${({ theme }) => theme.colors.line};
+    color: ${({ theme }) => theme.colors.text[100]};
+  }
+`
+
+const EditorHeader = styled(motion.header)`
+  padding-bottom: ${({ theme }) => theme.spacing.sm};
+
+  h1 { color: ${({ theme }) => theme.colors.text[100]}; }
+`
+
+const LeadText = styled.p`
+  color: ${({ theme }) => theme.colors.text[380]};
+  max-width: 560px;
+  line-height: 1.6;
+`
+
+const EditorLayout = styled.div`
+  display: grid;
+  grid-template-columns: 340px 1fr;
+  gap: ${({ theme }) => theme.spacing.md};
+  min-height: 520px;
+
+  @media (max-width: ${({ theme }) => theme.breakpoints.tablet}) {
+    grid-template-columns: 1fr;
+  }
+`
+
+const EditorSidebar = styled.aside`
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.spacing.md};
+`
+
+const HintText = styled.p`
+  font-size: ${({ theme }) => theme.typography.bodySmall};
+  color: ${({ theme }) => theme.colors.text[380]};
+  line-height: 1.5;
+`
+
+const FieldLabel = styled.label`
+  display: block;
+  font-size: ${({ theme }) => theme.typography.bodySmall};
+  color: ${({ theme }) => theme.colors.text[380]};
+  font-weight: 500;
+`
+
+const Input = styled.input`
+  width: 100%;
+  padding: 0.7rem 1rem;
+  border-radius: ${({ theme }) => theme.radii.lg};
+  border: 1px solid ${({ theme }) => theme.colors.lineSoft};
+  background: ${({ theme }) => theme.glass.bg};
+  color: ${({ theme }) => theme.colors.text[100]};
+  font-size: ${({ theme }) => theme.typography.body};
+  transition: border-color ${({ theme }) => theme.animation.duration.fast}s ease;
+  min-height: 44px;
+  backdrop-filter: blur(${({ theme }) => theme.glass.blur});
+  display: block;
+  margin-top: 0.35rem;
+
+  &::placeholder { color: ${({ theme }) => theme.colors.text[500]}; }
+  &:focus {
+    outline: none;
+    border-color: ${({ theme }) => theme.colors.green[500]};
+    box-shadow: 0 0 0 3px rgba(23, 247, 2, 0.1);
+  }
+`
+
+const DaysGrid = styled.div`
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+`
+
+const GpxSection = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.spacing.sm};
+`
+
+const GpxFieldLabel = styled.div`
+  font-size: ${({ theme }) => theme.typography.bodySmall};
+  font-weight: 600;
+  color: ${({ theme }) => theme.colors.text[220]};
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+`
+
+const GpxFileInput = styled.input`
+  font-size: ${({ theme }) => theme.typography.bodySmall};
+  color: ${({ theme }) => theme.colors.text[380]};
+`
+
+const GpxPreviewCard = styled.div`
+  padding: ${({ theme }) => theme.spacing.md};
+  background: ${({ theme }) => theme.glass.bg};
+  border: 1px solid ${({ theme }) => theme.glass.border};
+  border-radius: ${({ theme }) => theme.radii.md};
+  backdrop-filter: blur(${({ theme }) => theme.glass.blur});
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+`
+
+const GpxPreviewTitle = styled.p`
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: ${({ theme }) => theme.typography.bodySmall};
+  font-weight: 600;
+  color: ${({ theme }) => theme.colors.text[100]};
+`
+
+const MutedText = styled.p`
+  color: ${({ theme }) => theme.colors.text[380]};
+  font-size: ${({ theme }) => theme.typography.caption};
+`
+
+const GpxPreviewActions = styled.div`
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+`
+
+const GhostBtnSm = styled.button`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  border-radius: ${({ theme }) => theme.radii.pill};
+  transition: all ${({ theme }) => theme.animation.duration.normal}s ${({ theme }) => theme.animation.easeOut.join(',')};
+  min-height: 36px;
+  min-width: 36px;
+  white-space: nowrap;
+  line-height: 1;
+  padding: 0.4rem 0.9rem;
+  font-size: ${({ theme }) => theme.typography.bodySmall};
+  background: transparent;
+  color: ${({ theme }) => theme.colors.text[220]};
+  border: 1px solid ${({ theme }) => theme.colors.lineSoft};
+
+  &:hover {
+    background: rgba(65, 162, 56, 0.08);
+    border-color: ${({ theme }) => theme.colors.line};
+    color: ${({ theme }) => theme.colors.text[100]};
+  }
+  &:disabled { opacity: 0.4; cursor: not-allowed; }
+`
+
+const PrimaryBtnSm = styled.button`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  border-radius: ${({ theme }) => theme.radii.pill};
+  transition: all ${({ theme }) => theme.animation.duration.normal}s ${({ theme }) => theme.animation.easeOut.join(',')};
+  min-height: 36px;
+  min-width: 36px;
+  white-space: nowrap;
+  line-height: 1;
+  padding: 0.4rem 0.9rem;
+  font-size: ${({ theme }) => theme.typography.bodySmall};
+  background: linear-gradient(135deg, ${({ theme }) => theme.colors.green[580]}, ${({ theme }) => theme.colors.green[500]});
+  color: #0a1e08;
+  box-shadow: ${({ theme }) => theme.shadows.glowGreen};
+  border: none;
+  cursor: pointer;
+
+  &:hover {
+    background: linear-gradient(135deg, ${({ theme }) => theme.colors.green[500]}, ${({ theme }) => theme.colors.green[300]});
+    transform: translateY(-1px);
+  }
+  &:disabled { opacity: 0.5; transform: none; box-shadow: none; cursor: not-allowed; }
+`
+
+const PrimaryBtn = styled(PrimaryBtnSm)`
+  padding: 0.65rem 1.5rem;
+  min-height: 44px;
+  font-size: ${({ theme }) => theme.typography.body};
+`
+
+const DistanceLabel = styled.p`
+  font-size: ${({ theme }) => theme.typography.caption};
+  color: ${({ theme }) => theme.colors.text[380]};
+`
+
+const DrawingControls = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+`
+
+const PointCount = styled.p`
+  font-size: ${({ theme }) => theme.typography.caption};
+  color: ${({ theme }) => theme.colors.text[380]};
+`
+
+const DrawingActions = styled.div`
+  display: flex;
+  gap: 0.5rem;
+`
+
+const ErrorText = styled.p`
+  color: ${({ theme }) => theme.colors.danger[500]};
+  font-size: ${({ theme }) => theme.typography.bodySmall};
+`
+
+const EditorMapWrap = styled.div`
+  border-radius: ${({ theme }) => theme.radii.xl};
+  overflow: hidden;
+  border: 1px solid ${({ theme }) => theme.glass.border};
+  min-height: 400px;
+`
+
+const EditorMap = styled.div`
+  width: 100%;
+  height: 100%;
+  min-height: 400px;
+`

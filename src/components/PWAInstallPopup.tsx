@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import { FiX } from 'react-icons/fi';
+import styled from 'styled-components';
 
 interface PWAInstallPopupProps {
   show: boolean;
@@ -8,62 +9,226 @@ interface PWAInstallPopupProps {
   onInstall: () => void;
 }
 
+const Overlay = styled.div`
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+`
+
+const Card = styled(motion.div)`
+  position: relative;
+  background: ${({ theme }) => theme.glass.bgStrong};
+  border: 1px solid ${({ theme }) => theme.glass.border};
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-radius: ${({ theme }) => theme.radii.xl};
+  padding: ${({ theme }) => theme.spacing.xl};
+  max-width: 400px;
+  width: 100%;
+  text-align: center;
+  box-shadow: ${({ theme }) => theme.shadows.glowGreen}, ${({ theme }) => theme.shadows.xl};
+
+  h2 {
+    font-size: ${({ theme }) => theme.typography.h2};
+    color: ${({ theme }) => theme.colors.text[100]};
+    margin-bottom: ${({ theme }) => theme.spacing.sm};
+  }
+
+  p {
+    font-size: ${({ theme }) => theme.typography.bodySmall};
+    color: ${({ theme }) => theme.colors.text[380]};
+    margin-bottom: ${({ theme }) => theme.spacing.md};
+  }
+`
+
+const CloseBtn = styled.button`
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  width: 32px;
+  height: 32px;
+  border-radius: ${({ theme }) => theme.radii.full};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(243, 255, 241, 0.06);
+  color: ${({ theme }) => theme.colors.text[380]};
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: rgba(243, 255, 241, 0.12);
+    color: ${({ theme }) => theme.colors.text[100]};
+  }
+`
+
+const IconCircle = styled.div`
+  width: 72px;
+  height: 72px;
+  border-radius: ${({ theme }) => theme.radii.full};
+  background: ${({ theme }) => theme.glass.bg};
+  border: 2px solid ${({ theme }) => theme.colors.green[580]};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto ${({ theme }) => theme.spacing.md};
+  box-shadow: ${({ theme }) => theme.shadows.glowGreen};
+
+  img {
+    width: 44px;
+    height: 44px;
+    border-radius: ${({ theme }) => theme.radii.md};
+  }
+`
+
+const IosGuideCarousel = styled.div`
+  display: flex;
+  gap: 0.75rem;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x mandatory;
+  padding-bottom: 0.5rem;
+  margin-bottom: 0.5rem;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+`
+
+const IosGuideStep = styled.div`
+  flex: 0 0 100%;
+  scroll-snap-align: start;
+  text-align: center;
+
+  img {
+    width: 100%;
+    height: auto;
+    max-height: 200px;
+    object-fit: contain;
+    border-radius: ${({ theme }) => theme.radii.md};
+    border: 1px solid ${({ theme }) => theme.colors.lineSoft};
+    margin-bottom: 0.5rem;
+  }
+
+  p {
+    font-size: ${({ theme }) => theme.typography.caption};
+    color: ${({ theme }) => theme.colors.text[380]};
+    margin: 0;
+
+    strong {
+      color: ${({ theme }) => theme.colors.text[100]};
+    }
+  }
+`
+
+const SwipeHint = styled.p`
+  font-size: ${({ theme }) => theme.typography.eyebrow};
+  color: ${({ theme }) => theme.colors.text[500]};
+`
+
+const InstallBtn = styled.button`
+  width: 100%;
+  margin-top: 1.5rem;
+  padding: 0.9rem 1.5rem;
+  font-size: ${({ theme }) => theme.typography.body};
+  font-weight: 700;
+  border: none;
+  border-radius: ${({ theme }) => theme.radii.pill};
+  background: ${({ theme }) => theme.colors.green[580]};
+  color: ${({ theme }) => theme.colors.text[100]};
+  cursor: pointer;
+  transition: background 0.2s ease, box-shadow 0.2s ease;
+
+  &:hover {
+    background: ${({ theme }) => theme.colors.green[700]};
+    box-shadow: ${({ theme }) => theme.shadows.glowGreen};
+  }
+`
+
+const LaterBtn = styled.button`
+  margin-top: 0.5rem;
+  width: 100%;
+  padding: 0.6rem 1rem;
+  font-size: ${({ theme }) => theme.typography.bodySmall};
+  font-weight: 500;
+  border: none;
+  border-radius: ${({ theme }) => theme.radii.pill};
+  background: rgba(243, 255, 241, 0.06);
+  color: ${({ theme }) => theme.colors.text[380]};
+  cursor: pointer;
+  transition: all 0.15s ease;
+
+  &:hover {
+    background: rgba(243, 255, 241, 0.12);
+    color: ${({ theme }) => theme.colors.text[100]};
+  }
+`
+
 export function PWAInstallPopup({ show, isIos, onDismiss, onInstall }: PWAInstallPopupProps) {
   if (!show) return null;
 
   return (
-    <div className="pwa-popup-overlay">
-      <motion.div
-        className="pwa-popup-card"
+    <Overlay>
+      <Card
         initial={{ opacity: 0, scale: 0.9, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
       >
-        <button className="pwa-close-btn" onClick={onDismiss} aria-label="Close">
+        <CloseBtn onClick={onDismiss} aria-label="Close">
           <FiX />
-        </button>
+        </CloseBtn>
 
-        <div className="pwa-icon-circle">
+        <IconCircle>
           <img src="/pwa-192x192.png" alt="App Icon" />
-        </div>
+        </IconCircle>
 
         {isIos ? (
           <>
             <h2>Add to Home Screen</h2>
             <p>Install TripGenius on your iPhone for a native experience.</p>
 
-            <div className="ios-guide-carousel" data-lenis-prevent>
-              <div className="ios-guide-step">
+            <IosGuideCarousel data-lenis-prevent>
+              <IosGuideStep>
                 <img src="/iospwaguide/1.jpeg" alt="Step 1" />
                 <p>1. Tap the <strong>Share</strong> button in the browser bar.</p>
-              </div>
-              <div className="ios-guide-step">
+              </IosGuideStep>
+              <IosGuideStep>
                 <img src="/iospwaguide/2.jpeg" alt="Step 2" />
                 <p>2. Scroll down and find <strong>"Add to Home Screen"</strong>.</p>
-              </div>
-              <div className="ios-guide-step">
+              </IosGuideStep>
+              <IosGuideStep>
                 <img src="/iospwaguide/3.jpeg" alt="Step 3" />
                 <p>3. Confirm by tapping <strong>"Add"</strong> in the top right.</p>
-              </div>
-            </div>
+              </IosGuideStep>
+            </IosGuideCarousel>
 
-            <p className="swipe-hint">Swipe to see next step →</p>
+            <SwipeHint>Swipe to see next step →</SwipeHint>
           </>
         ) : (
           <>
             <h2>Install TripGenius</h2>
             <p>This app can be installed into your phone for faster access and offline support.</p>
-            <button className="btn btn-primary btn-lg" style={{ width: '100%', marginTop: '1.5rem' }} onClick={onInstall}>
+            <InstallBtn onClick={onInstall}>
               Install App
-            </button>
+            </InstallBtn>
           </>
         )}
 
         {!isIos && (
-          <button className="btn btn-ghost" style={{ marginTop: '0.5rem', width: '100%' }} onClick={onDismiss}>
+          <LaterBtn onClick={onDismiss}>
             Maybe later
-          </button>
+          </LaterBtn>
         )}
-      </motion.div>
-    </div>
+      </Card>
+    </Overlay>
   );
 }

@@ -8,12 +8,183 @@ import { useMapTilePrefetch } from '../hooks/useMapTilePrefetch'
 import { motion, AnimatePresence } from 'framer-motion'
 import { OSM_STYLE } from '../map/osmStyle'
 import { createMarkerElement, getPoiColor } from '../utils/mapMarkers'
+import styled from 'styled-components'
 
 interface TripRouteMapProps {
   timeline: TimelineStop[]
   selectedDay: number
   showOverlay?: boolean
 }
+
+const MapWrapper = styled.div`
+  position: relative;
+  height: 100%;
+  min-height: 400px;
+`
+
+const MapContainer = styled.div`
+  width: 100%;
+  height: 100%;
+  border-radius: 16px;
+  overflow: hidden;
+`
+
+const OverlayColumn = styled.div`
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+`
+
+const PoiBadge = styled.div`
+  background: rgba(17, 34, 26, 0.85);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  padding: 0.5rem 1rem;
+  border-radius: 12px;
+  border: 1px solid rgba(65, 162, 56, 0.3);
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+`
+
+const PoiLabel = styled.span`
+  color: ${({ theme }) => theme.colors.text[100]};
+  font-size: 0.85rem;
+  font-weight: 600;
+`
+
+const ZoomHint = styled.div`
+  background: rgba(255, 165, 0, 0.9);
+  color: #000;
+  padding: 0.4rem 0.8rem;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+`
+
+const LoadingBanner = styled.div`
+  background: rgba(17, 34, 26, 0.85);
+  color: ${({ theme }) => theme.colors.green[500]};
+  padding: 0.4rem 0.8rem;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+`
+
+const NavArea = styled.div`
+  position: absolute;
+  bottom: 1.5rem;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  z-index: 10;
+`
+
+const NavAnchor = styled.div`
+  position: relative;
+`
+
+const NavButton = styled.button`
+  border-radius: 30px;
+  padding: 0.8rem 1.8rem;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  box-shadow: ${({ theme }) => theme.shadows.md};
+  background: ${({ theme }) => theme.colors.green[580]};
+  color: ${({ theme }) => theme.colors.text[100]};
+  border: none;
+  font-size: ${({ theme }) => theme.typography.body};
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease;
+
+  &:hover {
+    background: ${({ theme }) => theme.colors.green[700]};
+  }
+`
+
+const NavMenu = styled.div`
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(17, 34, 26, 0.95);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(65, 162, 56, 0.4);
+  border-radius: 20px;
+  padding: 0.75rem;
+  display: grid;
+  gap: 0.5rem;
+  width: 200px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+  margin-bottom: 1rem;
+`
+
+const NavMenuItem = styled.button`
+  width: 100%;
+  justify-content: flex-start;
+  gap: 1rem;
+  border: none;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 0.6rem 0.8rem;
+  border-radius: ${({ theme }) => theme.radii.md};
+  color: ${({ theme }) => theme.colors.text[100]};
+  font-size: ${({ theme }) => theme.typography.bodySmall};
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  transition: background 0.15s ease;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.1);
+  }
+`
+
+const NavMenuDivider = styled.div`
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  margin-top: 0.25rem;
+  padding-top: 0.25rem;
+`
+
+const NavMenuCancel = styled.button`
+  width: 100%;
+  border: none;
+  font-size: 0.8rem;
+  opacity: 0.6;
+  background: transparent;
+  color: ${({ theme }) => theme.colors.text[380]};
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: ${({ theme }) => theme.radii.md};
+  transition: opacity 0.15s ease;
+
+  &:hover {
+    opacity: 1;
+    color: ${({ theme }) => theme.colors.text[100]};
+  }
+`
+
+const SpinnerIcon = styled(FiLoader)`
+  animation: spin 1s linear infinite;
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+`
 
 export function TripRouteMap({ timeline, selectedDay, showOverlay = true }: TripRouteMapProps) {
   const containerRef = useRef<HTMLDivElement | null>(null)
@@ -34,8 +205,7 @@ export function TripRouteMap({ timeline, selectedDay, showOverlay = true }: Trip
   useMapTilePrefetch(mapInstance)
 
   useEffect(() => {
-    const map = mapRef.current
-    if (!map || !mapLoadedRef.current) return
+    if (!mapInstance) return
 
     poiMarkersRef.current.forEach(m => m.remove())
     poiMarkersRef.current = []
@@ -52,11 +222,11 @@ export function TripRouteMap({ timeline, selectedDay, showOverlay = true }: Trip
       const marker = new maplibregl.Marker({ element: el })
         .setLngLat([place.point.lon, place.point.lat])
         .setPopup(popup)
-        .addTo(map)
+        .addTo(mapInstance)
 
       poiMarkersRef.current.push(marker)
     })
-  }, [places])
+  }, [places, mapInstance])
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return
@@ -130,7 +300,7 @@ export function TripRouteMap({ timeline, selectedDay, showOverlay = true }: Trip
 
   useEffect(() => {
     const map = mapRef.current
-    if (!map || !mapLoadedRef.current || !selectedStop) return
+    if (!map || !mapInstance || !selectedStop) return
 
     staticMarkersRef.current.forEach(m => m.remove())
     staticMarkersRef.current = []
@@ -178,7 +348,8 @@ export function TripRouteMap({ timeline, selectedDay, showOverlay = true }: Trip
 
             map.fitBounds(bounds, {
               padding: { top: 80, bottom: 100, left: 50, right: 50 },
-              duration: 1200
+              maxZoom: 14,
+              duration: 1200,
             })
           }
         }
@@ -193,7 +364,9 @@ export function TripRouteMap({ timeline, selectedDay, showOverlay = true }: Trip
     }
 
     updateRoute()
-  }, [selectedStop])
+
+    requestAnimationFrame(() => map.resize())
+  }, [selectedStop, mapInstance])
 
   const openExternalMap = (type: 'google' | 'waze' | 'apple') => {
     if (!selectedStop) return;
@@ -207,56 +380,42 @@ export function TripRouteMap({ timeline, selectedDay, showOverlay = true }: Trip
   };
 
   return (
-    <div className="map-wrapper" style={{ position: 'relative', height: '100%', minHeight: '400px' }}>
-      <div
+    <MapWrapper>
+      <MapContainer
         ref={containerRef}
-        className="map-container"
         data-lenis-prevent
-        style={{ width: '100%', height: '100%', borderRadius: '16px', overflow: 'hidden' }}
       />
 
       {showOverlay && (
-        <div style={{ position: 'absolute', top: '1rem', left: '1rem', zIndex: 10, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-          <motion.div 
-            className="map-overlay-compact"
-            style={{ background: 'rgba(17, 34, 26, 0.85)', backdropFilter: 'blur(10px)', padding: '0.5rem 1rem', borderRadius: '12px', border: '1px solid rgba(65, 162, 56, 0.3)', display: 'flex', alignItems: 'center', gap: '0.75rem' }}
-          >
-            <FiMapPin style={{ color: 'var(--green-500)' }} />
-            <span style={{ color: 'var(--text-100)', fontSize: '0.85rem', fontWeight: 600 }}>Points of Interest</span>
+        <OverlayColumn>
+          <motion.div>
+            <PoiBadge>
+              <FiMapPin style={{ color: '#17f702' }} />
+              <PoiLabel>Points of Interest</PoiLabel>
+            </PoiBadge>
           </motion.div>
 
-          {zoomLevel < 12 && (
-            <div style={{ background: 'rgba(255, 165, 0, 0.9)', color: '#000', padding: '0.4rem 0.8rem', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+          {zoomLevel < 11 && (
+            <ZoomHint>
               <FiZoomIn /> Zoom in for places
-            </div>
+            </ZoomHint>
           )}
 
           {loading && (
-            <div style={{ background: 'rgba(17, 34, 26, 0.85)', color: 'var(--green-500)', padding: '0.4rem 0.8rem', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-              <FiLoader className="spin" /> Fetching...
-            </div>
+            <LoadingBanner>
+              <SpinnerIcon /> Fetching...
+            </LoadingBanner>
           )}
-        </div>
+        </OverlayColumn>
       )}
 
       {selectedStop && showOverlay && (
-        <div style={{ position: 'absolute', bottom: '1.5rem', left: '0', right: '0', display: 'flex', justifyContent: 'center', zIndex: 10 }}>
-          <div style={{ position: 'relative' }}>
-            <button
-              className="btn btn-primary"
-              style={{
-                borderRadius: '30px',
-                padding: '0.8rem 1.8rem',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.6rem',
-                boxShadow: 'var(--shadow)',
-              }}
-              onClick={() => setIsNavOpen(!isNavOpen)}
-            >
+        <NavArea>
+          <NavAnchor>
+            <NavButton onClick={() => setIsNavOpen(!isNavOpen)}>
               <FiNavigation size={18} />
               Navigate
-            </button>
+            </NavButton>
 
             <AnimatePresence>
               {isNavOpen && (
@@ -264,43 +423,29 @@ export function TripRouteMap({ timeline, selectedDay, showOverlay = true }: Trip
                   initial={{ opacity: 0, y: 10, scale: 0.95 }}
                   animate={{ opacity: 1, y: -10, scale: 1 }}
                   exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                  style={{
-                    position: 'absolute',
-                    bottom: '100%',
-                    left: '50%',
-                    translateX: '-50%',
-                    background: 'rgba(17, 34, 26, 0.95)',
-                    backdropFilter: 'blur(20px)',
-                    border: '1px solid rgba(65, 162, 56, 0.4)',
-                    borderRadius: '20px',
-                    padding: '0.75rem',
-                    display: 'grid',
-                    gap: '0.5rem',
-                    width: '200px',
-                    boxShadow: '0 20px 40px rgba(0,0,0,0.4)',
-                    marginBottom: '1rem'
-                  }}
                 >
-                  <button onClick={() => openExternalMap('google')} className="btn btn-ghost" style={{ width: '100%', justifyContent: 'flex-start', gap: '1rem', border: 'none', background: 'rgba(255,255,255,0.05)' }}>
-                    <SiGooglemaps style={{ color: '#4285F4' }} /> Google Maps
-                  </button>
-                  <button onClick={() => openExternalMap('waze')} className="btn btn-ghost" style={{ width: '100%', justifyContent: 'flex-start', gap: '1rem', border: 'none', background: 'rgba(255,255,255,0.05)' }}>
-                    <SiWaze style={{ color: '#33CCFF' }} /> Waze
-                  </button>
-                  <button onClick={() => openExternalMap('apple')} className="btn btn-ghost" style={{ width: '100%', justifyContent: 'flex-start', gap: '1rem', border: 'none', background: 'rgba(255,255,255,0.05)' }}>
-                    <SiApple style={{ color: '#FFF' }} /> Apple Maps
-                  </button>
-                  <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', marginTop: '0.25rem', paddingTop: '0.25rem' }}>
-                    <button onClick={() => setIsNavOpen(false)} className="btn btn-ghost" style={{ width: '100%', border: 'none', fontSize: '0.8rem', opacity: 0.6 }}>
-                      Cancel
-                    </button>
-                  </div>
+                  <NavMenu>
+                    <NavMenuItem onClick={() => openExternalMap('google')}>
+                      <SiGooglemaps style={{ color: '#4285F4' }} /> Google Maps
+                    </NavMenuItem>
+                    <NavMenuItem onClick={() => openExternalMap('waze')}>
+                      <SiWaze style={{ color: '#33CCFF' }} /> Waze
+                    </NavMenuItem>
+                    <NavMenuItem onClick={() => openExternalMap('apple')}>
+                      <SiApple style={{ color: '#FFF' }} /> Apple Maps
+                    </NavMenuItem>
+                    <NavMenuDivider>
+                      <NavMenuCancel onClick={() => setIsNavOpen(false)}>
+                        Cancel
+                      </NavMenuCancel>
+                    </NavMenuDivider>
+                  </NavMenu>
                 </motion.div>
               )}
             </AnimatePresence>
-          </div>
-        </div>
+          </NavAnchor>
+        </NavArea>
       )}
-    </div>
+    </MapWrapper>
   )
 }

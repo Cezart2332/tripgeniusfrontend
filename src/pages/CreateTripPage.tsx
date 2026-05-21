@@ -12,14 +12,14 @@ import {
   FiActivity
 } from 'react-icons/fi'
 import { Link, useNavigate } from 'react-router-dom'
+import styled from 'styled-components'
 import { tripTypeOptions } from '../data/tripTypeOptions'
 import { ActivityType } from '../types/models'
 import { useSelector } from 'react-redux'
 import type { TripStatus, User } from '../types/models'
 import api from '../data/api'
-import { FeedbackToast } from '../components/FeedbackToast'
+import { useToast, ToastContainer } from '../components/shared/Toast'
 import { getErrorMessage, isQueuedRequestError } from '../utils/errorMessage'
-import type { FeedbackToastState } from '../components/FeedbackToast'
 import { ModalSurface } from '../components/ModalSurface'
 import { LocationAutocompleteField } from '../components/LocationAutocompleteField'
 import waitForBackendButtonUnlock from '../utils/interactionDelay'
@@ -85,17 +85,6 @@ const builderSteps: Array<{ key: BuilderStep; label: string; description: string
   { key: 'timeline', label: 'Route', description: 'Chart the coordinates and stops' },
   { key: 'overview', label: 'Review', description: 'Final inspection before launch' },
 ]
-
-const revealTransition = {
-  duration: 0.58,
-  ease: [0.22, 1, 0.36, 1] as const,
-}
-
-const builderPaneTransition = {
-  duration: 0.35,
-  ease: [0.22, 1, 0.36, 1] as const,
-}
-
 
 const monthFormatter = new Intl.DateTimeFormat('en-US', {
   month: 'long',
@@ -192,10 +181,10 @@ const isSameDay = (left: Date, right: Date): boolean =>
 export function CreateTripPage() {
   const navigate = useNavigate()
   const user = useSelector((state: AuthStoreState) => state.auth.user)
+  const { toasts, addToast, removeToast } = useToast()
 
   const [formState, setFormState] = useState<CreateTripFormState>(createInitialFormState)
   const [activeStep, setActiveStep] = useState<BuilderStep>('details')
-  const [toast, setToast] = useState<FeedbackToastState | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [isPublishingTrip, setIsPublishingTrip] = useState(false)
   const [calendarState, setCalendarState] = useState<CalendarState | null>(null)
@@ -302,11 +291,11 @@ export function CreateTripPage() {
       })
 
       await api.post('/api/trip/create-trip', formData)
-      setToast({ id: Date.now(), message: 'Trip saved!', tone: 'success' })
+      addToast('Trip saved!', 'success')
       setTimeout(() => navigate('/app/discover'), 2000)
     } catch (err: unknown) {
       if (isQueuedRequestError(err)) {
-        setToast({ id: Date.now(), message: 'Trip creation will be saved when online!', tone: 'success' })
+        addToast('Trip creation will be saved when online!', 'success')
         setTimeout(() => navigate('/app/discover'), 2000)
       } else {
         setError(getErrorMessage(err, 'Synchronization failed.'))
@@ -319,93 +308,94 @@ export function CreateTripPage() {
 
   if (!user) {
     return (
-      <section className="page container">
-        <div className="discovery-empty-state">
+      <PageSection>
+        <ToastContainer toasts={toasts} removeToast={removeToast} />
+        <EmptyState>
           <h1>Identity verification failed</h1>
           <p>Please log in to start new trips.</p>
-          <Link className="btn btn-primary" to="/login">Go to login</Link>
-        </div>
-      </section>
+          <LinkBtn to="/login">Go to login</LinkBtn>
+        </EmptyState>
+      </PageSection>
     )
   }
 
   return (
-    <section className="page builder-workspace-v2 container">
-      <FeedbackToast toast={toast} clearToast={() => setToast(null)} />
+    <BuilderWorkspace>
+      <ToastContainer toasts={toasts} removeToast={removeToast} />
 
-      <header className="builder-header-v2">
-        <p className="eyebrow">New Trip</p>
+      <BuilderHeader>
+        <Eyebrow>New Trip</Eyebrow>
         <h1>{builderSteps[activeIndex].label}</h1>
-        <p style={{ maxWidth: '600px', margin: '0.5rem auto', color: 'var(--text-380)' }}>
+        <BuilderDescription>
           {builderSteps[activeIndex].description}
-        </p>
-      </header>
+        </BuilderDescription>
+      </BuilderHeader>
 
-      <div className="builder-steps-v2">
+      <BuilderSteps>
         {builderSteps.map((s, i) => (
-          <div key={s.key} className={activeIndex === i ? 'step-indicator-v2 is-active' : 'step-indicator-v2'} />
+          <StepIndicator key={s.key} $active={activeIndex === i} />
         ))}
-      </div>
+      </BuilderSteps>
 
-      <motion.form onSubmit={e => e.preventDefault()} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={revealTransition}>
+      <motion.form onSubmit={e => e.preventDefault()} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.58, ease: [0.22, 1, 0.36, 1] }}>
         <AnimatePresence mode="wait">
           {activeStep === 'details' && (
-            <motion.div key="details" className="builder-form-v2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={builderPaneTransition}>
-              <div className="builder-section-v2">
-                <h3>Core Identity</h3>
-                <div className="form-group" style={{ marginTop: '2rem' }}>
-                  <label className="field-label">Trip Title</label>
-                  <input className="input" placeholder="Ex: Arctic Adventure" value={formState.title} onChange={e => setFormState(p => ({ ...p, title: e.target.value }))} />
-                </div>
-                <div className="form-group" style={{ marginTop: '1.5rem' }}>
-                  <label className="field-label">Description</label>
-                  <textarea className="input" rows={4} placeholder="Describe the mission goals..." value={formState.description} onChange={e => setFormState(p => ({ ...p, description: e.target.value }))} />
-                </div>
-              </div>
+            <motion.div key="details" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}>
+              <BuilderSection>
+                <SectionHeading>Core Identity</SectionHeading>
+                <FormGroup style={{ marginTop: '2rem' }}>
+                  <FieldLabel>Trip Title</FieldLabel>
+                  <Input placeholder="Ex: Arctic Adventure" value={formState.title} onChange={e => setFormState(p => ({ ...p, title: e.target.value }))} />
+                </FormGroup>
+                <FormGroup style={{ marginTop: '1.5rem' }}>
+                  <FieldLabel>Description</FieldLabel>
+                  <Textarea rows={4} placeholder="Describe the mission goals..." value={formState.description} onChange={e => setFormState(p => ({ ...p, description: e.target.value }))} />
+                </FormGroup>
+              </BuilderSection>
 
-              <div className="builder-grid-v2">
-                <div className="builder-section-v2">
-                  <h3>Logistics</h3>
-                  <div className="form-group" style={{ marginTop: '1.5rem' }}>
-                    <label className="field-label">Start Date</label>
-                    <button type="button" className="input input-trigger" onClick={() => openCalendar('startDate')}>
+              <BuilderGrid>
+                <BuilderSection>
+                  <SectionHeading>Logistics</SectionHeading>
+                  <FormGroup style={{ marginTop: '1.5rem' }}>
+                    <FieldLabel>Start Date</FieldLabel>
+                    <InputTrigger type="button" onClick={() => openCalendar('startDate')}>
                       <span>{formatDateLabel(formState.startDate)}</span>
                       <FiCalendar />
-                    </button>
-                  </div>
-                  <div className="form-group" style={{ marginTop: '1rem' }}>
-                    <label className="field-label">End Date</label>
-                    <button type="button" className="input input-trigger" onClick={() => openCalendar('endDate')}>
+                    </InputTrigger>
+                  </FormGroup>
+                  <FormGroup style={{ marginTop: '1rem' }}>
+                    <FieldLabel>End Date</FieldLabel>
+                    <InputTrigger type="button" onClick={() => openCalendar('endDate')}>
                       <span>{formatDateLabel(formState.endDate)}</span>
                       <FiCalendar />
-                    </button>
-                  </div>
-                </div>
+                    </InputTrigger>
+                  </FormGroup>
+                </BuilderSection>
 
-                <div className="builder-section-v2">
-                  <h3>Capacity & Cost</h3>
-                  <div className="form-group" style={{ marginTop: '1.5rem' }}>
-                    <label className="field-label">Budget per Person (EUR)</label>
-                    <input type="number" className="input" value={formState.budgetPerPerson || ''} onChange={e => setFormState(p => ({ ...p, budgetPerPerson: Number(e.target.value) }))} />
-                  </div>
-                  <div className="form-group" style={{ marginTop: '1rem' }}>
-                    <label className="field-label">Max Explorers</label>
-                    <input type="number" className="input" value={formState.maxMembers || ''} onChange={e => setFormState(p => ({ ...p, maxMembers: Number(e.target.value) }))} />
-                  </div>
-                </div>
-              </div>
+                <BuilderSection>
+                  <SectionHeading>Capacity & Cost</SectionHeading>
+                  <FormGroup style={{ marginTop: '1.5rem' }}>
+                    <FieldLabel>Budget per Person (EUR)</FieldLabel>
+                    <Input type="number" value={formState.budgetPerPerson || ''} onChange={e => setFormState(p => ({ ...p, budgetPerPerson: Number(e.target.value) }))} />
+                  </FormGroup>
+                  <FormGroup style={{ marginTop: '1rem' }}>
+                    <FieldLabel>Max Explorers</FieldLabel>
+                    <Input type="number" value={formState.maxMembers || ''} onChange={e => setFormState(p => ({ ...p, maxMembers: Number(e.target.value) }))} />
+                  </FormGroup>
+                </BuilderSection>
+              </BuilderGrid>
 
-              <div className="builder-section-v2">
-                <h3>Tags & Vibe</h3>
-                <p className="eyebrow" style={{ marginTop: '0.5rem', marginBottom: '1rem' }}>Select trip styles or add your own</p>
-                <div className="chip-row">
+              <BuilderSection>
+                <SectionHeading>Tags & Vibe</SectionHeading>
+                <Eyebrow style={{ marginTop: '0.5rem', marginBottom: '1rem' }}>Select trip styles or add your own</Eyebrow>
+                <ChipRow>
                   {tripTypeOptions.map((tag) => {
                     const isSelected = formState.tags.includes(tag)
                     return (
-                      <button
+                      <Chip
                         key={tag}
                         type="button"
-                        className={isSelected ? 'chip is-selected' : 'chip'}
+                        $selected={isSelected}
                         onClick={() => {
                           setFormState(prev => ({
                             ...prev,
@@ -416,15 +406,14 @@ export function CreateTripPage() {
                         }}
                       >
                         {tag}
-                      </button>
+                      </Chip>
                     )
                   })}
-                  {/* Custom Tags already added */}
                   {formState.tags.filter(t => !tripTypeOptions.includes(t)).map(tag => (
-                    <button
+                    <Chip
                       key={tag}
                       type="button"
-                      className="chip is-selected"
+                      $selected
                       onClick={() => {
                         setFormState(prev => ({
                           ...prev,
@@ -433,16 +422,17 @@ export function CreateTripPage() {
                       }}
                     >
                       {tag} <FiX size={12} style={{ marginLeft: '4px' }} />
-                    </button>
+                    </Chip>
                   ))}
-                </div>
+                </ChipRow>
 
-                <div className="form-group" style={{ marginTop: '1.5rem', display: 'flex', gap: '0.5rem' }}>
-                  <div style={{ position: 'relative', flex: 1 }}>
-                    <FiTag style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', opacity: 0.4 }} />
-                    <input
-                      className="input"
-                      style={{ paddingLeft: '2.8rem' }}
+                <FormGroup style={{ marginTop: '1.5rem', display: 'flex', gap: '0.5rem' }}>
+                  <InputWrapper>
+                    <TagIconWrapper>
+                      <FiTag />
+                    </TagIconWrapper>
+                    <Input
+                      $pl="2.8rem"
                       placeholder="Add custom mission tag..."
                       value={formState.customTag}
                       onChange={e => setFormState(p => ({ ...p, customTag: e.target.value }))}
@@ -460,10 +450,9 @@ export function CreateTripPage() {
                         }
                       }}
                     />
-                  </div>
-                  <button
+                  </InputWrapper>
+                  <GhostBtn
                     type="button"
-                    className="btn btn-ghost"
                     onClick={() => {
                       const tag = formState.customTag.trim().toLowerCase()
                       if (tag && !formState.tags.includes(tag)) {
@@ -476,23 +465,23 @@ export function CreateTripPage() {
                     }}
                   >
                     <FiPlusCircle />
-                  </button>
-                </div>
-              </div>
+                  </GhostBtn>
+                </FormGroup>
+              </BuilderSection>
 
-              <div className="builder-section-v2">
-                <h3>Visual Identification</h3>
-                <label className="upload-dropzone" htmlFor="cover-upload" style={{ background: 'rgba(255,255,255,0.02)', border: '2px dashed rgba(154,198,148,0.1)', height: '240px', borderRadius: '24px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+              <BuilderSection>
+                <SectionHeading>Visual Identification</SectionHeading>
+                <UploadDropzone htmlFor="cover-upload">
                   {formState.coverImageDataUrl ? (
-                    <img src={formState.coverImageDataUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '22px' }} />
+                    <CoverPreviewImg src={formState.coverImageDataUrl} alt="" />
                   ) : (
                     <>
                       <FiUploadCloud size={40} style={{ opacity: 0.3, marginBottom: '1rem' }} />
-                      <p style={{ opacity: 0.5 }}>Click to upload cover satellite image</p>
+                      <UploadHint>Click to upload cover satellite image</UploadHint>
                     </>
                   )}
-                </label>
-                <input id="cover-upload" type="file" className="visually-hidden" onChange={e => {
+                </UploadDropzone>
+                <VisuallyHiddenInput id="cover-upload" type="file" onChange={e => {
                   const file = e.target.files?.[0]
                   if (file) {
                     const reader = new FileReader()
@@ -500,59 +489,57 @@ export function CreateTripPage() {
                     reader.readAsDataURL(file)
                   }
                 }} />
-              </div>
+              </BuilderSection>
             </motion.div>
           )}
 
           {activeStep === 'timeline' && (
-            <motion.div key="timeline" className="builder-form-v2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={builderPaneTransition}>
-              <div className="timeline-flow-v2">
+            <motion.div key="timeline" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}>
+              <TimelineFlow>
                 {formState.timeline.map((stop, i) => (
-                  <div key={i} className="timeline-day-v2">
-                    <div className="day-marker-v2" />
-                    <div className="builder-section-v2">
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
+                  <TimelineDay key={i}>
+                    <DayMarker />
+                    <BuilderSection>
+                      <StopHeader>
                         <div>
-                          <h3>Stop #{i + 1}</h3>
-                          <p className="eyebrow" style={{ marginTop: '0.25rem' }}>Coordinates & Schedule</p>
+                          <SectionHeading>Stop #{i + 1}</SectionHeading>
+                          <Eyebrow style={{ marginTop: '0.25rem' }}>Coordinates & Schedule</Eyebrow>
                         </div>
                         {formState.timeline.length > 1 && (
-                          <button type="button" className="btn btn-ghost btn-sm" onClick={() => setFormState(p => ({ ...p, timeline: p.timeline.filter((_, idx) => idx !== i) }))}>
+                          <GhostBtnSm type="button" onClick={() => setFormState(p => ({ ...p, timeline: p.timeline.filter((_, idx) => idx !== i) }))}>
                             <FiTrash2 />
-                          </button>
+                          </GhostBtnSm>
                         )}
-                      </div>
+                      </StopHeader>
 
-                      <div className="builder-grid-v2" style={{ marginBottom: '1.5rem' }}>
-                        <div className="form-group">
-                          <label className="field-label">Start Day</label>
-                          <input type="number" className="input" min={1} value={stop.startDay || ''} onChange={e => setFormState(p => ({ ...p, timeline: p.timeline.map((s, idx) => idx === i ? { ...s, startDay: Number(e.target.value) } : s) }))} />
-                        </div>
-                        <div className="form-group">
-                          <label className="field-label">End Day</label>
-                          <input type="number" className="input" min={1} value={stop.endDay || ''} onChange={e => setFormState(p => ({ ...p, timeline: p.timeline.map((s, idx) => idx === i ? { ...s, endDay: Number(e.target.value) } : s) }))} />
-                        </div>
-                      </div>
+                      <BuilderGrid style={{ marginBottom: '1.5rem' }}>
+                        <FormGroup>
+                          <FieldLabel>Start Day</FieldLabel>
+                          <Input type="number" min={1} value={stop.startDay || ''} onChange={e => setFormState(p => ({ ...p, timeline: p.timeline.map((s, idx) => idx === i ? { ...s, startDay: Number(e.target.value) } : s) }))} />
+                        </FormGroup>
+                        <FormGroup>
+                          <FieldLabel>End Day</FieldLabel>
+                          <Input type="number" min={1} value={stop.endDay || ''} onChange={e => setFormState(p => ({ ...p, timeline: p.timeline.map((s, idx) => idx === i ? { ...s, endDay: Number(e.target.value) } : s) }))} />
+                        </FormGroup>
+                      </BuilderGrid>
 
-                      <div className="builder-grid-v2">
+                      <BuilderGrid>
                         <LocationAutocompleteField id={`from-${i}`} label="Starting Point" placeholder="Search locality..." value={stop.from} onValueChange={v => setFormState(p => ({ ...p, timeline: p.timeline.map((s, idx) => idx === i ? { ...s, from: v } : s) }))} onLocationSelect={s => setFormState(p => ({ ...p, timeline: p.timeline.map((st, idx) => idx === i ? { ...st, from: s.placeName, fromLat: String(s.lat), fromLng: String(s.lng) } : st) }))} />
                         <LocationAutocompleteField id={`to-${i}`} label="End Point" placeholder="Search locality..." value={stop.to} onValueChange={v => setFormState(p => ({ ...p, timeline: p.timeline.map((s, idx) => idx === i ? { ...s, to: v } : s) }))} onLocationSelect={s => setFormState(p => ({ ...p, timeline: p.timeline.map((st, idx) => idx === i ? { ...st, to: s.placeName, toLat: String(s.lat), toLng: String(s.lng) } : st) }))} />
-                      </div>
+                      </BuilderGrid>
 
-                      <div className="form-group" style={{ marginTop: '1.5rem' }}>
-                        <label className="field-label">Navigation Note</label>
-                        <input className="input" placeholder="General info about this stretch..." value={stop.note} onChange={e => setFormState(p => ({ ...p, timeline: p.timeline.map((s, idx) => idx === i ? { ...s, note: e.target.value } : s) }))} />
-                      </div>
+                      <FormGroup style={{ marginTop: '1.5rem' }}>
+                        <FieldLabel>Navigation Note</FieldLabel>
+                        <Input placeholder="General info about this stretch..." value={stop.note} onChange={e => setFormState(p => ({ ...p, timeline: p.timeline.map((s, idx) => idx === i ? { ...s, note: e.target.value } : s) }))} />
+                      </FormGroup>
 
-                      {/* Activities Section */}
-                      <div style={{ marginTop: '2rem', paddingTop: '1.5rem', borderTop: '1px dashed var(--line-soft)' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                          <h4 style={{ fontSize: '0.9rem', color: 'var(--text-100)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <ActivitiesSection>
+                        <ActivitiesHeader>
+                          <ActivitiesTitle>
                             <FiActivity size={16} /> Activities
-                          </h4>
-                          <button
+                          </ActivitiesTitle>
+                          <GhostBtnSm
                             type="button"
-                            className="btn btn-ghost btn-sm"
                             onClick={() => setFormState(p => ({
                               ...p,
                               timeline: p.timeline.map((s, idx) => idx === i ? {
@@ -562,16 +549,14 @@ export function CreateTripPage() {
                             }))}
                           >
                             <FiPlusCircle /> Add
-                          </button>
-                        </div>
+                          </GhostBtnSm>
+                        </ActivitiesHeader>
 
-                        <div style={{ display: 'grid', gap: '1rem' }}>
+                        <ActivitiesGrid>
                           {stop.activities.map((act, j) => (
-                            <div key={j} style={{ padding: '1rem', background: 'rgba(255,255,255,0.02)', borderRadius: '12px', border: '1px solid var(--line-soft)' }}>
-                              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
-                                <input
-                                  className="input"
-                                  style={{ background: 'transparent', border: 'none', borderBottom: '1px solid var(--line-soft)', borderRadius: 0, paddingLeft: 0, fontSize: '0.9rem', fontWeight: 600 }}
+                            <ActivityCard key={j}>
+                              <ActivityCardHeader>
+                                <ActivityNameInput
                                   placeholder="Activity name..."
                                   value={act.name}
                                   onChange={e => setFormState(p => ({
@@ -582,22 +567,23 @@ export function CreateTripPage() {
                                     } : s)
                                   }))}
                                 />
-                                <button type="button" className="btn btn-ghost btn-sm" style={{ color: 'var(--danger-500)' }} onClick={() => setFormState(p => ({
-                                  ...p,
-                                  timeline: p.timeline.map((s, idx) => idx === i ? {
-                                    ...s,
-                                    activities: s.activities.filter((_, aidx) => aidx !== j)
-                                  } : s)
-                                }))}>
+                                <DangerBtn
+                                  type="button"
+                                  onClick={() => setFormState(p => ({
+                                    ...p,
+                                    timeline: p.timeline.map((s, idx) => idx === i ? {
+                                      ...s,
+                                      activities: s.activities.filter((_, aidx) => aidx !== j)
+                                    } : s)
+                                  }))}
+                                >
                                   <FiTrash2 size={14} />
-                                </button>
-                              </div>
-                              <div className="builder-grid-v2">
-                                <div className="form-group">
-                                  <label className="field-label" style={{ fontSize: '0.75rem' }}>Type</label>
-                                  <select
-                                    className="input"
-                                    style={{ fontSize: '0.8rem' }}
+                                </DangerBtn>
+                              </ActivityCardHeader>
+                              <BuilderGrid>
+                                <FormGroup>
+                                  <SmallFieldLabel>Type</SmallFieldLabel>
+                                  <SmallSelect
                                     value={act.type}
                                     onChange={e => setFormState(p => ({
                                       ...p,
@@ -612,14 +598,12 @@ export function CreateTripPage() {
                                     <option value={ActivityType.Accommodation}>Accommodation</option>
                                     <option value={ActivityType.Transport}>Transport</option>
                                     <option value={ActivityType.Other}>Other</option>
-                                  </select>
-                                </div>
-                                <div className="form-group">
-                                  <label className="field-label" style={{ fontSize: '0.75rem' }}>Cost (EUR)</label>
-                                  <input
+                                  </SmallSelect>
+                                </FormGroup>
+                                <FormGroup>
+                                  <SmallFieldLabel>Cost (EUR)</SmallFieldLabel>
+                                  <SmallInput
                                     type="number"
-                                    className="input"
-                                    style={{ fontSize: '0.8rem' }}
                                     value={act.cost || ''}
                                     onChange={e => setFormState(p => ({
                                       ...p,
@@ -629,14 +613,12 @@ export function CreateTripPage() {
                                       } : s)
                                     }))}
                                   />
-                                </div>
-                              </div>
-                              <div className="form-group" style={{ marginTop: '0.5rem' }}>
-                                <label className="field-label" style={{ fontSize: '0.75rem' }}>Description</label>
-                                <textarea
-                                  className="input"
+                                </FormGroup>
+                              </BuilderGrid>
+                              <FormGroup style={{ marginTop: '0.5rem' }}>
+                                <SmallFieldLabel>Description</SmallFieldLabel>
+                                <SmallTextarea
                                   rows={2}
-                                  style={{ fontSize: '0.8rem' }}
                                   placeholder="Brief details..."
                                   value={act.description}
                                   onChange={e => setFormState(p => ({
@@ -647,12 +629,10 @@ export function CreateTripPage() {
                                     } : s)
                                   }))}
                                 />
-                              </div>
-                              <div className="form-group" style={{ marginTop: '0.5rem' }}>
-                                <label className="field-label" style={{ fontSize: '0.75rem' }}>External Link</label>
-                                <input
-                                  className="input"
-                                  style={{ fontSize: '0.8rem' }}
+                              </FormGroup>
+                              <FormGroup style={{ marginTop: '0.5rem' }}>
+                                <SmallFieldLabel>External Link</SmallFieldLabel>
+                                <SmallInput
                                   placeholder="https://..."
                                   value={act.link || ''}
                                   onChange={e => setFormState(p => ({
@@ -663,93 +643,670 @@ export function CreateTripPage() {
                                     } : s)
                                   }))}
                                 />
-                              </div>
-                            </div>
+                              </FormGroup>
+                            </ActivityCard>
                           ))}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                        </ActivitiesGrid>
+                      </ActivitiesSection>
+                    </BuilderSection>
+                  </TimelineDay>
                 ))}
-              </div>
-              <button type="button" className="btn btn-ghost" style={{ alignSelf: 'center', marginTop: '2rem' }} onClick={() => setFormState(p => ({ ...p, timeline: [...p.timeline, createTimelineStopDraft(formState.timeline.length)] }))}>
+              </TimelineFlow>
+              <CenteredGhostBtn type="button" onClick={() => setFormState(p => ({ ...p, timeline: [...p.timeline, createTimelineStopDraft(formState.timeline.length)] }))}>
                 <FiPlusCircle /> Extend Timeline
-              </button>
+              </CenteredGhostBtn>
             </motion.div>
           )}
 
           {activeStep === 'overview' && (
-            <motion.div key="overview" className="builder-form-v2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={builderPaneTransition}>
-              <div className="builder-section-v2" style={{ textAlign: 'center' }}>
-                <FiCheckCircle size={48} style={{ color: 'var(--green-580)', marginBottom: '1rem' }} />
-                <h3>Pre-Flight Check</h3>
+            <motion.div key="overview" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}>
+              <BuilderSection style={{ textAlign: 'center' }}>
+                <CheckIcon />
+                <SectionHeading>Pre-Flight Check</SectionHeading>
                 <p>All your trip data is ready. Review the summary below.</p>
-              </div>
+              </BuilderSection>
 
-              <div className="trip-stats-bar-v2">
-                <div className="trip-stat-v2">
+              <TripStatsBar>
+                <TripStat>
                   <label>Mission</label>
                   <span>{formState.title || 'Untitled'}</span>
-                </div>
-                <div className="trip-stat-v2">
+                </TripStat>
+                <TripStat>
                   <label>Chronology</label>
                   <span>{formState.timeline.length} Days</span>
-                </div>
-                <div className="trip-stat-v2">
+                </TripStat>
+                <TripStat>
                   <label>Budget</label>
                   <span>{formState.budgetPerPerson} EUR</span>
-                </div>
-              </div>
+                </TripStat>
+              </TripStatsBar>
 
-              <div className="builder-section-v2">
-                <h3>Mission Briefing</h3>
-                <p style={{ marginTop: '1rem', color: 'var(--text-380)', lineHeight: 1.6 }}>{formState.description}</p>
+              <BuilderSection>
+                <SectionHeading>Mission Briefing</SectionHeading>
+                <BriefingText>{formState.description}</BriefingText>
 
-                <div className="chip-row" style={{ marginTop: '1.5rem' }}>
+                <ChipRow style={{ marginTop: '1.5rem' }}>
                   {formState.tags.map(tag => (
-                    <span key={tag} className="chip-static">{tag}</span>
+                    <StaticChip key={tag}>{tag}</StaticChip>
                   ))}
-                </div>
-              </div>
+                </ChipRow>
+              </BuilderSection>
             </motion.div>
           )}
         </AnimatePresence>
 
-        {error && <p className="info-banner is-error" style={{ marginTop: '2rem' }}>{error}</p>}
+        {error && <ErrorBanner>{error}</ErrorBanner>}
 
-        <div className="create-actions" style={{ marginTop: '3rem', display: 'flex', gap: '1rem', justifyContent: 'center' }}>
-          {!isFirst && <button type="button" className="btn btn-ghost btn-lg" disabled={isPublishingTrip} onClick={() => setActiveStep(builderSteps[activeIndex - 1].key)}>Previous Step</button>}
+        <CreateActions>
+          {!isFirst && <GhostBtnLg type="button" disabled={isPublishingTrip} onClick={() => setActiveStep(builderSteps[activeIndex - 1].key)}>Previous Step</GhostBtnLg>}
           {isLast ? (
-            <button type="button" onClick={handleCreate} className="btn btn-primary btn-lg" style={{ minWidth: '240px' }} disabled={isPublishingTrip}>
+            <PrimaryBtnLg type="button" onClick={handleCreate} $minWidth="240px" disabled={isPublishingTrip}>
               {isPublishingTrip ? 'Publishing...' : 'Publish Trip'}
-            </button>
+            </PrimaryBtnLg>
           ) : (
-            <button type="button" className="btn btn-primary btn-lg" style={{ minWidth: '240px' }} disabled={isPublishingTrip} onClick={() => setActiveStep(builderSteps[activeIndex + 1].key)}>Next Step</button>
+            <PrimaryBtnLg type="button" $minWidth="240px" disabled={isPublishingTrip} onClick={() => setActiveStep(builderSteps[activeIndex + 1].key)}>Next Step</PrimaryBtnLg>
           )}
-        </div>
+        </CreateActions>
       </motion.form>
 
-      {/* Calendar Modal */}
       <ModalSurface isOpen={Boolean(calendarState)} title="Chronology Sync" subtitle="Pick a date for the mission timeline" onClose={() => setCalendarState(null)}>
-        <div className="calendar-shell">
-          <div className="calendar-head" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-            <button type="button" className="btn btn-ghost btn-sm" onClick={() => shiftMonth(-1)}><FiArrowLeft /></button>
-            <h4 style={{ color: 'var(--text-100)' }}>{calendarState && monthFormatter.format(calendarState.monthCursor)}</h4>
-            <button type="button" className="btn btn-ghost btn-sm" onClick={() => shiftMonth(1)}><FiArrowLeft style={{ transform: 'rotate(180deg)' }} /></button>
-          </div>
-          <div className="calendar-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '0.4rem' }}>
-            {calendarCells.map((date, i) => {
-              if (!date) return <div key={i} />
-              const isSel = selectedCalendarDate && isSameDay(date, selectedCalendarDate)
-              return (
-                <button key={i} type="button" className={isSel ? 'calendar-day is-selected' : 'calendar-day'} style={{ padding: '0.8rem', borderRadius: '12px', border: 'none', background: isSel ? 'var(--green-580)' : 'var(--surface-860)', color: isSel ? 'var(--text-100)' : 'var(--text-100)', cursor: 'pointer' }} onClick={() => selectDate(date)}>
-                  {date.getDate()}
-                </button>
-              )
-            })}
-          </div>
-        </div>
+        <CalendarHead>
+          <GhostBtnSm type="button" onClick={() => shiftMonth(-1)}><FiArrowLeft /></GhostBtnSm>
+          <MonthLabel>{calendarState && monthFormatter.format(calendarState.monthCursor)}</MonthLabel>
+          <GhostBtnSm type="button" onClick={() => shiftMonth(1)}><FiArrowLeft style={{ transform: 'rotate(180deg)' }} /></GhostBtnSm>
+        </CalendarHead>
+        <CalendarGrid>
+          {calendarCells.map((date, i) => {
+            if (!date) return <div key={i} />
+            const isSel = selectedCalendarDate && isSameDay(date, selectedCalendarDate)
+            return (
+              <CalendarDay key={i} type="button" $selected={!!isSel} onClick={() => selectDate(date)}>
+                {date.getDate()}
+              </CalendarDay>
+            )
+          })}
+        </CalendarGrid>
       </ModalSurface>
-    </section>
+    </BuilderWorkspace>
   )
 }
+
+// --- Styled Components ---
+
+const PageSection = styled.section`
+  width: min(1200px, 100% - 2rem);
+  margin: 0 auto;
+  padding-top: ${({ theme }) => theme.spacing.lg};
+  padding-bottom: ${({ theme }) => theme.spacing['3xl']};
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.spacing.lg};
+
+  @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
+    width: min(1200px, 100% - 1rem);
+    padding-bottom: 7rem;
+    gap: ${({ theme }) => theme.spacing.md};
+  }
+`
+
+const EmptyState = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: ${({ theme }) => theme.spacing['3xl']} ${({ theme }) => theme.spacing.lg};
+  gap: ${({ theme }) => theme.spacing.md};
+
+  h1 { color: ${({ theme }) => theme.colors.text[100]}; }
+  p { color: ${({ theme }) => theme.colors.text[380]}; }
+`
+
+const LinkBtn = styled(Link)`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  border-radius: ${({ theme }) => theme.radii.pill};
+  transition: all ${({ theme }) => theme.animation.duration.normal}s ${({ theme }) => theme.animation.easeOut.join(',')};
+  min-height: 44px;
+  min-width: 44px;
+  white-space: nowrap;
+  text-decoration: none;
+  line-height: 1;
+  padding: 0.65rem 1.5rem;
+  background: linear-gradient(135deg, ${({ theme }) => theme.colors.green[580]}, ${({ theme }) => theme.colors.green[500]});
+  color: #0a1e08;
+  box-shadow: ${({ theme }) => theme.shadows.glowGreen};
+
+  &:hover {
+    background: linear-gradient(135deg, ${({ theme }) => theme.colors.green[500]}, ${({ theme }) => theme.colors.green[300]});
+    transform: translateY(-1px);
+    box-shadow: 0 0 40px rgba(23, 247, 2, 0.3), 0 0 80px rgba(23, 247, 2, 0.1);
+  }
+`
+
+const BuilderWorkspace = styled(PageSection)``
+
+const BuilderHeader = styled.header`
+  text-align: center;
+  padding: ${({ theme }) => theme.spacing.lg} 0;
+
+  h1 {
+    color: ${({ theme }) => theme.colors.text[100]};
+    margin-top: 0.5rem;
+  }
+`
+
+const BuilderDescription = styled.p`
+  max-width: 600px;
+  margin: 0.5rem auto;
+  color: ${({ theme }) => theme.colors.text[380]};
+`
+
+const Eyebrow = styled.p`
+  font-size: ${({ theme }) => theme.typography.eyebrow};
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: ${({ theme }) => theme.colors.green[580]};
+  font-weight: 600;
+`
+
+const BuilderSteps = styled.div`
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+  margin-bottom: ${({ theme }) => theme.spacing.xl};
+`
+
+const StepIndicator = styled.div<{ $active: boolean }>`
+  width: ${({ $active }) => $active ? '4rem' : '1.5rem'};
+  height: 4px;
+  border-radius: 2px;
+  background: ${({ $active, theme }) => $active ? theme.colors.green[500] : theme.colors.lineSoft};
+  transition: all 0.3s ease;
+`
+
+const BuilderSection = styled.div`
+  background: ${({ theme }) => theme.glass.bg};
+  border: 1px solid ${({ theme }) => theme.glass.border};
+  border-radius: ${({ theme }) => theme.radii.xl};
+  padding: ${({ theme }) => theme.spacing.lg};
+  backdrop-filter: blur(${({ theme }) => theme.glass.blur});
+  margin-bottom: ${({ theme }) => theme.spacing.md};
+`
+
+const SectionHeading = styled.h3`
+  color: ${({ theme }) => theme.colors.text[100]};
+`
+
+const BuilderGrid = styled.div`
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: ${({ theme }) => theme.spacing.md};
+
+  @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
+    grid-template-columns: 1fr;
+  }
+`
+
+const FormGroup = styled.div`
+  margin-bottom: 0.25rem;
+`
+
+const FieldLabel = styled.label`
+  display: block;
+  font-size: ${({ theme }) => theme.typography.bodySmall};
+  color: ${({ theme }) => theme.colors.text[380]};
+  margin-bottom: 0.35rem;
+  font-weight: 500;
+`
+
+const SmallFieldLabel = styled(FieldLabel)`
+  font-size: 0.75rem;
+`
+
+const Input = styled.input<{ $pl?: string }>`
+  width: 100%;
+  padding: 0.7rem 1rem;
+  padding-left: ${({ $pl }) => $pl ?? '1rem'};
+  border-radius: ${({ theme }) => theme.radii.lg};
+  border: 1px solid ${({ theme }) => theme.colors.lineSoft};
+  background: ${({ theme }) => theme.glass.bg};
+  color: ${({ theme }) => theme.colors.text[100]};
+  font-size: ${({ theme }) => theme.typography.body};
+  transition: border-color ${({ theme }) => theme.animation.duration.fast}s ease;
+  min-height: 44px;
+  backdrop-filter: blur(${({ theme }) => theme.glass.blur});
+
+  &::placeholder { color: ${({ theme }) => theme.colors.text[500]}; }
+  &:focus {
+    outline: none;
+    border-color: ${({ theme }) => theme.colors.green[500]};
+    box-shadow: 0 0 0 3px rgba(23, 247, 2, 0.1);
+  }
+  &:disabled { opacity: 0.5; cursor: not-allowed; }
+`
+
+const Textarea = styled.textarea`
+  width: 100%;
+  padding: 0.7rem 1rem;
+  border-radius: ${({ theme }) => theme.radii.lg};
+  border: 1px solid ${({ theme }) => theme.colors.lineSoft};
+  background: ${({ theme }) => theme.glass.bg};
+  color: ${({ theme }) => theme.colors.text[100]};
+  font-size: ${({ theme }) => theme.typography.body};
+  font-family: inherit;
+  transition: border-color ${({ theme }) => theme.animation.duration.fast}s ease;
+  min-height: 44px;
+  resize: vertical;
+  backdrop-filter: blur(${({ theme }) => theme.glass.blur});
+
+  &::placeholder { color: ${({ theme }) => theme.colors.text[500]}; }
+  &:focus {
+    outline: none;
+    border-color: ${({ theme }) => theme.colors.green[500]};
+    box-shadow: 0 0 0 3px rgba(23, 247, 2, 0.1);
+  }
+`
+
+const SmallTextarea = styled(Textarea)`
+  font-size: 0.8rem;
+`
+
+const SmallInput = styled(Input)`
+  font-size: 0.8rem;
+`
+
+const SmallSelect = styled.select`
+  width: 100%;
+  padding: 0.7rem 1rem;
+  border-radius: ${({ theme }) => theme.radii.lg};
+  border: 1px solid ${({ theme }) => theme.colors.lineSoft};
+  background: ${({ theme }) => theme.glass.bg};
+  color: ${({ theme }) => theme.colors.text[100]};
+  font-size: 0.8rem;
+  min-height: 44px;
+  backdrop-filter: blur(${({ theme }) => theme.glass.blur});
+
+  &:focus { outline: none; border-color: ${({ theme }) => theme.colors.green[500]}; }
+`
+
+const InputTrigger = styled.button`
+  width: 100%;
+  padding: 0.7rem 1rem;
+  border-radius: ${({ theme }) => theme.radii.lg};
+  border: 1px solid ${({ theme }) => theme.colors.lineSoft};
+  background: ${({ theme }) => theme.glass.bg};
+  color: ${({ theme }) => theme.colors.text[100]};
+  font-size: ${({ theme }) => theme.typography.body};
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 44px;
+  cursor: pointer;
+  backdrop-filter: blur(${({ theme }) => theme.glass.blur});
+  transition: border-color ${({ theme }) => theme.animation.duration.fast}s ease;
+
+  &:hover { border-color: ${({ theme }) => theme.colors.line}; }
+`
+
+const ChipRow = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+`
+
+const Chip = styled.button<{ $selected: boolean }>`
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.4rem 0.9rem;
+  border-radius: ${({ theme }) => theme.radii.pill};
+  font-size: ${({ theme }) => theme.typography.bodySmall};
+  font-weight: 600;
+  border: 1px solid ${({ $selected, theme }) => $selected ? theme.colors.green[580] : theme.colors.lineSoft};
+  background: ${({ $selected }) => $selected ? 'rgba(65, 162, 56, 0.2)' : 'transparent'};
+  color: ${({ $selected, theme }) => $selected ? theme.colors.green[500] : theme.colors.text[220]};
+  transition: all 0.15s ease;
+
+  &:hover {
+    border-color: ${({ theme }) => theme.colors.line};
+    color: ${({ theme }) => theme.colors.text[100]};
+  }
+`
+
+const StaticChip = styled.span`
+  display: inline-flex;
+  align-items: center;
+  padding: 0.4rem 0.9rem;
+  border-radius: ${({ theme }) => theme.radii.pill};
+  font-size: ${({ theme }) => theme.typography.bodySmall};
+  font-weight: 600;
+  border: 1px solid ${({ theme }) => theme.colors.lineSoft};
+  color: ${({ theme }) => theme.colors.text[220]};
+  background: rgba(65, 162, 56, 0.08);
+`
+
+const InputWrapper = styled.div`
+  position: relative;
+  flex: 1;
+`
+
+const TagIconWrapper = styled.div`
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  opacity: 0.4;
+  display: flex;
+`
+
+const UploadDropzone = styled.label`
+  background: rgba(255,255,255,0.02);
+  border: 2px dashed rgba(154,198,148,0.1);
+  height: 240px;
+  border-radius: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  margin-top: ${({ theme }) => theme.spacing.md};
+`
+
+const CoverPreviewImg = styled.img`
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 22px;
+`
+
+const UploadHint = styled.p`
+  opacity: 0.5;
+  color: ${({ theme }) => theme.colors.text[380]};
+`
+
+const VisuallyHiddenInput = styled.input`
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+`
+
+const TimelineFlow = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.spacing.md};
+`
+
+const TimelineDay = styled.div`
+  display: flex;
+  gap: ${({ theme }) => theme.spacing.md};
+  position: relative;
+
+  & > ${BuilderSection} { flex: 1; }
+`
+
+const DayMarker = styled.div`
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: ${({ theme }) => theme.colors.green[580]};
+  margin-top: 1.5rem;
+  flex-shrink: 0;
+  box-shadow: 0 0 12px rgba(23, 247, 2, 0.3);
+`
+
+const StopHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1.5rem;
+`
+
+const ActivitiesSection = styled.div`
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px dashed ${({ theme }) => theme.colors.lineSoft};
+`
+
+const ActivitiesHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+`
+
+const ActivitiesTitle = styled.h4`
+  font-size: 0.9rem;
+  color: ${({ theme }) => theme.colors.text[100]};
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+`
+
+const ActivitiesGrid = styled.div`
+  display: grid;
+  gap: 1rem;
+`
+
+const ActivityCard = styled.div`
+  padding: 1rem;
+  background: rgba(255,255,255,0.02);
+  border-radius: 12px;
+  border: 1px solid ${({ theme }) => theme.colors.lineSoft};
+`
+
+const ActivityCardHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+`
+
+const ActivityNameInput = styled.input`
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid ${({ theme }) => theme.colors.lineSoft};
+  border-radius: 0;
+  padding-left: 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: ${({ theme }) => theme.colors.text[100]};
+  flex: 1;
+  min-height: 32px;
+  outline: none;
+
+  &::placeholder { color: ${({ theme }) => theme.colors.text[500]}; }
+  &:focus { border-color: ${({ theme }) => theme.colors.green[500]}; }
+`
+
+const GhostBtn = styled.button`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  border-radius: ${({ theme }) => theme.radii.pill};
+  transition: all ${({ theme }) => theme.animation.duration.normal}s ${({ theme }) => theme.animation.easeOut.join(',')};
+  min-height: 44px;
+  min-width: 44px;
+  white-space: nowrap;
+  text-decoration: none;
+  line-height: 1;
+  padding: 0.55rem 1.2rem;
+  background: transparent;
+  color: ${({ theme }) => theme.colors.text[220]};
+  border: 1px solid ${({ theme }) => theme.colors.lineSoft};
+
+  &:hover {
+    background: rgba(65, 162, 56, 0.08);
+    border-color: ${({ theme }) => theme.colors.line};
+    color: ${({ theme }) => theme.colors.text[100]};
+  }
+  &:disabled { opacity: 0.4; cursor: not-allowed; background: transparent; }
+`
+
+const GhostBtnSm = styled(GhostBtn)`
+  padding: 0.4rem 0.9rem;
+  font-size: ${({ theme }) => theme.typography.bodySmall};
+  min-height: 36px;
+  min-width: 36px;
+`
+
+const GhostBtnLg = styled(GhostBtn)`
+  padding: 0.85rem 2rem;
+  font-size: 1.05rem;
+  min-height: 52px;
+`
+
+const DangerBtn = styled.button`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.4rem 0.9rem;
+  font-size: ${({ theme }) => theme.typography.bodySmall};
+  min-height: 36px;
+  min-width: 36px;
+  font-weight: 600;
+  border-radius: ${({ theme }) => theme.radii.pill};
+  background: transparent;
+  color: ${({ theme }) => theme.colors.danger[500]};
+  border: 1px solid rgba(219, 74, 91, 0.25);
+  transition: all ${({ theme }) => theme.animation.duration.normal}s ${({ theme }) => theme.animation.easeOut.join(',')};
+
+  &:hover { background: rgba(219, 74, 91, 0.1); border-color: ${({ theme }) => theme.colors.danger[500]}; }
+`
+
+const CenteredGhostBtn = styled(GhostBtn)`
+  align-self: center;
+  margin-top: 2rem;
+`
+
+const CheckIcon = styled(FiCheckCircle).attrs({ size: 48 })`
+  color: ${({ theme }) => theme.colors.green[580]};
+  margin-bottom: 1rem;
+`
+
+const TripStatsBar = styled.div`
+  display: flex;
+  gap: ${({ theme }) => theme.spacing.md};
+  margin-bottom: ${({ theme }) => theme.spacing.md};
+
+  @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
+    flex-wrap: wrap;
+  }
+`
+
+const TripStat = styled.div`
+  flex: 1;
+  padding: ${({ theme }) => theme.spacing.md};
+  background: ${({ theme }) => theme.glass.bg};
+  border: 1px solid ${({ theme }) => theme.glass.border};
+  border-radius: ${({ theme }) => theme.radii.lg};
+  backdrop-filter: blur(${({ theme }) => theme.glass.blur});
+  text-align: center;
+
+  label {
+    display: block;
+    font-size: ${({ theme }) => theme.typography.caption};
+    color: ${({ theme }) => theme.colors.text[380]};
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.25rem;
+  }
+  span {
+    color: ${({ theme }) => theme.colors.text[100]};
+    font-size: ${({ theme }) => theme.typography.body};
+    font-weight: 600;
+  }
+`
+
+const BriefingText = styled.p`
+  margin-top: 1rem;
+  color: ${({ theme }) => theme.colors.text[380]};
+  line-height: 1.6;
+`
+
+const ErrorBanner = styled.p`
+  background: rgba(219, 74, 91, 0.1);
+  border: 1px solid rgba(219, 74, 91, 0.3);
+  color: ${({ theme }) => theme.colors.danger[500]};
+  padding: 0.75rem 1rem;
+  border-radius: ${({ theme }) => theme.radii.lg};
+  margin-top: 2rem;
+  font-size: ${({ theme }) => theme.typography.bodySmall};
+`
+
+const CreateActions = styled.div`
+  margin-top: 3rem;
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+`
+
+const PrimaryBtnLg = styled.button<{ $minWidth: string }>`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  border-radius: ${({ theme }) => theme.radii.pill};
+  transition: all ${({ theme }) => theme.animation.duration.normal}s ${({ theme }) => theme.animation.easeOut.join(',')};
+  min-height: 52px;
+  min-width: 44px;
+  white-space: nowrap;
+  text-decoration: none;
+  line-height: 1;
+  padding: 0.85rem 2rem;
+  font-size: 1.05rem;
+  min-width: ${({ $minWidth }) => $minWidth};
+  background: linear-gradient(135deg, ${({ theme }) => theme.colors.green[580]}, ${({ theme }) => theme.colors.green[500]});
+  color: #0a1e08;
+  box-shadow: ${({ theme }) => theme.shadows.glowGreen};
+
+  &:hover {
+    background: linear-gradient(135deg, ${({ theme }) => theme.colors.green[500]}, ${({ theme }) => theme.colors.green[300]});
+    transform: translateY(-1px);
+    box-shadow: 0 0 40px rgba(23, 247, 2, 0.3), 0 0 80px rgba(23, 247, 2, 0.1);
+  }
+  &:active { transform: translateY(0); }
+  &:disabled { opacity: 0.5; transform: none; box-shadow: none; cursor: not-allowed; }
+`
+
+const CalendarHead = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+`
+
+const MonthLabel = styled.h4`
+  color: ${({ theme }) => theme.colors.text[100]};
+`
+
+const CalendarGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.4rem;
+`
+
+const CalendarDay = styled.button<{ $selected: boolean }>`
+  padding: 0.8rem;
+  border-radius: 12px;
+  border: none;
+  background: ${({ $selected, theme }) => $selected ? theme.colors.green[580] : theme.colors.surface[860]};
+  color: ${({ theme }) => theme.colors.text[100]};
+  cursor: pointer;
+  font-size: ${({ theme }) => theme.typography.bodySmall};
+
+  &:hover {
+    background: ${({ $selected, theme }) => $selected ? theme.colors.green[580] : 'rgba(65, 162, 56, 0.25)'};
+  }
+`
