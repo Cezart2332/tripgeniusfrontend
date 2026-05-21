@@ -1,13 +1,7 @@
-import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import styled from 'styled-components'
-
-interface ToastItem {
-  id: number
-  message: string
-  tone: 'success' | 'error' | 'info'
-}
+import type { ToastItem } from './useToast'
 
 interface ToastContainerProps {
   toasts: ToastItem[]
@@ -86,13 +80,7 @@ const CloseBtn = styled.button`
 `
 
 export function ToastContainer({ toasts, removeToast }: ToastContainerProps) {
-  const [mounted, setMounted] = useState(false)
-
-  useEffect(() => {
-    setMounted(true)
-  }, [])
-
-  if (!mounted) return null
+  if (typeof document === 'undefined') return null
 
   return createPortal(
     <Wrapper>
@@ -117,20 +105,4 @@ export function ToastContainer({ toasts, removeToast }: ToastContainerProps) {
     </Wrapper>,
     document.body,
   )
-}
-
-export function useToast() {
-  const [toasts, setToasts] = useState<ToastItem[]>([])
-
-  const addToast = (message: string, tone: 'success' | 'error' | 'info' = 'info') => {
-    const id = Date.now()
-    setToasts((prev) => [...prev, { id, message, tone }])
-    setTimeout(() => removeToast(id), 3500)
-  }
-
-  const removeToast = (id: number) => {
-    setToasts((prev) => prev.filter((t) => t.id !== id))
-  }
-
-  return { toasts, addToast, removeToast }
 }

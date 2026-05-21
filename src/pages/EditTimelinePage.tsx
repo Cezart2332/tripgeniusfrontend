@@ -7,7 +7,8 @@ import api from '../data/api'
 import { ActivityType } from '../types/models'
 import type { TimelineStop, TripActivity } from '../types/models'
 import { isQueuedRequestError } from '../utils/errorMessage'
-import { useToast, ToastContainer } from '../components/shared/Toast'
+import { ToastContainer } from '../components/shared/Toast'
+import { useToast } from '../components/shared/useToast'
 
 interface LocationSelection {
   name: string

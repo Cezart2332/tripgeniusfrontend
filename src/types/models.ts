@@ -23,14 +23,19 @@ export interface User {
 
 export interface Notification {
   id: number,
-  content: string,
+  content?: string,
+  message?: string,
+  Message?: string,
+  text?: string,
   isRead?: boolean,
   read?: boolean,
   IsRead?: boolean,
   Read?: boolean,
   date?: string,
   createdAt?: string,
-  CreatedAt?: string
+  CreatedAt?: string,
+  timestamp?: string,
+  Timestamp?: string,
 }
 export interface TripMember {
   id: string

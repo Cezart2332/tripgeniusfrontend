@@ -152,19 +152,14 @@ const EmptyMsg = styled.p`
 `
 
 function getNotificationContent(n: Notification): string {
-  const candidate =
-    n.content ??
-    (n as any).Content ??
-    (n as any).message ??
-    (n as any).Message ??
-    (n as any).text
+  const candidate = n.content ?? n.message ?? n.Message ?? n.text
   return typeof candidate === 'string' && candidate.trim().length > 0
     ? candidate
     : 'New notification'
 }
 
 function formatNotificationTime(n: Notification): string {
-  const ts = (n as any).CreatedAt ?? (n as any).createdAt ?? (n as any).timestamp ?? (n as any).Timestamp ?? n.date
+  const ts = n.CreatedAt ?? n.createdAt ?? n.timestamp ?? n.Timestamp ?? n.date
   if (!ts) return 'Just now'
 
   const match = /\/Date\((\d+)\)\//.exec(ts)
@@ -175,7 +170,7 @@ function formatNotificationTime(n: Notification): string {
 }
 
 function isRead(n: Notification): boolean {
-  return Boolean(n.isRead ?? n.read ?? (n as any).IsRead ?? (n as any).Read)
+  return Boolean(n.isRead ?? n.read ?? n.IsRead ?? n.Read)
 }
 
 export function NotificationDropdown({ user, isSyncingUser, onReadAll, onSync }: NotificationDropdownProps) {

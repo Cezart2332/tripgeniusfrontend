@@ -5,7 +5,8 @@ import { motion } from 'framer-motion'
 import styled from 'styled-components'
 import { FiArrowRight, FiCompass, FiMap, FiMessageCircle, FiUsers, FiWifiOff } from 'react-icons/fi'
 import type { IconType } from 'react-icons'
-import { ToastContainer, useToast } from '../components/shared/Toast'
+import { ToastContainer } from '../components/shared/Toast'
+import { useToast } from '../components/shared/useToast'
 import type { User } from '../types/models'
 
 interface AuthStoreState {

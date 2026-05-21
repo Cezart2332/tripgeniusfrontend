@@ -12,7 +12,8 @@ import api, { updateCachedResponse } from '../data/api'
 import { setUser } from '../data/authSlice'
 import { AxiosError } from 'axios'
 import { isQueuedRequestError } from '../utils/errorMessage'
-import { ToastContainer, useToast } from '../components/shared/Toast'
+import { ToastContainer } from '../components/shared/Toast'
+import { useToast } from '../components/shared/useToast'
 import waitForBackendButtonUnlock from '../utils/interactionDelay'
 import { formatDisplayDate, formatDisplayDateRange } from '../utils/dateDisplay'
 import {
@@ -1370,7 +1371,7 @@ export function ProfilePage() {
     return () => {
       window.clearTimeout(timeoutId)
     }
-  }, [shouldRedirectToLogin, navigate])
+  }, [shouldRedirectToLogin, navigate, addToast])
 
   useEffect(() => {
     if (!user) return

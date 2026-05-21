@@ -22,7 +22,12 @@ const MapContainer = styled.div<{ $height: string }>`
 export function OffroadRouteMap({ routes, selectedRouteId, height = '320px', interactive = false }: OffroadRouteMapProps) {
   const containerRef = useRef<HTMLDivElement | null>(null)
   const mapRef = useRef<maplibregl.Map | null>(null)
+  const routesRef = useRef(routes)
   const [mapReady, setMapReady] = useState(false)
+
+  useEffect(() => {
+    routesRef.current = routes
+  }, [routes])
 
   const applyRoutesToMap = useCallback((map: maplibregl.Map, currentRoutes: OffroadRoute[]) => {
     if (!map.getSource('offroad-routes')) return
@@ -111,7 +116,7 @@ export function OffroadRouteMap({ routes, selectedRouteId, height = '320px', int
         },
       })
       setMapReady(true)
-      applyRoutesToMap(map, routes)
+      applyRoutesToMap(map, routesRef.current)
     })
 
     return () => {

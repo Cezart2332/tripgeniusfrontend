@@ -5,7 +5,8 @@ import styled from 'styled-components'
 import { AxiosError } from 'axios'
 import { tripTypeOptions } from '../data/tripTypeOptions'
 import api from '../data/api'
-import { ToastContainer, useToast } from '../components/shared/Toast'
+import { ToastContainer } from '../components/shared/Toast'
+import { useToast } from '../components/shared/useToast'
 import waitForBackendButtonUnlock from '../utils/interactionDelay'
 
 interface RegisterState {

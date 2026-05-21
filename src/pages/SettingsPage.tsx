@@ -19,7 +19,8 @@ import type { User } from '../types/models'
 import api from '../data/api'
 import { useDispatch, useSelector } from 'react-redux'
 import { setUser, logout as logoutAction } from '../data/authSlice'
-import { ToastContainer, useToast } from '../components/shared/Toast'
+import { ToastContainer } from '../components/shared/Toast'
+import { useToast } from '../components/shared/useToast'
 import waitForBackendButtonUnlock from '../utils/interactionDelay'
 
 import { AxiosError } from 'axios'
@@ -543,7 +544,7 @@ export function SettingsPage() {
     return () => {
       window.clearTimeout(timeoutId)
     }
-  }, [shouldRedirectToLogin, navigate])
+  }, [shouldRedirectToLogin, navigate, addToast])
 
   if (!user) {
     return (

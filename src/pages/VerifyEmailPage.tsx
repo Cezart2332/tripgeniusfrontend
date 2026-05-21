@@ -5,7 +5,8 @@ import styled, { keyframes } from 'styled-components'
 import { FiCheckCircle, FiLoader, FiMail } from 'react-icons/fi'
 import { setCredentials, setToken } from '../data/authSlice'
 import api from '../data/api'
-import { ToastContainer, useToast } from '../components/shared/Toast'
+import { ToastContainer } from '../components/shared/Toast'
+import { useToast } from '../components/shared/useToast'
 
 const spin = keyframes`
   to { transform: rotate(360deg); }
@@ -190,7 +191,7 @@ export function VerifyEmailPage() {
     }
 
     verifyEmail()
-  }, [token, dispatch, navigate])
+  }, [token, dispatch, navigate, addToast])
 
   return (
     <Page>

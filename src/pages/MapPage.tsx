@@ -4,7 +4,8 @@ import { Link, useNavigate } from "react-router-dom"
 import { useSelector } from "react-redux"
 import styled, { keyframes } from 'styled-components'
 import maplibregl from 'maplibre-gl'
-import { useToast, ToastContainer } from "../components/shared/Toast"
+import { ToastContainer } from "../components/shared/Toast"
+import { useToast } from "../components/shared/useToast"
 import { usePlaces } from "../hooks/usePlaces"
 import { useMapTilePrefetch } from "../hooks/useMapTilePrefetch"
 import { subscribeForNotifications } from "../utils/notifications"
@@ -56,7 +57,7 @@ export function MapPage() {
         return () => {
             window.clearTimeout(timeoutId)
         }
-    }, [shouldRedirectToLogin, navigate])
+    }, [shouldRedirectToLogin, navigate, addToast])
 
     useEffect(() => {
         if (!user) return

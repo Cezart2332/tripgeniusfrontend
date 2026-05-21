@@ -6,7 +6,8 @@ import { FiLock, FiMail, FiCheck } from 'react-icons/fi'
 import { AxiosError } from 'axios'
 import api from '../data/api'
 import { setCredentials, setToken } from '../data/authSlice'
-import { ToastContainer, useToast } from '../components/shared/Toast'
+import { ToastContainer } from '../components/shared/Toast'
+import { useToast } from '../components/shared/useToast'
 import waitForBackendButtonUnlock from '../utils/interactionDelay'
 
 const spin = keyframes`

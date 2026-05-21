@@ -6,7 +6,8 @@ import styled from 'styled-components'
 import { ActivityType } from '../types/models'
 import type { TimelineStop } from '../types/models'
 import api from '../data/api'
-import { useToast, ToastContainer } from '../components/shared/Toast'
+import { ToastContainer } from '../components/shared/Toast'
+import { useToast } from '../components/shared/useToast'
 import { isQueuedRequestError } from '../utils/errorMessage'
 
 interface LocationSelection {

@@ -11,7 +11,7 @@ import { DesktopTopbar } from './layout/DesktopTopbar'
 import { SplashScreen } from './layout/SplashScreen'
 import { logout as logoutAction, setUser } from '../data/authSlice'
 import api from '../data/api'
-import type { User } from '../types/models'
+import type { Notification, User } from '../types/models'
 
 interface AuthStoreState {
   auth: {
@@ -70,7 +70,7 @@ const AmbientLayer = styled.div`
   display: none;
 `
 
-function isRead(n: any): boolean {
+function isRead(n: Notification): boolean {
   return Boolean(n.isRead ?? n.read ?? n.IsRead ?? n.Read)
 }
 
@@ -121,7 +121,7 @@ export function AppLayout() {
     if (!user || unreadNotifications.length === 0) return
     try {
       await api.post('/api/user/read-notifications')
-      const updated = user.notifications.map((n: any) => ({
+      const updated = user.notifications.map((n) => ({
         ...n, isRead: true, read: true, IsRead: true, Read: true,
       }))
       dispatch(setUser({ user: { ...user, notifications: updated } }))
