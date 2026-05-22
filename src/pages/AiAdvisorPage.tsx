@@ -34,6 +34,7 @@ interface Message {
 interface AiChatResponse {
   message: string
   role: string
+  dateTime?: string
 }
 
 /* ------------------------------------------------------------------ */
@@ -810,6 +811,7 @@ export function AiAdvisorPage() {
   const [activeAiMessageId, setActiveAiMessageId] = useState<string | null>(null)
   const connectionRef = useRef<signalR.HubConnection | null>(null)
   const aiMessageIdRef = useRef<string | null>(null)
+  const isSendingRef = useRef(false)
   const [messages, setMessages] = useState<Message[]>([])
   const [isOffline, setIsOffline] = useState(!navigator.onLine)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -838,18 +840,20 @@ export function AiAdvisorPage() {
   const fetchChatHistory = async () => {
     try {
       const res = await api.get<AiChatResponse[]>('/api/ai/history')
-      const historyMessages: Message[] = res.data.map((item) => ({
-        id: `hist-${item.role}-${item.message.slice(0, 20)}-${item.message.length}`,
-        text: item.message,
-        sender: item.role.toLowerCase() === 'user' ? 'user' : 'assistant',
-        isComplete: true,
-      }))
+      const historyMessages: Message[] = []
+      for (let i = 0; i < res.data.length; i++) {
+        const item = res.data[i]
+        const sender = item.role.toLowerCase() === 'user' ? 'user' : 'assistant'
+        const prev = historyMessages[historyMessages.length - 1]
+        if (prev && prev.sender === sender && prev.text === item.message) continue
 
-      setMessages((prev) => {
-        const existingIds = new Set(prev.map((m) => m.id))
-        const uniqueHistory = historyMessages.filter((m) => !existingIds.has(m.id))
-        return [...prev, ...uniqueHistory]
-      })
+        historyMessages.push({
+          id: item.dateTime ? `hist-${item.dateTime}` : `hist-${i}-${sender}`,
+          text: item.message,
+          sender,
+          isComplete: true,
+        })
+      }
 
       setMessages(historyMessages)
     } catch (error) {
@@ -1049,9 +1053,10 @@ export function AiAdvisorPage() {
   const handleSubmit = async (e?: FormEvent) => {
     if (e) e.preventDefault()
 
-    if (!prompt.trim() || isTyping || activeAiMessageId) return
+    if (!prompt.trim() || isTyping || activeAiMessageId || isSendingRef.current) return
 
-    const text = prompt
+    const text = prompt.trim()
+    isSendingRef.current = true
 
     setMessages((prev) => [...prev, { id: crypto.randomUUID(), text, sender: 'user', isComplete: true }])
 
@@ -1065,6 +1070,8 @@ export function AiAdvisorPage() {
       setIsTyping(false)
       setActiveAiMessageId(null)
       aiMessageIdRef.current = null
+    } finally {
+      isSendingRef.current = false
     }
   }
 

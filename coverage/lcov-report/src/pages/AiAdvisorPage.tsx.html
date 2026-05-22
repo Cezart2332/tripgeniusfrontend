@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/643</span>
+                <span class='fraction'>0/649</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/643</span>
+                <span class='fraction'>0/649</span>
             </div>
         
             
@@ -1341,7 +1341,14 @@
 <a name='L1276'></a><a href='#L1276'>1276</a>
 <a name='L1277'></a><a href='#L1277'>1277</a>
 <a name='L1278'></a><a href='#L1278'>1278</a>
-<a name='L1279'></a><a href='#L1279'>1279</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L1279'></a><a href='#L1279'>1279</a>
+<a name='L1280'></a><a href='#L1280'>1280</a>
+<a name='L1281'></a><a href='#L1281'>1281</a>
+<a name='L1282'></a><a href='#L1282'>1282</a>
+<a name='L1283'></a><a href='#L1283'>1283</a>
+<a name='L1284'></a><a href='#L1284'>1284</a>
+<a name='L1285'></a><a href='#L1285'>1285</a>
+<a name='L1286'></a><a href='#L1286'>1286</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -1383,6 +1390,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -2159,6 +2167,7 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -2188,11 +2197,13 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -2394,6 +2405,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -2401,6 +2413,8 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -2655,6 +2669,7 @@ interface Message {
 interface AiChatResponse {
   message: string
   role: string
+  dateTime?: string
 }
 &nbsp;
 /* ------------------------------------------------------------------ */
@@ -3431,6 +3446,7 @@ interface AiChatResponse {
 <span class="cstat-no" title="statement not covered" >  const [activeAiMessageId, setActiveAiMessageId] = useState&lt;string | null&gt;(null)</span>
 <span class="cstat-no" title="statement not covered" >  const connectionRef = useRef&lt;signalR.HubConnection | null&gt;(null)</span>
 <span class="cstat-no" title="statement not covered" >  const aiMessageIdRef = useRef&lt;string | null&gt;(null)</span>
+<span class="cstat-no" title="statement not covered" >  const isSendingRef = useRef(false)</span>
 <span class="cstat-no" title="statement not covered" >  const [messages, setMessages] = useState&lt;Message[]&gt;([])</span>
 <span class="cstat-no" title="statement not covered" >  const [isOffline, setIsOffline] = useState(!navigator.onLine)</span>
 <span class="cstat-no" title="statement not covered" >  const textareaRef = useRef&lt;HTMLTextAreaElement&gt;(null)</span>
@@ -3459,18 +3475,20 @@ interface AiChatResponse {
 <span class="cstat-no" title="statement not covered" >  const fetchChatHistory = async () =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >    try {</span>
 <span class="cstat-no" title="statement not covered" >      const res = await api.get&lt;AiChatResponse[]&gt;('/api/ai/history')</span>
-<span class="cstat-no" title="statement not covered" >      const historyMessages: Message[] = res.data.map((item) =&gt; ({</span>
-<span class="cstat-no" title="statement not covered" >        id: `hist-${item.role}-${item.message.slice(0, 20)}-${item.message.length}`,</span>
-<span class="cstat-no" title="statement not covered" >        text: item.message,</span>
-<span class="cstat-no" title="statement not covered" >        sender: item.role.toLowerCase() === 'user' ? 'user' : 'assistant',</span>
-<span class="cstat-no" title="statement not covered" >        isComplete: true,</span>
-<span class="cstat-no" title="statement not covered" >      }))</span>
+<span class="cstat-no" title="statement not covered" >      const historyMessages: Message[] = []</span>
+<span class="cstat-no" title="statement not covered" >      for (let i = 0; i &lt; res.data.length; i++) {</span>
+<span class="cstat-no" title="statement not covered" >        const item = res.data[i]</span>
+<span class="cstat-no" title="statement not covered" >        const sender = item.role.toLowerCase() === 'user' ? 'user' : 'assistant'</span>
+<span class="cstat-no" title="statement not covered" >        const prev = historyMessages[historyMessages.length - 1]</span>
+<span class="cstat-no" title="statement not covered" >        if (prev &amp;&amp; prev.sender === sender &amp;&amp; prev.text === item.message) continue</span>
 &nbsp;
-<span class="cstat-no" title="statement not covered" >      setMessages((prev) =&gt; {</span>
-<span class="cstat-no" title="statement not covered" >        const existingIds = new Set(prev.map((m) =&gt; m.id))</span>
-<span class="cstat-no" title="statement not covered" >        const uniqueHistory = historyMessages.filter((m) =&gt; !existingIds.has(m.id))</span>
-<span class="cstat-no" title="statement not covered" >        return [...prev, ...uniqueHistory]</span>
-<span class="cstat-no" title="statement not covered" >      })</span>
+<span class="cstat-no" title="statement not covered" >        historyMessages.push({</span>
+<span class="cstat-no" title="statement not covered" >          id: item.dateTime ? `hist-${item.dateTime}` : `hist-${i}-${sender}`,</span>
+<span class="cstat-no" title="statement not covered" >          text: item.message,</span>
+<span class="cstat-no" title="statement not covered" >          sender,</span>
+<span class="cstat-no" title="statement not covered" >          isComplete: true,</span>
+<span class="cstat-no" title="statement not covered" >        })</span>
+<span class="cstat-no" title="statement not covered" >      }</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >      setMessages(historyMessages)</span>
 <span class="cstat-no" title="statement not covered" >    } catch (error) {</span>
@@ -3670,9 +3688,10 @@ interface AiChatResponse {
 <span class="cstat-no" title="statement not covered" >  const handleSubmit = async (e?: FormEvent) =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >    if (e) e.preventDefault()</span>
 &nbsp;
-<span class="cstat-no" title="statement not covered" >    if (!prompt.trim() || isTyping || activeAiMessageId) return</span>
+<span class="cstat-no" title="statement not covered" >    if (!prompt.trim() || isTyping || activeAiMessageId || isSendingRef.current) return</span>
 &nbsp;
-<span class="cstat-no" title="statement not covered" >    const text = prompt</span>
+<span class="cstat-no" title="statement not covered" >    const text = prompt.trim()</span>
+<span class="cstat-no" title="statement not covered" >    isSendingRef.current = true</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >    setMessages((prev) =&gt; [...prev, { id: crypto.randomUUID(), text, sender: 'user', isComplete: true }])</span>
 &nbsp;
@@ -3686,6 +3705,8 @@ interface AiChatResponse {
 <span class="cstat-no" title="statement not covered" >      setIsTyping(false)</span>
 <span class="cstat-no" title="statement not covered" >      setActiveAiMessageId(null)</span>
 <span class="cstat-no" title="statement not covered" >      aiMessageIdRef.current = null</span>
+<span class="cstat-no" title="statement not covered" >    } finally {</span>
+<span class="cstat-no" title="statement not covered" >      isSendingRef.current = false</span>
 <span class="cstat-no" title="statement not covered" >    }</span>
 <span class="cstat-no" title="statement not covered" >  }</span>
 &nbsp;
@@ -3904,7 +3925,7 @@ interface AiChatResponse {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-05-21T15:50:35.807Z
+                at 2026-05-22T11:55:14.312Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

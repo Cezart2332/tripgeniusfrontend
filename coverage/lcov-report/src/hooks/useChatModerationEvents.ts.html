@@ -3,15 +3,15 @@
 <html lang="en">
 
 <head>
-    <title>Code coverage report for src/components/shared/useToast.ts</title>
+    <title>Code coverage report for src/hooks/useChatModerationEvents.ts</title>
     <meta charset="utf-8" />
-    <link rel="stylesheet" href="../../../prettify.css" />
-    <link rel="stylesheet" href="../../../base.css" />
-    <link rel="shortcut icon" type="image/x-icon" href="../../../favicon.png" />
+    <link rel="stylesheet" href="../../prettify.css" />
+    <link rel="stylesheet" href="../../base.css" />
+    <link rel="shortcut icon" type="image/x-icon" href="../../favicon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <style type='text/css'>
         .coverage-summary .sorter {
-            background-image: url(../../../sort-arrow-sprite.png);
+            background-image: url(../../sort-arrow-sprite.png);
         }
     </style>
 </head>
@@ -19,13 +19,13 @@
 <body>
 <div class='wrapper'>
     <div class='pad1'>
-        <h1><a href="../../../index.html">All files</a> / <a href="index.html">src/components/shared</a> useToast.ts</h1>
+        <h1><a href="../../index.html">All files</a> / <a href="index.html">src/hooks</a> useChatModerationEvents.ts</h1>
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">71.42% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>10/14</span>
+                <span class='fraction'>0/16</span>
             </div>
         
             
@@ -44,9 +44,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">71.42% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>10/14</span>
+                <span class='fraction'>0/16</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line medium'></div>
+    <div class='status-line low'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -87,57 +87,54 @@
 <a name='L22'></a><a href='#L22'>22</a>
 <a name='L23'></a><a href='#L23'>23</a>
 <a name='L24'></a><a href='#L24'>24</a>
-<a name='L25'></a><a href='#L25'>25</a>
-<a name='L26'></a><a href='#L26'>26</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">1x</span>
+<a name='L25'></a><a href='#L25'>25</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">4x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">4x</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-yes">4x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">4x</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-yes">4x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">4x</span>
-<span class="cline-any cline-yes">4x</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import { useCallback, useState } from 'react'
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import type { HubConnection } from '@microsoft/signalr'
+import type { Dispatch, SetStateAction } from 'react'
+import type { ChatMessage } from '../types/models'
 &nbsp;
-export interface ToastItem {
-  id: number
-  message: string
-  tone: 'success' | 'error' | 'info'
-}
+type RejectedPayload = { messageId: number; message?: string }
 &nbsp;
-let nextToastId = 0
+<span class="cstat-no" title="statement not covered" >function matchesMessageId(messageId: string, removedId: number): boolean {</span>
+<span class="cstat-no" title="statement not covered" >  return String(messageId) === String(removedId)</span>
+<span class="cstat-no" title="statement not covered" >}</span>
 &nbsp;
-export function useToast() {
-  const [toasts, setToasts] = useState&lt;ToastItem[]&gt;([])
+<span class="cstat-no" title="statement not covered" >export function registerChatModerationEvents(</span>
+<span class="cstat-no" title="statement not covered" >  connection: HubConnection,</span>
+<span class="cstat-no" title="statement not covered" >  setChatMessages: Dispatch&lt;SetStateAction&lt;ChatMessage[]&gt;&gt;,</span>
+<span class="cstat-no" title="statement not covered" >  onRejected?: (payload: RejectedPayload) =&gt; void,</span>
+<span class="cstat-no" title="statement not covered" >) {</span>
+<span class="cstat-no" title="statement not covered" >  connection.on('MessageRemoved', (messageId: number) =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >    setChatMessages((prev) =&gt; prev.filter((m) =&gt; !matchesMessageId(m.id, messageId)))</span>
+<span class="cstat-no" title="statement not covered" >  })</span>
 &nbsp;
-  const removeToast = useCallback((id: number) =&gt; {
-<span class="cstat-no" title="statement not covered" >    setToasts((prev) =&gt; prev.filter((t) =&gt; t.id !== id))</span>
-  }, [])
-&nbsp;
-  const addToast = useCallback((message: string, tone: 'success' | 'error' | 'info' = 'info') =&gt; {
-<span class="cstat-no" title="statement not covered" >    const id = ++nextToastId</span>
-<span class="cstat-no" title="statement not covered" >    setToasts((prev) =&gt; [...prev, { id, message, tone }])</span>
-<span class="cstat-no" title="statement not covered" >    setTimeout(() =&gt; removeToast(id), 3500)</span>
-  }, [removeToast])
-&nbsp;
-  return { toasts, addToast, removeToast }
-}
+<span class="cstat-no" title="statement not covered" >  connection.on('MessageRejected', (payload: RejectedPayload) =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >    setChatMessages((prev) =&gt; prev.filter((m) =&gt; !matchesMessageId(m.id, payload.messageId)))</span>
+<span class="cstat-no" title="statement not covered" >    onRejected?.(payload)</span>
+<span class="cstat-no" title="statement not covered" >  })</span>
+<span class="cstat-no" title="statement not covered" >}</span>
 &nbsp;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
@@ -147,14 +144,14 @@ export function useToast() {
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
                 at 2026-05-22T11:55:14.312Z
             </div>
-        <script src="../../../prettify.js"></script>
+        <script src="../../prettify.js"></script>
         <script>
             window.onload = function () {
                 prettyPrint();
             };
         </script>
-        <script src="../../../sorter.js"></script>
-        <script src="../../../block-navigation.js"></script>
+        <script src="../../sorter.js"></script>
+        <script src="../../block-navigation.js"></script>
     </body>
 </html>
     
