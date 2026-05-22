@@ -542,15 +542,16 @@ export function OffroadTripPage() {
                   {currentRoute ? `Day ${currentDay}: ${currentRoute.name}` : `Day ${currentDay}: No route planned`}
                 </CurrentDayTitle>
                 {currentRoute && (
-                  <GhostBtnSm
+                  <CurrentDayActionBtn
                     type="button"
                     onClick={() => {
                       setSelectedRouteId(currentRoute.id)
                       setActiveTab('routes')
                     }}
                   >
-                    View in Routes
-                  </GhostBtnSm>
+                    <span className="label-full">View in Routes</span>
+                    <span className="label-short">Routes</span>
+                  </CurrentDayActionBtn>
                 )}
               </CurrentDayHeader>
 
@@ -901,6 +902,10 @@ const HeaderBar = styled.div`
   align-items: center;
   gap: ${({ theme }) => theme.spacing.md};
   flex-wrap: wrap;
+
+  @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
+    gap: ${({ theme }) => theme.spacing.sm};
+  }
 `
 
 const BackLink = styled(Link)`
@@ -977,6 +982,9 @@ const GhostBtnSm = styled.button`
   background: transparent;
   color: ${({ theme }) => theme.colors.text[220]};
   border: 1px solid ${({ theme }) => theme.colors.lineSoft};
+  box-sizing: border-box;
+  flex-shrink: 0;
+  max-width: 100%;
 
   &:hover {
     background: rgba(65, 162, 56, 0.08);
@@ -1048,6 +1056,15 @@ const PrimaryBtnSm = styled(PrimaryBtn)`
 const OffroadTabs = styled.div`
   display: flex;
   gap: 0.25rem;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
 `
 
 const OffroadTab = styled.button<{ $active: boolean }>`
@@ -1064,10 +1081,19 @@ const OffroadTab = styled.button<{ $active: boolean }>`
   cursor: pointer;
   white-space: nowrap;
   min-height: 40px;
+  flex-shrink: 0;
   transition: all 0.2s ease;
 
   &:hover {
     color: ${({ $active, theme }) => $active ? '#0a1e08' : theme.colors.text[220]};
+  }
+
+  @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
+    padding: 0.5rem 0.75rem;
+
+    span {
+      display: none;
+    }
   }
 `
 
@@ -1076,6 +1102,13 @@ const HeaderActions = styled.div`
   gap: 0.5rem;
   align-items: center;
   margin-left: auto;
+  flex-shrink: 0;
+
+  @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
+    width: 100%;
+    margin-left: 0;
+    justify-content: flex-end;
+  }
 `
 
 const TripHero = styled(motion.header)<{ $hasCover: boolean }>`
@@ -1092,6 +1125,10 @@ const HeroOverlay = styled.div<{ $hasCover: boolean }>`
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+
+  @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
+    padding: ${({ theme }) => theme.spacing.lg} ${({ theme }) => theme.spacing.md};
+  }
 `
 
 const StatusBadge = styled.span`
@@ -1161,20 +1198,64 @@ const CurrentDaySection = styled.div`
   border-radius: ${({ theme }) => theme.radii.xl};
   padding: ${({ theme }) => theme.spacing.lg};
   backdrop-filter: blur(${({ theme }) => theme.glass.blur});
+
+  @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
+    padding: ${({ theme }) => theme.spacing.md};
+  }
 `
 
 const CurrentDayHeader = styled.div`
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
+  gap: ${({ theme }) => theme.spacing.sm};
+  flex-wrap: wrap;
   margin-bottom: ${({ theme }) => theme.spacing.md};
+
+  @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
+    flex-direction: column;
+    align-items: stretch;
+  }
 `
 
 const CurrentDayTitle = styled.h2`
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 0.5rem;
+  flex: 1 1 auto;
+  min-width: 0;
   color: ${({ theme }) => theme.colors.text[100]};
+  font-size: ${({ theme }) => theme.typography.h3};
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+
+  svg {
+    flex-shrink: 0;
+    margin-top: 0.15rem;
+  }
+
+  @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
+    width: 100%;
+    font-size: ${({ theme }) => theme.typography.body};
+  }
+`
+
+const CurrentDayActionBtn = styled(GhostBtnSm)`
+  .label-short {
+    display: none;
+  }
+
+  @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
+    align-self: flex-start;
+
+    .label-full {
+      display: none;
+    }
+
+    .label-short {
+      display: inline;
+    }
+  }
 `
 
 const RouteMapBlock = styled.div`
@@ -1290,10 +1371,18 @@ const RouteCard = styled.article<{ $selected: boolean }>`
 const RouteCardHeader = styled.div`
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
+  gap: 0.5rem;
+  flex-wrap: wrap;
   margin-bottom: 0.5rem;
 
-  h3 { color: ${({ theme }) => theme.colors.text[100]}; font-size: ${({ theme }) => theme.typography.body}; }
+  h3 {
+    color: ${({ theme }) => theme.colors.text[100]};
+    font-size: ${({ theme }) => theme.typography.body};
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
 `
 
 const RouteSource = styled.span<{ $isDrawn: boolean }>`
@@ -1321,6 +1410,8 @@ const RouteActions = styled.div`
   display: flex;
   gap: 0.35rem;
   margin-top: ${({ theme }) => theme.spacing.sm};
+  flex-wrap: wrap;
+  align-items: center;
 `
 
 const RoutesMapPanel = styled.div`
@@ -1614,7 +1705,9 @@ const RouteStatsRow = styled.div`
   border-radius: 12px;
   padding: 0.75rem;
   margin-top: ${({ theme }) => theme.spacing.sm};
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
 `
 
 const RouteStatItem = styled.div`
@@ -1624,6 +1717,11 @@ const RouteStatItem = styled.div`
   align-items: center;
   gap: 0.15rem;
   padding: 0 0.5rem;
+  min-width: 4.25rem;
+
+  @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
+    flex: 0 0 auto;
+  }
 `
 
 const RouteStatIcon = styled.span`

@@ -23,11 +23,34 @@ const Scrim = styled(motion.div)`
   align-items: center;
   justify-content: center;
   padding: 1.5rem;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+
+  @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
+    align-items: flex-start;
+    padding: 1rem;
+    padding-top: max(1rem, env(safe-area-inset-top, 0px));
+    padding-bottom: max(1rem, env(safe-area-inset-bottom, 0px));
+  }
+`
+
+const ModalFrame = styled(motion.div)`
+  width: min(500px, 100%);
+  max-width: 100%;
+  min-width: 0;
+  margin: auto;
+
+  @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
+    margin: 0 auto;
+  }
 `
 
 const Card = styled.div`
-  max-width: 500px;
-  width: 90%;
+  width: 100%;
+  max-height: min(90dvh, calc(100dvh - 2rem));
+  box-sizing: border-box;
+  overflow-x: hidden;
+  overflow-y: auto;
   background: ${({ theme }) => theme.glass.bgStrong};
   border: 1px solid ${({ theme }) => theme.glass.border};
   backdrop-filter: blur(20px);
@@ -35,6 +58,11 @@ const Card = styled.div`
   border-radius: ${({ theme }) => theme.radii.xl};
   padding: ${({ theme }) => theme.spacing.lg};
   box-shadow: ${({ theme }) => theme.shadows.xl};
+
+  @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
+    padding: ${({ theme }) => theme.spacing.md};
+    max-height: calc(100dvh - 2rem);
+  }
 `
 
 const Header = styled.div`
@@ -46,9 +74,13 @@ const Header = styled.div`
 `
 
 const HeaderText = styled.div`
+  flex: 1;
+  min-width: 0;
+
   h3 {
     font-size: ${({ theme }) => theme.typography.h3};
     color: ${({ theme }) => theme.colors.text[100]};
+    overflow-wrap: anywhere;
   }
 `
 
@@ -98,7 +130,7 @@ export function ModalSurface({ isOpen, title, subtitle, onClose, children }: Mod
           exit={{ opacity: 0 }}
           onClick={onClose}
         >
-          <motion.div
+          <ModalFrame
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
@@ -114,7 +146,7 @@ export function ModalSurface({ isOpen, title, subtitle, onClose, children }: Mod
               </Header>
               {children}
             </Card>
-          </motion.div>
+          </ModalFrame>
         </Scrim>
       )}
     </AnimatePresence>

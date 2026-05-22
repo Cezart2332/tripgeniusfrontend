@@ -266,13 +266,18 @@ const RouteCard = styled.div<{ $selected: boolean }>`
 
 const RouteCardHeader = styled.div`
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
+  gap: 0.5rem;
+  flex-wrap: wrap;
   margin-bottom: 0.4rem;
 
   h4 {
     font-size: ${({ theme }) => theme.typography.body};
     color: ${({ theme }) => theme.colors.text[100]};
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow-wrap: anywhere;
   }
 `
 
@@ -319,6 +324,7 @@ const RouteActions = styled.div`
 const GhostBtn = styled.button<{ $danger?: boolean }>`
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 0.3rem;
   padding: 0.4rem 0.7rem;
   font-size: ${({ theme }) => theme.typography.caption};
@@ -331,10 +337,27 @@ const GhostBtn = styled.button<{ $danger?: boolean }>`
   transition: all 0.15s ease;
   text-decoration: none;
   white-space: nowrap;
+  box-sizing: border-box;
+  flex-shrink: 0;
+  max-width: 100%;
 
   &:hover {
     background: rgba(243, 255, 241, 0.12);
     color: ${({ $danger, theme }) => $danger ? theme.colors.danger[400] : theme.colors.text[100]};
+  }
+
+  .label-short {
+    display: none;
+  }
+
+  @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
+    .label-full {
+      display: none;
+    }
+
+    .label-short {
+      display: inline;
+    }
   }
 `
 
@@ -925,7 +948,8 @@ export function OffroadTripModal({ trip, isOpen, onClose, onTripUpdate }: Offroa
                           {route.note && <MutedText>{route.note}</MutedText>}
                           <RouteActions>
                             <GhostBtn onClick={() => setSelectedRouteId(route.id)}>
-                              Show on map
+                              <span className="label-full">Show on map</span>
+                              <span className="label-short">Map</span>
                             </GhostBtn>
                             <GhostBtn onClick={() => exportRouteGpx(route.id)}>
                               <FiDownload /> GPX

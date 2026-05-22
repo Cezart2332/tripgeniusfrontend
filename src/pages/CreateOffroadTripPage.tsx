@@ -22,6 +22,7 @@ import { getErrorMessage, isQueuedRequestError } from '../utils/errorMessage'
 import { DiscoveryModeTabs } from '../components/layout/DiscoveryModeTabs'
 import { ModalSurface } from '../components/ModalSurface'
 import waitForBackendButtonUnlock from '../utils/interactionDelay'
+import { EMPTY_OFFROAD_TRACK_GEOJSON } from '../utils/coords'
 
 interface AuthStoreState {
   auth: { user: User | null }
@@ -207,6 +208,9 @@ export function CreateOffroadTripPage() {
         form.append(`Routes[${i}].EndDay`, String(route.endDay))
         form.append(`Routes[${i}].Note`, route.note)
         form.append(`Routes[${i}].Source`, route.importGpxLater ? 'Drawn' : 'Imported')
+        form.append(`Routes[${i}].TrackGeoJson`, EMPTY_OFFROAD_TRACK_GEOJSON)
+        form.append(`Routes[${i}].DistanceMeters`, '0')
+        form.append(`Routes[${i}].ElevationGainMeters`, '0')
       })
 
       await api.post('api/OffroadTrip/create-offroad-trip', form)
@@ -1100,27 +1104,50 @@ const CalendarHead = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 0.5rem;
   margin-bottom: 1.5rem;
+  min-width: 0;
 `
 
 const MonthLabel = styled.h4`
+  flex: 1;
+  min-width: 0;
+  text-align: center;
   color: ${({ theme }) => theme.colors.text[100]};
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 `
 
 const CalendarGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 0.4rem;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0.35rem;
+  width: 100%;
+  min-width: 0;
+
+  @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
+    gap: 0.2rem;
+  }
 `
 
 const CalendarDay = styled.button<{ $selected: boolean }>`
-  padding: 0.8rem;
-  border-radius: 12px;
+  aspect-ratio: 1;
+  min-width: 0;
+  padding: 0.5rem 0.25rem;
+  border-radius: 10px;
   border: none;
   background: ${({ $selected, theme }) => $selected ? theme.colors.offroad.accent : theme.colors.surface[860]};
   color: ${({ $selected, theme }) => $selected ? '#1a1408' : theme.colors.text[100]};
   cursor: pointer;
   font-size: ${({ theme }) => theme.typography.bodySmall};
+  line-height: 1;
 
   &:hover { opacity: 0.85; }
+
+  @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
+    padding: 0.35rem 0.15rem;
+    font-size: ${({ theme }) => theme.typography.caption};
+    border-radius: 8px;
+  }
 `
