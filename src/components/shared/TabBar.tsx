@@ -20,6 +20,8 @@ const Wrapper = styled.div`
   width: 100%;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+  touch-action: pan-x;
   scrollbar-width: none;
   -ms-overflow-style: none;
 
@@ -60,27 +62,35 @@ const Tab = styled.button<{ $active: boolean; $variant: 'default' | 'pill' }>`
   white-space: nowrap;
   cursor: pointer;
   transition: color 0.2s ease;
-  min-height: 40px;
+  min-height: 44px;
+  flex-shrink: 0;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
 
   &:hover {
     color: ${({ theme }) => theme.colors.text[220]};
   }
 `
 
-const ActiveIndicator = styled(motion.div)<{ $variant: 'default' | 'pill' }>`
+const PillIndicator = styled(motion.div)`
   position: absolute;
-  bottom: ${({ $variant }) => $variant === 'default' ? '-1px' : '0'};
+  inset: 0;
+  background: linear-gradient(135deg, ${({ theme }) => theme.colors.green[580]}, ${({ theme }) => theme.colors.green[500]});
+  border-radius: ${({ theme }) => theme.radii.pill};
+  box-shadow: 0 2px 12px rgba(23, 247, 2, 0.2);
+  z-index: 0;
+  pointer-events: none;
+`
+
+const UnderlineIndicator = styled(motion.div)`
+  position: absolute;
+  bottom: -1px;
   left: 0;
-  right: 0;
-  height: ${({ $variant }) => $variant === 'default' ? '2px' : '100%'};
-  ${({ $variant, theme }) => $variant === 'default' ? `
-    background: linear-gradient(90deg, ${theme.colors.green[580]}, ${theme.colors.green[500]});
-  ` : `
-    background: linear-gradient(135deg, ${theme.colors.green[580]}, ${theme.colors.green[500]});
-    border-radius: ${theme.radii.pill};
-    box-shadow: 0 2px 12px rgba(23, 247, 2, 0.2);
-  `}
-  z-index: ${({ $variant }) => $variant === 'pill' ? '-1' : '1'};
+  height: 2px;
+  background: linear-gradient(90deg, ${({ theme }) => theme.colors.green[580]}, ${({ theme }) => theme.colors.green[500]});
+  z-index: 1;
+  pointer-events: none;
 `
 
 const Badge = styled.span`
@@ -98,11 +108,15 @@ const Badge = styled.span`
   line-height: 1;
 `
 
+const pillIndicatorTransition = { type: 'spring' as const, stiffness: 500, damping: 35 }
+
 export function TabBar({ tabs, activeTab, onChange, variant = 'default' }: TabBarProps) {
+  const isPill = variant === 'pill'
   const [indicatorStyle, setIndicatorStyle] = useState({ left: 0, width: 0 })
   const tabRefs = useRef<Map<string, HTMLButtonElement>>(new Map())
 
   const updateIndicator = useCallback(() => {
+    if (isPill) return
     const activeEl = tabRefs.current.get(activeTab)
     const wrapperEl = activeEl?.closest<HTMLDivElement>('[data-tab-wrapper]')
     if (!activeEl || !wrapperEl) return
@@ -113,51 +127,77 @@ export function TabBar({ tabs, activeTab, onChange, variant = 'default' }: TabBa
       left: elRect.left - wrapperRect.left,
       width: elRect.width,
     })
-  }, [activeTab])
+  }, [activeTab, isPill])
 
   useEffect(() => {
     updateIndicator()
-    const activeEl = tabRefs.current.get(activeTab)
-    activeEl?.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' })
-    activeEl?.focus({ preventScroll: true })
-  }, [activeTab, updateIndicator])
+  }, [updateIndicator])
 
   useEffect(() => {
+    const activeEl = tabRefs.current.get(activeTab)
+    if (!activeEl) return
+
+    const finePointer = window.matchMedia('(pointer: fine)').matches
+    if (finePointer) {
+      activeEl.scrollIntoView({ inline: 'nearest', block: 'nearest' })
+      activeEl.focus({ preventScroll: true })
+    }
+  }, [activeTab])
+
+  useEffect(() => {
+    if (isPill) return
     const wrapper = tabRefs.current.get(activeTab)?.closest<HTMLDivElement>('[data-tab-wrapper]')
     if (!wrapper) return
 
     const observer = new ResizeObserver(updateIndicator)
     observer.observe(wrapper)
     return () => observer.disconnect()
-  }, [updateIndicator, activeTab])
+  }, [updateIndicator, activeTab, isPill])
+
+  const handleTabClick = (key: string) => {
+    onChange(key)
+  }
 
   return (
     <Wrapper data-tab-wrapper>
       <TabList $variant={variant} role="tablist">
-        <ActiveIndicator
-          $variant={variant}
-          layoutId={variant === 'pill' ? 'pill-indicator' : 'tab-indicator'}
-          initial={false}
-          animate={{ left: indicatorStyle.left, width: indicatorStyle.width }}
-          transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
-        />
-        {tabs.map((tab) => (
-          <Tab
-            key={tab.key}
-            ref={(el) => { if (el) tabRefs.current.set(tab.key, el) }}
-            $active={activeTab === tab.key}
-            $variant={variant}
-            role="tab"
-            aria-selected={activeTab === tab.key}
-            onClick={() => onChange(tab.key)}
-          >
-            {tab.icon}
-            <span style={{ position: 'relative', zIndex: 1 }}>{tab.label}</span>
-            {tab.badge !== undefined && tab.badge > 0 && (
-              <Badge>{tab.badge}</Badge>
-            )}
-          </Tab>
-        ))}
+        {!isPill && (
+          <UnderlineIndicator
+            initial={false}
+            animate={{ left: indicatorStyle.left, width: indicatorStyle.width }}
+            transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+          />
+        )}
+        {tabs.map((tab) => {
+          const isActive = activeTab === tab.key
+          return (
+            <Tab
+              key={tab.key}
+              ref={(el) => {
+                if (el) tabRefs.current.set(tab.key, el)
+                else tabRefs.current.delete(tab.key)
+              }}
+              $active={isActive}
+              $variant={variant}
+              role="tab"
+              aria-selected={isActive}
+              type="button"
+              onClick={() => handleTabClick(tab.key)}
+            >
+              {isPill && isActive && (
+                <PillIndicator
+                  layoutId="pill-indicator"
+                  transition={pillIndicatorTransition}
+                />
+              )}
+              {tab.icon}
+              <span style={{ position: 'relative', zIndex: 1 }}>{tab.label}</span>
+              {tab.badge !== undefined && tab.badge > 0 && (
+                <Badge>{tab.badge}</Badge>
+              )}
+            </Tab>
+          )
+        })}
       </TabList>
     </Wrapper>
   )

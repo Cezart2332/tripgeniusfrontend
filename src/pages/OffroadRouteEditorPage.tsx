@@ -6,6 +6,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import styled from 'styled-components'
 import api from '../data/api'
 import { OFFROAD_MAP_STYLE } from '../map/osmStyle'
+import { DEFAULT_MAP_CENTER, getInitialMapLocation } from '../utils/mapInitialCenter'
 import { offroadMapTrackColors } from '../styles/theme'
 import {
   buildLineStringGeoJson3D,
@@ -81,76 +82,107 @@ export function OffroadRouteEditorPage() {
 
   useEffect(() => {
     if (!mapContainer.current || mapRef.current) return
-    const map = new maplibregl.Map({
-      container: mapContainer.current,
-      style: OFFROAD_MAP_STYLE,
-      center: [25.0, 45.9],
-      zoom: 10,
-      maxZoom: 17,
-    })
-    map.addControl(new maplibregl.NavigationControl(), 'top-right')
-    mapRef.current = map
 
-    const addSourceAndLayer = () => {
-      if (map.getSource('draw-line')) return
-      map.addSource('draw-line', {
-        type: 'geojson',
-        data: { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: [] } },
-      })
-      map.addLayer({
-        id: 'draw-line-casing',
-        type: 'line',
-        source: 'draw-line',
-        layout: { 'line-join': 'round', 'line-cap': 'round' },
-        paint: { 'line-color': '#ffffff', 'line-width': 7, 'line-opacity': 0.9 },
-      })
-      map.addLayer({
-        id: 'draw-line-layer',
-        type: 'line',
-        source: 'draw-line',
-        layout: { 'line-join': 'round', 'line-cap': 'round' },
-        paint: { 'line-color': '#1b5e3a', 'line-width': 5 },
-      })
-      map.addLayer({
-        id: 'draw-line-accent',
-        type: 'line',
-        source: 'draw-line',
-        layout: { 'line-join': 'round', 'line-cap': 'round' },
-        paint: { 'line-color': offroadMapTrackColors.line, 'line-width': 2.5, 'line-dasharray': [2, 1] },
-      })
-      map.addSource('draw-points', {
-        type: 'geojson',
-        data: { type: 'FeatureCollection', features: [] },
-      })
-      map.addLayer({
-        id: 'draw-points-layer',
-        type: 'circle',
-        source: 'draw-points',
-        paint: {
-          'circle-radius': 6,
-          'circle-color': offroadMapTrackColors.line,
-          'circle-stroke-width': 2,
-          'circle-stroke-color': offroadMapTrackColors.pointStroke,
-        },
-      })
-    }
+    let cancelled = false
 
-    if (map.loaded()) {
-      addSourceAndLayer()
-    } else {
-      map.on('load', addSourceAndLayer)
-    }
+    void (async () => {
+      const initial = await getInitialMapLocation()
+      if (cancelled || !mapContainer.current || mapRef.current) return
 
-    map.on('click', (e) => {
-      setPoints((prev) => {
-        const newPoint: [number, number] = [e.lngLat.lng, e.lngLat.lat]
-        return [...prev, newPoint]
+      const map = new maplibregl.Map({
+        container: mapContainer.current,
+        style: OFFROAD_MAP_STYLE,
+        center: initial?.center ?? DEFAULT_MAP_CENTER,
+        zoom: initial?.zoom ?? 10,
+        maxZoom: 17,
+        cooperativeGestures: true,
       })
-    })
+      map.addControl(new maplibregl.NavigationControl(), 'top-right')
+      mapRef.current = map
+
+      const addSourceAndLayer = () => {
+        if (map.getSource('draw-line')) return
+        map.addSource('draw-line', {
+          type: 'geojson',
+          data: { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: [] } },
+        })
+        map.addLayer({
+          id: 'draw-line-casing',
+          type: 'line',
+          source: 'draw-line',
+          layout: { 'line-join': 'round', 'line-cap': 'round' },
+          paint: { 'line-color': '#ffffff', 'line-width': 7, 'line-opacity': 0.9 },
+        })
+        map.addLayer({
+          id: 'draw-line-layer',
+          type: 'line',
+          source: 'draw-line',
+          layout: { 'line-join': 'round', 'line-cap': 'round' },
+          paint: { 'line-color': '#1b5e3a', 'line-width': 5 },
+        })
+        map.addLayer({
+          id: 'draw-line-accent',
+          type: 'line',
+          source: 'draw-line',
+          layout: { 'line-join': 'round', 'line-cap': 'round' },
+          paint: { 'line-color': offroadMapTrackColors.line, 'line-width': 2.5, 'line-dasharray': [2, 1] },
+        })
+        map.addSource('draw-points', {
+          type: 'geojson',
+          data: { type: 'FeatureCollection', features: [] },
+        })
+        map.addLayer({
+          id: 'draw-points-layer',
+          type: 'circle',
+          source: 'draw-points',
+          paint: {
+            'circle-radius': 6,
+            'circle-color': offroadMapTrackColors.line,
+            'circle-stroke-width': 2,
+            'circle-stroke-color': offroadMapTrackColors.pointStroke,
+          },
+        })
+      }
+
+      if (map.loaded()) {
+        addSourceAndLayer()
+      } else {
+        map.on('load', addSourceAndLayer)
+      }
+
+      map.on('click', (e) => {
+        setPoints((prev) => {
+          const newPoint: [number, number] = [e.lngLat.lng, e.lngLat.lat]
+          return [...prev, newPoint]
+        })
+      })
+    })()
 
     return () => {
-      map.remove()
+      cancelled = true
+      mapRef.current?.remove()
       mapRef.current = null
+    }
+  }, [])
+
+  useEffect(() => {
+    const el = mapContainer.current
+    const map = mapRef.current
+    if (!el || !map) return
+
+    const resize = () => map.resize()
+    const observer = new ResizeObserver(resize)
+    observer.observe(el)
+
+    const onVisible = (entries: IntersectionObserverEntry[]) => {
+      if (entries.some((e) => e.isIntersecting)) resize()
+    }
+    const visibilityObserver = new IntersectionObserver(onVisible, { threshold: 0.1 })
+    visibilityObserver.observe(el)
+
+    return () => {
+      observer.disconnect()
+      visibilityObserver.disconnect()
     }
   }, [])
 
@@ -382,7 +414,7 @@ export function OffroadRouteEditorPage() {
         </EditorSidebar>
 
         <EditorMapWrap>
-          <EditorMap ref={mapContainer} />
+          <EditorMap ref={mapContainer} data-lenis-prevent />
         </EditorMapWrap>
       </EditorLayout>
     </PageSection>
@@ -449,10 +481,11 @@ const EditorLayout = styled.div`
   display: grid;
   grid-template-columns: 340px 1fr;
   gap: ${({ theme }) => theme.spacing.md};
-  min-height: 520px;
+  align-items: start;
 
   @media (max-width: ${({ theme }) => theme.breakpoints.tablet}) {
     grid-template-columns: 1fr;
+    gap: ${({ theme }) => theme.spacing.lg};
   }
 `
 
@@ -460,6 +493,10 @@ const EditorSidebar = styled.aside`
   display: flex;
   flex-direction: column;
   gap: ${({ theme }) => theme.spacing.md};
+
+  @media (max-width: ${({ theme }) => theme.breakpoints.tablet}) {
+    order: 2;
+  }
 `
 
 const HintText = styled.p`
@@ -643,11 +680,24 @@ const EditorMapWrap = styled.div`
   border-radius: ${({ theme }) => theme.radii.xl};
   overflow: hidden;
   border: 1px solid ${({ theme }) => theme.glass.border};
-  min-height: 400px;
+  min-height: 420px;
+  height: 520px;
+  position: sticky;
+  top: 1rem;
+
+  @media (max-width: ${({ theme }) => theme.breakpoints.tablet}) {
+    order: 1;
+    position: relative;
+    top: auto;
+    height: min(52dvh, 420px);
+    min-height: 280px;
+    flex-shrink: 0;
+    touch-action: pan-x pan-y pinch-zoom;
+  }
 `
 
 const EditorMap = styled.div`
   width: 100%;
   height: 100%;
-  min-height: 400px;
+  min-height: 280px;
 `

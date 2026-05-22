@@ -13,6 +13,7 @@ import { logout as logoutAction, setUser } from '../data/authSlice'
 import api from '../data/api'
 import type { Notification, User } from '../types/models'
 import { isFullscreenMapPath } from '../utils/mapRoutes'
+import { syncPushSubscriptionForCurrentUser } from '../utils/notifications'
 
 interface AuthStoreState {
   auth: {
@@ -191,6 +192,11 @@ export function AppLayout() {
       void syncUserFromProfileFetch()
     }
   }, [user, syncUserFromProfileFetch])
+
+  useEffect(() => {
+    if (!user?.id) return
+    void syncPushSubscriptionForCurrentUser()
+  }, [user?.id])
 
   useEffect(() => {
     if (!user) return

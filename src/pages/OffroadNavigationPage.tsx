@@ -23,6 +23,10 @@ import {
   trackAheadCoords,
   trackCheckpointFeatures,
 } from '../utils/trackProximity'
+import {
+  addUserLocationLayers,
+  setUserLocationOnMap,
+} from '../utils/mapUserLocation'
 
 const ARRIVAL_RADIUS_M = 30
 
@@ -37,10 +41,12 @@ export function OffroadNavigationPage() {
   const navigate = useNavigate()
   const containerRef = useRef<HTMLDivElement | null>(null)
   const mapRef = useRef<maplibregl.Map | null>(null)
-  const userMarkerRef = useRef<maplibregl.Marker | null>(null)
+  const skipNextMapEaseRef = useRef(false)
+  const hasFittedProximityViewRef = useRef(false)
 
   const [route, setRoute] = useState<OffroadRoute | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
+  const [gpsWaitTimedOut, setGpsWaitTimedOut] = useState(false)
 
   const trackPoints = useMemo(
     () => (route ? lineStringToLngLatCoords(route.trackGeoJson) : []),
@@ -48,6 +54,19 @@ export function OffroadNavigationPage() {
   )
 
   const { position, error: geoError, supported } = useGeolocationWatch(Boolean(route))
+
+  const mapCenterMode = useMemo<'pending' | 'user' | 'track'>(() => {
+    if (!supported || geoError) return 'track'
+    if (position) return 'user'
+    if (gpsWaitTimedOut) return 'track'
+    return 'pending'
+  }, [supported, geoError, position, gpsWaitTimedOut])
+
+  useEffect(() => {
+    if (mapCenterMode !== 'pending') return
+    const timeout = window.setTimeout(() => setGpsWaitTimedOut(true), 5000)
+    return () => window.clearTimeout(timeout)
+  }, [mapCenterMode])
 
   const distanceToTrack = useMemo(() => {
     if (!position || trackPoints.length < 2) return null
@@ -96,6 +115,7 @@ export function OffroadNavigationPage() {
   useEffect(() => {
     if (!tripId || !routeId) return
     const load = async () => {
+      setGpsWaitTimedOut(false)
       try {
         const res = await api.get<{ routes: OffroadRoute[] }>(`api/OffroadTrip/get-offroad-trip/${tripId}`)
         const found = res.data.routes?.find((r) => r.id === Number(routeId))
@@ -127,14 +147,23 @@ export function OffroadNavigationPage() {
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current || trackPoints.length < 2) return
+    if (mapCenterMode === 'pending') return
 
     const [startLng, startLat] = trackPoints[0]
+    const useUserCenter = mapCenterMode === 'user' && position != null
+    const initialCenter: [number, number] = useUserCenter
+      ? [position.lng, position.lat]
+      : [startLng, startLat]
+    const initialZoom = useUserCenter ? 15 : 14
+
+    if (useUserCenter) skipNextMapEaseRef.current = true
+
     const map = new maplibregl.Map({
       container: containerRef.current,
       style: OFFROAD_MAP_STYLE,
-      center: [startLng, startLat],
-      zoom: 14,
-      pitch: 55,
+      center: initialCenter,
+      zoom: initialZoom,
+      pitch: useUserCenter ? 55 : 45,
       cooperativeGestures: true,
     })
     mapRef.current = map
@@ -168,47 +197,57 @@ export function OffroadNavigationPage() {
         data: trackCheckpointFeatures(trackPoints),
       })
       map.addLayer({
-        id: 'offroad-checkpoint-ring',
+        id: 'offroad-checkpoint-shadow',
         type: 'circle',
         source: 'offroad-checkpoints',
         paint: {
-          'circle-radius': 14,
-          'circle-color': '#ffffff',
-          'circle-opacity': 0.95,
+          'circle-radius': 24,
+          'circle-color': '#0d0f0d',
+          'circle-opacity': 0.92,
+          'circle-blur': 0.15,
         },
       })
       map.addLayer({
-        id: 'offroad-checkpoint-dot',
+        id: 'offroad-checkpoint-fill',
         type: 'circle',
         source: 'offroad-checkpoints',
         paint: {
-          'circle-radius': 9,
+          'circle-radius': 16,
           'circle-color': [
             'match',
             ['get', 'kind'],
             'start',
             '#17f702',
             'finish',
-            '#ef4444',
+            '#dc2626',
             offroadMapTrackColors.line,
           ],
-          'circle-stroke-width': 2,
-          'circle-stroke-color': '#0d0f0d',
+          'circle-stroke-width': 3,
+          'circle-stroke-color': '#f8faf8',
         },
       })
 
-      const bounds = new maplibregl.LngLatBounds()
-      trackPoints.forEach(([lng, lat]) => bounds.extend([lng, lat]))
-      map.fitBounds(bounds, { padding: 80, maxZoom: 15 })
+      addUserLocationLayers(map)
+      if (position) setUserLocationOnMap(map, position)
+
+      if (useUserCenter && position) {
+        const bounds = new maplibregl.LngLatBounds()
+        bounds.extend([position.lng, position.lat])
+        trackPoints.forEach(([lng, lat]) => bounds.extend([lng, lat]))
+        map.fitBounds(bounds, { padding: 80, maxZoom: 15, duration: 0 })
+      } else {
+        const bounds = new maplibregl.LngLatBounds()
+        trackPoints.forEach(([lng, lat]) => bounds.extend([lng, lat]))
+        map.fitBounds(bounds, { padding: 80, maxZoom: 15 })
+      }
     })
 
     return () => {
-      userMarkerRef.current?.remove()
-      userMarkerRef.current = null
       map.remove()
       mapRef.current = null
+      skipNextMapEaseRef.current = false
     }
-  }, [trackPoints])
+  }, [trackPoints, mapCenterMode, position])
 
   useEffect(() => {
     const map = mapRef.current
@@ -231,22 +270,35 @@ export function OffroadNavigationPage() {
 
   useEffect(() => {
     const map = mapRef.current
+    if (!map || !position) return
+    setUserLocationOnMap(map, position)
+  }, [position])
+
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !position || canStart || trackPoints.length < 2) return
+    if (hasFittedProximityViewRef.current) return
+    hasFittedProximityViewRef.current = true
+    const bounds = new maplibregl.LngLatBounds()
+    bounds.extend([position.lng, position.lat])
+    trackPoints.forEach(([lng, lat]) => bounds.extend([lng, lat]))
+    map.fitBounds(bounds, { padding: 80, maxZoom: 15, duration: 500 })
+  }, [position, canStart, trackPoints])
+
+  useEffect(() => {
+    const map = mapRef.current
     if (!map || !position || !canStart) return
 
     const lngLat: [number, number] = [position.lng, position.lat]
-    if (!userMarkerRef.current) {
-      const el = document.createElement('div')
-      el.className = 'user-waze-dot'
-      userMarkerRef.current = new maplibregl.Marker(el).setLngLat(lngLat).addTo(map)
+    if (skipNextMapEaseRef.current) {
+      skipNextMapEaseRef.current = false
     } else {
-      userMarkerRef.current.setLngLat(lngLat)
+      map.easeTo({
+        center: lngLat,
+        bearing: position.heading ?? map.getBearing(),
+        duration: 800,
+      })
     }
-
-    map.easeTo({
-      center: lngLat,
-      bearing: position.heading ?? map.getBearing(),
-      duration: 800,
-    })
   }, [position, canStart])
 
   if (loadError) {
@@ -469,21 +521,26 @@ const NavStatPill = styled.div`
 const CheckpointPill = styled.div<{ $kind: 'start' | 'finish' }>`
   display: flex;
   align-items: center;
-  gap: 0.35rem;
-  padding: 0.4rem 0.8rem;
+  gap: 0.4rem;
+  padding: 0.45rem 0.9rem;
   border-radius: 20px;
   font-size: 0.85rem;
-  font-weight: 700;
-  background: ${({ $kind }) =>
-    $kind === 'start' ? 'rgba(23, 247, 2, 0.12)' : 'rgba(239, 68, 68, 0.12)'};
-  color: ${({ $kind }) => ($kind === 'start' ? '#5cf752' : '#f87171')};
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  background: ${({ $kind }) => ($kind === 'start' ? '#145214' : '#7f1d1d')};
+  color: #f8faf8;
+  border: 2px solid #0d0f0d;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.45);
 
   &::before {
     content: '';
-    width: 8px;
-    height: 8px;
+    width: 10px;
+    height: 10px;
     border-radius: 50%;
     background: ${({ $kind }) => ($kind === 'start' ? '#17f702' : '#ef4444')};
+    border: 2px solid #f8faf8;
+    flex-shrink: 0;
   }
 `
 

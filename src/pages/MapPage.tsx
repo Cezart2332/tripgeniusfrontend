@@ -12,6 +12,7 @@ import { subscribeForNotifications } from "../utils/notifications"
 import { OSM_STYLE } from "../map/osmStyle"
 import { createMarkerElement, getPoiColor } from "../utils/mapMarkers"
 import { prefetchWorldBase, isWorldMapCached } from "../utils/mapTileCache"
+import { DEFAULT_MAP_CENTER, getInitialMapLocation } from "../utils/mapInitialCenter"
 import type { User } from "../types/models"
 
 interface AuthStoreState {
@@ -64,55 +65,102 @@ export function MapPage() {
     }, [user])
 
     useEffect(() => {
-        if (!user || !mapContainer.current) return;
+        if (!user || !mapContainer.current) return
 
-        map.current = new maplibregl.Map({
-            container: mapContainer.current,
-            style: OSM_STYLE,
-            center: [12.4534, 41.9029],
-            zoom: 14,
-            cooperativeGestures: true
-        });
+        let cancelled = false
+        let watchId = 0
 
-        map.current.addControl(new maplibregl.NavigationControl(), 'bottom-right');
-        setMapInstance(map.current);
+        const reverseGeocode = (lat: number, lng: number) => {
+            fetch(
+                `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`
+            )
+                .then((res) => res.json())
+                .then((data) => {
+                    if (cancelled) return
+                    if (data.display_name) {
+                        const parts = data.display_name.split(',')
+                        setCurrentAddress(parts[0] + (parts[1] ? ', ' + parts[1] : ''))
+                    }
+                })
+                .catch(() => {
+                    if (!cancelled) setCurrentAddress('Current location')
+                })
+        }
 
-        const watchId = navigator.geolocation.watchPosition((position) => {
-            const coords: [number, number] = [position.coords.longitude, position.coords.latitude];
-            setUserLocation([position.coords.latitude, position.coords.longitude]);
-
-            if (map.current) {
-                if (!userMarker.current) {
-                    const el = document.createElement('div');
-                    el.className = 'user-dot-marker';
-                    userMarker.current = new maplibregl.Marker({ element: el })
-                        .setLngLat(coords)
-                        .addTo(map.current);
-                } else {
-                    userMarker.current.setLngLat(coords);
-                }
-
-                if (!hasAutoCentered.current) {
-                    map.current.flyTo({ center: coords, zoom: 15 });
-                    hasAutoCentered.current = true;
-                    fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${position.coords.latitude}&lon=${position.coords.longitude}`)
-                        .then(res => res.json())
-                        .then(data => {
-                            if (data.display_name) {
-                                const parts = data.display_name.split(',');
-                                setCurrentAddress(parts[0] + (parts[1] ? ', ' + parts[1] : ''));
-                            }
-                        })
-                        .catch(() => setCurrentAddress("Current Location"));
-                }
+        const placeUserMarker = (lng: number, lat: number) => {
+            if (!map.current) return
+            const coords: [number, number] = [lng, lat]
+            if (!userMarker.current) {
+                const el = document.createElement('div')
+                el.className = 'user-dot-marker'
+                userMarker.current = new maplibregl.Marker({ element: el })
+                    .setLngLat(coords)
+                    .addTo(map.current)
+            } else {
+                userMarker.current.setLngLat(coords)
             }
-        });
+        }
+
+        void (async () => {
+            const initial = await getInitialMapLocation()
+            if (cancelled || !mapContainer.current) return
+
+            const center = initial?.center ?? DEFAULT_MAP_CENTER
+            const zoom = initial?.zoom ?? 14
+
+            if (initial) {
+                setUserLocation([initial.lat, initial.lng])
+                hasAutoCentered.current = true
+                reverseGeocode(initial.lat, initial.lng)
+            } else {
+                setCurrentAddress('Location unavailable')
+            }
+
+            map.current = new maplibregl.Map({
+                container: mapContainer.current,
+                style: OSM_STYLE,
+                center,
+                zoom,
+                cooperativeGestures: true,
+            })
+
+            map.current.addControl(new maplibregl.NavigationControl(), 'bottom-right')
+            setMapInstance(map.current)
+
+            if (initial) {
+                map.current.once('load', () => placeUserMarker(initial.lng, initial.lat))
+            }
+
+            if (!navigator.geolocation) return
+
+            watchId = navigator.geolocation.watchPosition(
+                (position) => {
+                    const lng = position.coords.longitude
+                    const lat = position.coords.latitude
+                    setUserLocation([lat, lng])
+                    placeUserMarker(lng, lat)
+
+                    if (!map.current || hasAutoCentered.current) return
+                    map.current.jumpTo({ center: [lng, lat], zoom: 15 })
+                    hasAutoCentered.current = true
+                    reverseGeocode(lat, lng)
+                },
+                undefined,
+                { enableHighAccuracy: true, maximumAge: 2000, timeout: 15000 }
+            )
+        })()
 
         return () => {
-            navigator.geolocation.clearWatch(watchId);
-            map.current?.remove();
-        };
-    }, [user]);
+            cancelled = true
+            if (watchId) navigator.geolocation.clearWatch(watchId)
+            userMarker.current?.remove()
+            userMarker.current = null
+            map.current?.remove()
+            map.current = null
+            setMapInstance(null)
+            hasAutoCentered.current = false
+        }
+    }, [user])
 
     useEffect(() => {
         if (!user || !mapInstance) return;

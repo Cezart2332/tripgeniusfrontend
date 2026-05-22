@@ -1,5 +1,5 @@
 import * as signalR from '@microsoft/signalr'
-import { AnimatePresence, motion } from 'framer-motion'
+import { motion } from 'framer-motion'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   FiArrowLeft,
@@ -35,6 +35,7 @@ import { formatDisplayDateRange } from '../utils/dateDisplay'
 import { getTripStatusLabel } from '../utils/tripStatus'
 import { computeElevationStats, estimateDuration } from '../utils/coords'
 import { registerChatModerationEvents } from '../hooks/useChatModerationEvents'
+import { TabBar } from '../components/shared/TabBar'
 
 interface AuthStoreState {
   auth: { user: User | null; token: string | null }
@@ -455,35 +456,38 @@ export function OffroadTripPage() {
     { key: 'chat', label: 'Chat', icon: FiMessageSquare },
   ]
 
+  const tabItems = tabs.map((tab) => ({
+    key: tab.key,
+    label: tab.label,
+    icon: <tab.icon size={16} aria-hidden />,
+  }))
+
   return (
     <PageSection>
       <HeaderBar>
-        <BackLink to="/app/offroad">
-          <FiArrowLeft aria-hidden /> Back
-        </BackLink>
-        <OffroadTabs>
-          {tabs.map((tab) => (
-            <OffroadTab
-              key={tab.key}
-              type="button"
-              $active={activeTab === tab.key}
-              onClick={() => setActiveTab(tab.key)}
-            >
-              <tab.icon size={16} />
-              <span>{tab.label}</span>
-            </OffroadTab>
-          ))}
-        </OffroadTabs>
-        <HeaderActions>
-          <GhostBtnSm type="button" onClick={exportTripGpx} disabled={isExporting}>
-            <FiDownload aria-hidden /> {isExporting ? 'Exporting...' : 'GPX'}
-          </GhostBtnSm>
-          {isOwner && (
-            <PrimaryLinkSm to={`/app/offroad/${tripId}/route/new`}>
-              <FiPlus aria-hidden /> Route
-            </PrimaryLinkSm>
-          )}
-        </HeaderActions>
+        <ToolbarRow>
+          <BackLink to="/app/offroad">
+            <FiArrowLeft aria-hidden /> Back
+          </BackLink>
+          <HeaderActions>
+            <GhostBtnSm type="button" onClick={exportTripGpx} disabled={isExporting}>
+              <FiDownload aria-hidden /> {isExporting ? 'Exporting...' : 'GPX'}
+            </GhostBtnSm>
+            {isOwner && (
+              <PrimaryLinkSm to={`/app/offroad/${tripId}/route/new`}>
+                <FiPlus aria-hidden /> Route
+              </PrimaryLinkSm>
+            )}
+          </HeaderActions>
+        </ToolbarRow>
+        <TripTabStrip>
+          <TabBar
+            tabs={tabItems}
+            activeTab={activeTab}
+            onChange={(key) => setActiveTab(key as TripTab)}
+            variant="pill"
+          />
+        </TripTabStrip>
       </HeaderBar>
 
       <TripHero
@@ -527,14 +531,12 @@ export function OffroadTripPage() {
         </JoinBanner>
       )}
 
-      <AnimatePresence mode="wait">
-        {activeTab === 'overview' && (
+      {activeTab === 'overview' && (
           <TabContent
             key="overview"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
           >
             <CurrentDaySection>
               <CurrentDayHeader>
@@ -604,15 +606,14 @@ export function OffroadTripPage() {
               </OffroadStat>
             </OffroadStatsBar>
           </TabContent>
-        )}
+      )}
 
-        {activeTab === 'routes' && (
+      {activeTab === 'routes' && (
           <TabContent
             key="routes"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
           >
             <RoutesLayout>
               <RoutesSidebar>
@@ -690,15 +691,14 @@ export function OffroadTripPage() {
               </RoutesMapPanel>
             </RoutesLayout>
           </TabContent>
-        )}
+      )}
 
-        {activeTab === 'members' && (
+      {activeTab === 'members' && (
           <TabContent
             key="members"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
           >
             <MembersSection>
               <MembersHeader>
@@ -771,15 +771,14 @@ export function OffroadTripPage() {
               )}
             </MembersSection>
           </TabContent>
-        )}
+      )}
 
-        {activeTab === 'chat' && (
+      {activeTab === 'chat' && (
           <TabContent
             key="chat"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
           >
             <ChatPanel>
               {!isMember ? (
@@ -833,8 +832,7 @@ export function OffroadTripPage() {
               )}
             </ChatPanel>
           </TabContent>
-        )}
-      </AnimatePresence>
+      )}
 
       {isInviteModalOpen && (
         <ModalScrim onClick={() => setIsInviteModalOpen(false)}>
@@ -907,12 +905,30 @@ const LoadingState = styled.div`
 
 const HeaderBar = styled.div`
   display: flex;
-  align-items: center;
+  flex-direction: column;
   gap: ${({ theme }) => theme.spacing.md};
-  flex-wrap: wrap;
+  margin-bottom: ${({ theme }) => theme.spacing.lg};
+`
+
+const ToolbarRow = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: ${({ theme }) => theme.spacing.sm};
+  width: 100%;
+  min-width: 0;
+`
+
+const TripTabStrip = styled.div`
+  width: 100%;
+  min-width: 0;
 
   @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
-    gap: ${({ theme }) => theme.spacing.sm};
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    padding: ${({ theme }) => theme.spacing.xs} 0;
+    background: ${({ theme }) => theme.colors.surface[900]};
   }
 `
 
@@ -1061,62 +1077,11 @@ const PrimaryBtnSm = styled(PrimaryBtn)`
   min-width: 36px;
 `
 
-const OffroadTabs = styled.div`
-  display: flex;
-  gap: 0.25rem;
-  flex: 1 1 auto;
-  min-width: 0;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
-
-  &::-webkit-scrollbar {
-    display: none;
-  }
-`
-
-const OffroadTab = styled.button<{ $active: boolean }>`
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.5rem 1rem;
-  font-size: ${({ theme }) => theme.typography.bodySmall};
-  font-weight: ${({ $active }) => $active ? 700 : 500};
-  color: ${({ $active, theme }) => $active ? '#0a1e08' : theme.colors.text[380]};
-  background: ${({ $active, theme }) => $active ? `linear-gradient(135deg, ${theme.colors.green[580]}, ${theme.colors.green[500]})` : 'transparent'};
-  border: ${({ $active, theme }) => $active ? 'none' : `1px solid ${theme.colors.lineSoft}`};
-  border-radius: ${({ theme }) => theme.radii.pill};
-  cursor: pointer;
-  white-space: nowrap;
-  min-height: 40px;
-  flex-shrink: 0;
-  transition: all 0.2s ease;
-
-  &:hover {
-    color: ${({ $active, theme }) => $active ? '#0a1e08' : theme.colors.text[220]};
-  }
-
-  @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
-    padding: 0.5rem 0.75rem;
-
-    span {
-      display: none;
-    }
-  }
-`
-
 const HeaderActions = styled.div`
   display: flex;
   gap: 0.5rem;
   align-items: center;
-  margin-left: auto;
   flex-shrink: 0;
-
-  @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
-    width: 100%;
-    margin-left: 0;
-    justify-content: flex-end;
-  }
 `
 
 const TripHero = styled(motion.header)<{ $hasCover: boolean }>`

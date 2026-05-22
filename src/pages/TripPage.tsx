@@ -193,8 +193,8 @@ const getTripMemberStatusLabel = (status: unknown): string => {
   return 'Visitor'
 }
 
-const revealTransition = {
-  duration: 0.58,
+const tabContentTransition = {
+  duration: 0.2,
   ease: [0.22, 1, 0.36, 1] as const,
 }
 
@@ -1141,10 +1141,9 @@ function TripPageContent({ trip }: TripPageContentProps) {
   const renderOverview = () => (
     <motion.div
       key="tab-overview"
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -12 }}
-      transition={revealTransition}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={tabContentTransition}
     >
       <TripWorkspace>
         <TripMainContent>
@@ -1255,10 +1254,9 @@ function TripPageContent({ trip }: TripPageContentProps) {
   const renderTimeline = () => (
     <motion.div
       key="tab-timeline"
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -12 }}
-      transition={revealTransition}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={tabContentTransition}
     >
       <TripWorkspace>
         <TripMainContent>
@@ -1318,10 +1316,9 @@ function TripPageContent({ trip }: TripPageContentProps) {
   const renderTripMembers = () => (
     <motion.div
       key="tab-members"
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -12 }}
-      transition={revealTransition}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={tabContentTransition}
     >
       <ProfileSection>
         <MembersHead>
@@ -1416,10 +1413,9 @@ function TripPageContent({ trip }: TripPageContentProps) {
   const renderChat = () => (
     <motion.div
       key="tab-chat"
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -12 }}
-      transition={revealTransition}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={tabContentTransition}
     >
       <ChatContainer>
         <ChatThread>
@@ -1459,10 +1455,9 @@ function TripPageContent({ trip }: TripPageContentProps) {
   const renderSettings = () => (
     <motion.div
       key="tab-settings"
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -12 }}
-      transition={revealTransition}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={tabContentTransition}
     >
       <BuilderForm onSubmit={saveOwnerTripDetails}>
         <BuilderSection>
@@ -1533,10 +1528,9 @@ function TripPageContent({ trip }: TripPageContentProps) {
   const renderHistory = () => (
     <motion.div
       key="tab-history"
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -12 }}
-      transition={revealTransition}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={tabContentTransition}
     >
       <ProfileSection style={{ marginBottom: '2rem' }}>
         <div>
@@ -1598,14 +1592,12 @@ function TripPageContent({ trip }: TripPageContentProps) {
         />
       </TabBarWrapper>
 
-      <AnimatePresence mode="popLayout">
-        {activeTab === 'overview' && renderOverview()}
-        {activeTab === 'map' && renderTimeline()}
-        {activeTab === 'members' && renderTripMembers()}
-        {activeTab === 'chat' && renderChat()}
-        {activeTab === 'settings' && renderSettings()}
-        {activeTab === 'history' && renderHistory()}
-      </AnimatePresence>
+      {activeTab === 'overview' && renderOverview()}
+      {activeTab === 'map' && renderTimeline()}
+      {activeTab === 'members' && renderTripMembers()}
+      {activeTab === 'chat' && renderChat()}
+      {activeTab === 'settings' && renderSettings()}
+      {activeTab === 'history' && renderHistory()}
 
       <AnimatePresence>
         {isInviteModalOpen && (
@@ -1867,6 +1859,15 @@ const StaticChipSmall = styled(StaticChip)`
 
 const TabBarWrapper = styled.nav`
   margin-bottom: ${({ theme }) => theme.spacing['2xl']};
+
+  @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    margin-bottom: ${({ theme }) => theme.spacing.lg};
+    padding: ${({ theme }) => theme.spacing.xs} 0;
+    background: ${({ theme }) => theme.colors.surface[900]};
+  }
 `
 
 const TripWorkspace = styled.div`
