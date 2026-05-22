@@ -16,6 +16,8 @@ const PERSISTENT_CACHE_NAMES = new Set([
     'individual-trip-cache',
     'trip-messages-cache',
     'api-cache',
+    'offroad-trips-cache',
+    'offroad-route-cache',
     'attractions-cache',
     'routes-cache-v1',
     'images-cache',
@@ -116,6 +118,36 @@ registerRoute(
             new ExpirationPlugin({ maxEntries: 100, maxAgeSeconds: 60 * 60 * 24 * 7 }) // 7 days
         ]
     })
+)
+
+// ─── Offroad trip detail + list (GPX tracks in JSON) — Network First, 30 days ───
+registerRoute(
+    ({ url, request }) =>
+        request.method === 'GET' &&
+        /\/api\/OffroadTrip\/(get-offroad-trip\/|get-all-offroad-trips)/i.test(url.pathname),
+    new NetworkFirst({
+        cacheName: 'offroad-trips-cache',
+        networkTimeoutSeconds: 5,
+        plugins: [
+            new CacheableResponsePlugin({ statuses: [0, 200] }),
+            new ExpirationPlugin({ maxEntries: 80, maxAgeSeconds: 60 * 60 * 24 * 30 }),
+        ],
+    }),
+)
+
+// ─── Single offroad route (editor / GPX) — Network First ───────────────────────
+registerRoute(
+    ({ url, request }) =>
+        request.method === 'GET' &&
+        /\/api\/OffroadTrip\/route\//i.test(url.pathname),
+    new NetworkFirst({
+        cacheName: 'offroad-route-cache',
+        networkTimeoutSeconds: 5,
+        plugins: [
+            new CacheableResponsePlugin({ statuses: [0, 200] }),
+            new ExpirationPlugin({ maxEntries: 120, maxAgeSeconds: 60 * 60 * 24 * 30 }),
+        ],
+    }),
 )
 
 // ─── Trip messages — Network First ───────────────────────────────────────────

@@ -6,6 +6,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import styled from 'styled-components'
 import api from '../data/api'
 import { OFFROAD_MAP_STYLE } from '../map/osmStyle'
+import { offroadMapTrackColors } from '../styles/theme'
 import {
   buildLineStringGeoJson3D,
   computeElevationStats,
@@ -16,10 +17,9 @@ import { fetchElevationsForLngLatPoints } from '../utils/elevationService'
 import { getErrorMessage } from '../utils/errorMessage'
 import { parseGpxBlob } from '../utils/gpx'
 import {
+  cacheOffroadRouteForOffline,
   getOffroadRoute,
   getOffroadTrip,
-  mergeRouteIntoCachedTrip,
-  putOffroadRoute,
 } from '../utils/offroadTripCache'
 import type { OffroadRoute } from '../types/models'
 
@@ -60,8 +60,7 @@ export function OffroadRouteEditorPage() {
         if (cancelled) return
         const route = res.data
         hydrateFromRoute(route)
-        await putOffroadRoute(tripId, route)
-        await mergeRouteIntoCachedTrip(tripId, route)
+        await cacheOffroadRouteForOffline(tripId, route)
       } catch {
         let route = await getOffroadRoute(tripId, routeId)
         if (!route) {
@@ -70,7 +69,7 @@ export function OffroadRouteEditorPage() {
         }
         if (cancelled || !route) return
         hydrateFromRoute(route)
-        await putOffroadRoute(tripId, route)
+        await cacheOffroadRouteForOffline(tripId, route)
       }
     }
 
@@ -117,7 +116,7 @@ export function OffroadRouteEditorPage() {
         type: 'line',
         source: 'draw-line',
         layout: { 'line-join': 'round', 'line-cap': 'round' },
-        paint: { 'line-color': '#c9a227', 'line-width': 2.5, 'line-dasharray': [2, 1] },
+        paint: { 'line-color': offroadMapTrackColors.line, 'line-width': 2.5, 'line-dasharray': [2, 1] },
       })
       map.addSource('draw-points', {
         type: 'geojson',
@@ -127,7 +126,12 @@ export function OffroadRouteEditorPage() {
         id: 'draw-points-layer',
         type: 'circle',
         source: 'draw-points',
-        paint: { 'circle-radius': 6, 'circle-color': '#c9a227', 'circle-stroke-width': 2, 'circle-stroke-color': '#1a1408' },
+        paint: {
+          'circle-radius': 6,
+          'circle-color': offroadMapTrackColors.line,
+          'circle-stroke-width': 2,
+          'circle-stroke-color': offroadMapTrackColors.pointStroke,
+        },
       })
     }
 
@@ -209,8 +213,7 @@ export function OffroadRouteEditorPage() {
     setSaving(true)
     try {
       const res = await api.post<OffroadRoute>('api/OffroadTrip/import-route-gpx', form)
-      await putOffroadRoute(tripId!, res.data)
-      await mergeRouteIntoCachedTrip(tripId!, res.data)
+      await cacheOffroadRouteForOffline(tripId!, res.data)
       navigate(`/app/offroad/${tripId}`)
     } catch (err) {
       setError(getErrorMessage(err))
@@ -253,8 +256,7 @@ export function OffroadRouteEditorPage() {
         ? await api.post<OffroadRoute>('api/OffroadTrip/add-route', payload)
         : await api.patch<OffroadRoute>('api/OffroadTrip/update-route', { ...payload, id: Number(routeId) })
       const saved = res.data
-      await putOffroadRoute(tripId!, saved)
-      await mergeRouteIntoCachedTrip(tripId!, saved)
+      await cacheOffroadRouteForOffline(tripId!, saved)
       navigate(`/app/offroad/${tripId}`)
     } catch (err) {
       setError(getErrorMessage(err))

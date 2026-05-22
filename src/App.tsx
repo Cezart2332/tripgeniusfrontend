@@ -22,6 +22,7 @@ import { CreateOffroadTripPage } from './pages/CreateOffroadTripPage'
 import { OffroadTripPage } from './pages/OffroadTripPage'
 import { OffroadRouteEditorPage } from './pages/OffroadRouteEditorPage'
 import { AiOffroadPlannerPage } from './pages/AiOffroadPlannerPage'
+import { OffroadNavigationPage } from './pages/OffroadNavigationPage'
 import { isReallyOnline, flushQueue } from './data/api'
 
 function App() {
@@ -62,6 +63,7 @@ function App() {
       </Route>
 
       <Route path="/navigation/:tripId/:day" element={<NavigationPage />} />
+      <Route path="/offroad-navigation/:tripId/:routeId" element={<OffroadNavigationPage />} />
       <Route path="/map" element={<MapPage />} />
 
       <Route path="*" element={<Navigate replace to="/" />} />

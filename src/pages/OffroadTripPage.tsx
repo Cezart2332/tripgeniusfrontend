@@ -23,9 +23,14 @@ import { useSelector } from 'react-redux'
 import api from '../data/api'
 import type { ChatMessage, OffroadTrip, User, OffroadRoute, MemberRole, TripMember } from '../types/models'
 import { OffroadRouteMap } from '../components/OffroadRouteMap'
+import { OffroadTrackStartBar } from '../components/offroad/OffroadTrackStartBar'
 import { getErrorMessage } from '../utils/errorMessage'
 import { downloadBlob } from '../utils/gpx'
-import { putOffroadTrip, getOffroadTrip, putOffroadRoute, deleteOffroadRoute } from '../utils/offroadTripCache'
+import {
+  cacheOffroadTripForOffline,
+  getOffroadTrip,
+  deleteOffroadRoute,
+} from '../utils/offroadTripCache'
 import { formatDisplayDateRange } from '../utils/dateDisplay'
 import { getTripStatusLabel } from '../utils/tripStatus'
 import { computeElevationStats, estimateDuration } from '../utils/coords'
@@ -194,11 +199,7 @@ export function OffroadTripPage() {
         const res = await api.get(`api/OffroadTrip/get-offroad-trip/${tripId}`)
         if (active) {
           setTrip(res.data)
-          await putOffroadTrip(res.data)
-          const routes = res.data.routes as OffroadRoute[] | undefined
-          if (routes?.length) {
-            await Promise.all(routes.map((r) => putOffroadRoute(tripId, r)))
-          }
+          await cacheOffroadTripForOffline(res.data)
         }
       } catch {
         const cached = await getOffroadTrip(tripId)
@@ -306,7 +307,7 @@ export function OffroadTripPage() {
     setTrip((t) => {
       if (!t) return t
       const next = { ...t, routes: t.routes.filter((r) => r.id !== routeId) }
-      void putOffroadTrip(next)
+      void cacheOffroadTripForOffline(next)
       void deleteOffroadRoute(tripId!, routeId)
       return next
     })
@@ -320,11 +321,7 @@ export function OffroadTripPage() {
       await api.post('api/OffroadTrip/membership-request', { tripId: Number(tripId) })
       const res = await api.get(`api/OffroadTrip/get-offroad-trip/${tripId}`)
       setTrip(res.data)
-      await putOffroadTrip(res.data)
-      const routes = res.data.routes as OffroadRoute[] | undefined
-      if (routes?.length) {
-        await Promise.all(routes.map((r) => putOffroadRoute(tripId, r)))
-      }
+      await cacheOffroadTripForOffline(res.data)
     } catch (err) {
       setJoinError(getErrorMessage(err))
     } finally {
@@ -564,6 +561,10 @@ export function OffroadTripPage() {
                     <RouteStatsBar route={currentRoute} />
                   </RouteMapBlock>
 
+                  {viewerParticipation === 'accepted' && tripId && (
+                    <OffroadTrackStartBar tripId={tripId} route={currentRoute} />
+                  )}
+
                   {currentRoute.note && (
                     <RouteNote>
                       <strong>Note:</strong> {currentRoute.note}
@@ -673,6 +674,9 @@ export function OffroadTripPage() {
                       </RouteMapShell>
                       <RouteStatsBar route={selectedRoute} />
                     </RouteMapBlock>
+                    {viewerParticipation === 'accepted' && tripId && (
+                      <OffroadTrackStartBar tripId={tripId} route={selectedRoute} />
+                    )}
                   </>
                 ) : (
                   <NoSelection>

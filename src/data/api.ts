@@ -1,6 +1,12 @@
 import axios, { type AxiosError } from 'axios';
 import { store } from "./store";
 import { setToken, logout } from './authSlice'
+import type { OffroadRoute, OffroadTrip } from '../types/models'
+import {
+    cacheOffroadRouteForOffline,
+    cacheOffroadTripForOffline,
+    putAllOffroadTrips,
+} from '../utils/offroadTripCache'
 
 const baseURL = import.meta.env.VITE_BASE_URL;
 
@@ -186,6 +192,19 @@ export async function updateCachedResponse(url: string, data: unknown) {
             await tripCache.put(fullUrl, makeResponse())
         }
 
+        if (
+            url.includes('/api/OffroadTrip/get-offroad-trip/') ||
+            url.includes('/api/OffroadTrip/get-all-offroad-trips')
+        ) {
+            const offroadCache = await caches.open('offroad-trips-cache')
+            await offroadCache.put(fullUrl, makeResponse())
+        }
+
+        if (/\/api\/OffroadTrip\/route\//i.test(url)) {
+            const offroadRouteCache = await caches.open('offroad-route-cache')
+            await offroadRouteCache.put(fullUrl, makeResponse())
+        }
+
         console.log(`[Cache Sync] Updated ${fullUrl} with optimistic data.`)
     } catch (err) {
         console.error('[Cache Sync] Failed to update cache:', err)
@@ -250,10 +269,35 @@ const processQueue = (error: unknown, token: string | null = null) => {
     failedQueue = [];
 };
 
+function syncOffroadResponseToOfflineCache(response: { config: { url?: string; method?: string }; data: unknown }) {
+    const method = (response.config.method ?? 'get').toLowerCase()
+    if (method !== 'get') return
+
+    const url = response.config.url ?? ''
+    if (url.includes('OffroadTrip/get-offroad-trip') && response.data && typeof response.data === 'object') {
+        void cacheOffroadTripForOffline(response.data as OffroadTrip)
+        void updateCachedResponse(url, response.data)
+        return
+    }
+
+    if (url.includes('OffroadTrip/get-all-offroad-trips') && Array.isArray(response.data)) {
+        void putAllOffroadTrips(response.data as OffroadTrip[])
+        void updateCachedResponse(url, response.data)
+        return
+    }
+
+    const routeMatch = url.match(/OffroadTrip\/route\/([^/]+)\/([^/?]+)/i)
+    if (routeMatch && response.data && typeof response.data === 'object') {
+        void cacheOffroadRouteForOffline(routeMatch[1], response.data as OffroadRoute)
+        void updateCachedResponse(url, response.data)
+    }
+}
+
 api.interceptors.response.use(
     (response) => {
         // Dacă o cerere reușește, înseamnă că suntem online, deci încercăm să golim coada.
         flushQueue()
+        syncOffroadResponseToOfflineCache(response)
         return response
     },
     async (error) => {

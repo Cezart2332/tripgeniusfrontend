@@ -32,6 +32,9 @@ declare module 'styled-components' {
         accentGlow: string
         line: string
         surface: string
+        track: string
+        trackSoft: string
+        trackPointStroke: string
       }
       danger: {
         500: string
@@ -136,6 +139,9 @@ const theme: DefaultTheme = {
       accentGlow: 'rgba(232, 200, 120, 0.35)',
       line: 'rgba(201, 162, 39, 0.38)',
       surface: 'rgba(28, 32, 24, 0.82)',
+      track: '#3b82f6',
+      trackSoft: 'rgba(59, 130, 246, 0.4)',
+      trackPointStroke: '#1e40af',
     },
     danger: {
       500: '#db4a5b',
@@ -214,5 +220,11 @@ const theme: DefaultTheme = {
     wide: '1600px',
   },
 }
+
+/** MapLibre paint colors for offroad GPS tracks (shared across map views). */
+export const offroadMapTrackColors = {
+  line: theme.colors.offroad.track,
+  pointStroke: theme.colors.offroad.trackPointStroke,
+} as const
 
 export default theme

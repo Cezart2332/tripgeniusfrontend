@@ -1,4 +1,5 @@
 import type { OffroadTrip, OffroadRoute } from '../types/models'
+import { prefetchMapTilesForTrack } from './mapTilePrefetch'
 
 const DB_NAME = 'offroad-trip-idb-cache'
 const DB_VERSION = 2
@@ -32,6 +33,36 @@ function openDB(): Promise<IDBDatabase> {
   })
 }
 
+/** Trip + every route (full GPX GeoJSON) + map tiles for offline navigation. */
+export async function cacheOffroadTripForOffline(trip: OffroadTrip): Promise<void> {
+  await putOffroadTrip(trip)
+  const tripKey = String(trip.id)
+  if (trip.routes?.length) {
+    await Promise.all(trip.routes.map((r) => putOffroadRoute(tripKey, r)))
+    void prefetchOffroadTilesForRoutes(trip.routes)
+  }
+}
+
+/** Single route row + merge into cached trip + tile prefetch (start + full track). */
+export async function cacheOffroadRouteForOffline(tripId: string, route: OffroadRoute): Promise<void> {
+  await putOffroadRoute(tripId, route)
+  await mergeRouteIntoCachedTrip(tripId, route)
+  void prefetchMapTilesForTrack(route.trackGeoJson, {
+    styles: ['topo', 'carto'],
+    prefetchStartZooms: [13, 14, 15, 16],
+  })
+}
+
+async function prefetchOffroadTilesForRoutes(routes: OffroadRoute[]): Promise<void> {
+  for (const route of routes) {
+    await prefetchMapTilesForTrack(route.trackGeoJson, {
+      styles: ['topo', 'carto'],
+      prefetchStartZooms: [13, 14, 15, 16],
+      maxTiles: 180,
+    })
+  }
+}
+
 export async function putOffroadTrip(trip: OffroadTrip): Promise<void> {
   try {
     const db = await openDB()
@@ -48,8 +79,24 @@ export async function putAllOffroadTrips(trips: OffroadTrip[]): Promise<void> {
     const tx = db.transaction(STORE_NAME, 'readwrite')
     const store = tx.objectStore(STORE_NAME)
     trips.forEach((t) => store.put({ ...t, _cachedAt: Date.now() }))
+    void prefetchOffroadTilesForTripsList(trips)
   } catch (err) {
     console.warn('[OffroadTripCache] putAll failed:', err)
+  }
+}
+
+/** Prefetch tiles for the first navigable route per trip (discovery list). */
+async function prefetchOffroadTilesForTripsList(trips: OffroadTrip[]): Promise<void> {
+  for (const trip of trips.slice(0, 12)) {
+    const route = trip.routes?.find((r) => r.trackGeoJson?.includes('coordinates'))
+    if (!route) continue
+    await prefetchMapTilesForTrack(route.trackGeoJson, {
+      styles: ['topo'],
+      minZoom: 9,
+      maxZoom: 13,
+      maxTiles: 80,
+      prefetchStartZooms: [13, 14],
+    })
   }
 }
 

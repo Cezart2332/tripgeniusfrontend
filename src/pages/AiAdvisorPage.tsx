@@ -861,7 +861,6 @@ export function AiAdvisorPage() {
     }
   }
 
-  /* eslint-disable react-hooks/set-state-in-effect -- reset chat UI when SignalR connection (re)mounts */
   useEffect(() => {
     if (!threadRef.current) {
       return
@@ -1002,7 +1001,6 @@ export function AiAdvisorPage() {
       connectionRef.current = null
     }
   }, [token, baseURL, dispatch, navigate])
-  /* eslint-enable react-hooks/set-state-in-effect */
 
   useEffect(() => {
     if (!token) {
@@ -1032,7 +1030,6 @@ export function AiAdvisorPage() {
     }
   }
 
-  /* eslint-disable react-hooks/set-state-in-effect -- scroll position sync after message stream updates */
   useEffect(() => {
     const thread = threadRef.current
     if (thread && messages.length > 0) {
@@ -1048,7 +1045,6 @@ export function AiAdvisorPage() {
       handleScroll()
     }
   }, [messages, isTyping])
-  /* eslint-enable react-hooks/set-state-in-effect */
 
   const handleSubmit = async (e?: FormEvent) => {
     if (e) e.preventDefault()

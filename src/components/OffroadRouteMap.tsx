@@ -2,7 +2,9 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import maplibregl from 'maplibre-gl'
 import type { OffroadRoute } from '../types/models'
 import { lineStringToLngLatCoords } from '../utils/coords'
+import { prefetchMapTilesForTrack } from '../utils/mapTilePrefetch'
 import { OFFROAD_MAP_STYLE } from '../map/osmStyle'
+import { offroadMapTrackColors } from '../styles/theme'
 import styled from 'styled-components'
 
 interface OffroadRouteMapProps {
@@ -110,7 +112,7 @@ export function OffroadRouteMap({ routes, selectedRouteId, height = '320px', int
         source: 'offroad-routes',
         layout: { 'line-join': 'round', 'line-cap': 'round' },
         paint: {
-          'line-color': '#c9a227',
+          'line-color': offroadMapTrackColors.line,
           'line-width': 2.5,
           'line-dasharray': [2, 1],
         },
@@ -130,6 +132,13 @@ export function OffroadRouteMap({ routes, selectedRouteId, height = '320px', int
     const map = mapRef.current
     if (!map || !mapReady) return
     applyRoutesToMap(map, routes)
+    for (const route of routes) {
+      void prefetchMapTilesForTrack(route.trackGeoJson, {
+        styles: ['topo'],
+        prefetchStartZooms: [13, 14, 15, 16],
+        maxTiles: 160,
+      })
+    }
   }, [routes, selectedRouteId, mapReady, applyRoutesToMap])
 
   return (
