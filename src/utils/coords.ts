@@ -1,8 +1,10 @@
 import type { GeoJsonLineString } from '../types/models'
 
 /** Valid GeoJSON placeholder when a route has no GPX/track yet (PostgreSQL jsonb rejects ""). */
-export const EMPTY_OFFROAD_TRACK_GEOJSON =
-  '{"type":"LineString","coordinates":[]}' satisfies GeoJsonLineString
+export const EMPTY_OFFROAD_TRACK_GEOJSON = JSON.stringify({
+  type: 'LineString',
+  coordinates: [],
+} satisfies GeoJsonLineString)
 
 export function parseLineString(trackGeoJson: string): GeoJsonLineString | null {
   try {
