@@ -339,9 +339,10 @@ export function CreateTripPage() {
       </BuilderSteps>
 
       <motion.form onSubmit={e => e.preventDefault()} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.58, ease: [0.22, 1, 0.36, 1] }}>
+        <StepViewport>
         <AnimatePresence mode="wait">
           {activeStep === 'details' && (
-            <motion.div key="details" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}>
+            <StepPanel key="details" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}>
               <BuilderSection>
                 <SectionHeading>Core Identity</SectionHeading>
                 <FormGroup style={{ marginTop: '2rem' }}>
@@ -491,11 +492,11 @@ export function CreateTripPage() {
                   }
                 }} />
               </BuilderSection>
-            </motion.div>
+            </StepPanel>
           )}
 
           {activeStep === 'timeline' && (
-            <motion.div key="timeline" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}>
+            <StepPanel key="timeline" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}>
               <TimelineFlow>
                 {formState.timeline.map((stop, i) => (
                   <TimelineDay key={i}>
@@ -656,11 +657,11 @@ export function CreateTripPage() {
               <CenteredGhostBtn type="button" onClick={() => setFormState(p => ({ ...p, timeline: [...p.timeline, createTimelineStopDraft(formState.timeline.length)] }))}>
                 <FiPlusCircle /> Extend Timeline
               </CenteredGhostBtn>
-            </motion.div>
+            </StepPanel>
           )}
 
           {activeStep === 'overview' && (
-            <motion.div key="overview" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}>
+            <StepPanel key="overview" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}>
               <BuilderSection style={{ textAlign: 'center' }}>
                 <CheckIcon />
                 <SectionHeading>Pre-Flight Check</SectionHeading>
@@ -692,14 +693,20 @@ export function CreateTripPage() {
                   ))}
                 </ChipRow>
               </BuilderSection>
-            </motion.div>
+            </StepPanel>
           )}
         </AnimatePresence>
+        </StepViewport>
 
         {error && <ErrorBanner>{error}</ErrorBanner>}
 
         <CreateActions>
-          {!isFirst && <GhostBtnLg type="button" disabled={isPublishingTrip} onClick={() => setActiveStep(builderSteps[activeIndex - 1].key)}>Previous Step</GhostBtnLg>}
+          {!isFirst && (
+            <GhostBtnLg type="button" disabled={isPublishingTrip} onClick={() => setActiveStep(builderSteps[activeIndex - 1].key)}>
+              <span className="label-full">Previous Step</span>
+              <span className="label-short">Back</span>
+            </GhostBtnLg>
+          )}
           {isLast ? (
             <PrimaryBtnLg type="button" onClick={handleCreate} $minWidth="240px" disabled={isPublishingTrip}>
               {isPublishingTrip ? 'Publishing...' : 'Publish Trip'}
@@ -812,6 +819,17 @@ const Eyebrow = styled.p`
   letter-spacing: 0.08em;
   color: ${({ theme }) => theme.colors.green[580]};
   font-weight: 600;
+`
+
+const StepViewport = styled.div`
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  isolation: isolate;
+`
+
+const StepPanel = styled(motion.div)`
+  width: 100%;
 `
 
 const BuilderSteps = styled.div`
@@ -1165,6 +1183,19 @@ const GhostBtnLg = styled(GhostBtn)`
   padding: 0.85rem 2rem;
   font-size: 1.05rem;
   min-height: 52px;
+
+  .label-short {
+    display: none;
+  }
+
+  @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
+    .label-full {
+      display: none;
+    }
+    .label-short {
+      display: inline;
+    }
+  }
 `
 
 const DangerBtn = styled.button`
@@ -1248,8 +1279,31 @@ const ErrorBanner = styled.p`
 const CreateActions = styled.div`
   margin-top: 3rem;
   display: flex;
-  gap: 1rem;
+  flex-wrap: wrap;
+  gap: 0.75rem;
   justify-content: center;
+  align-items: stretch;
+  width: 100%;
+  position: relative;
+  z-index: 5;
+  clear: both;
+
+  & > button {
+    flex: 1 1 12rem;
+    max-width: 100%;
+  }
+
+  @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
+    flex-direction: column;
+    align-items: stretch;
+    margin-top: 2rem;
+    padding-bottom: 0.5rem;
+
+    & > button {
+      width: 100%;
+      flex: 1 1 auto;
+    }
+  }
 `
 
 const PrimaryBtnLg = styled.button<{ $minWidth: string }>`
@@ -1261,7 +1315,6 @@ const PrimaryBtnLg = styled.button<{ $minWidth: string }>`
   border-radius: ${({ theme }) => theme.radii.pill};
   transition: all ${({ theme }) => theme.animation.duration.normal}s ${({ theme }) => theme.animation.easeOut.join(',')};
   min-height: 52px;
-  min-width: 44px;
   white-space: nowrap;
   text-decoration: none;
   line-height: 1;
@@ -1271,6 +1324,9 @@ const PrimaryBtnLg = styled.button<{ $minWidth: string }>`
   background: linear-gradient(135deg, ${({ theme }) => theme.colors.green[580]}, ${({ theme }) => theme.colors.green[500]});
   color: #0a1e08;
   box-shadow: ${({ theme }) => theme.shadows.glowGreen};
+  border: none;
+  cursor: pointer;
+  box-sizing: border-box;
 
   &:hover {
     background: linear-gradient(135deg, ${({ theme }) => theme.colors.green[500]}, ${({ theme }) => theme.colors.green[300]});
@@ -1279,6 +1335,11 @@ const PrimaryBtnLg = styled.button<{ $minWidth: string }>`
   }
   &:active { transform: translateY(0); }
   &:disabled { opacity: 0.5; transform: none; box-shadow: none; cursor: not-allowed; }
+
+  @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
+    width: 100%;
+    min-width: 0;
+  }
 `
 
 const CalendarHead = styled.div`

@@ -927,8 +927,17 @@ const TripTabStrip = styled.div`
     position: sticky;
     top: 0;
     z-index: 30;
-    padding: ${({ theme }) => theme.spacing.xs} 0;
-    background: ${({ theme }) => theme.colors.surface[900]};
+    width: 100vw;
+    max-width: 100vw;
+    margin-left: calc(50% - 50vw);
+    margin-right: calc(50% - 50vw);
+    padding: ${({ theme }) => theme.spacing.sm}
+      max(0.5rem, env(safe-area-inset-right, 0px))
+      ${({ theme }) => theme.spacing.sm}
+      max(0.5rem, env(safe-area-inset-left, 0px));
+    box-sizing: border-box;
+    background: ${({ theme }) => theme.colors.bg[980]};
+    border-bottom: 1px solid ${({ theme }) => theme.colors.lineSoft};
   }
 `
 

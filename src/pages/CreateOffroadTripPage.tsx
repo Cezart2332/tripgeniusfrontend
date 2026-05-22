@@ -255,14 +255,15 @@ export function CreateOffroadTripPage() {
       </BuilderStepsRow>
 
       <OffroadFormContainer onSubmit={e => e.preventDefault()} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+        <StepViewport>
         <AnimatePresence mode="wait">
           {activeStep === 'details' && (
-            <motion.div
+            <StepPanel
               key="details"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
             >
               <BuilderSection>
                 <SectionHeading><FiNavigation aria-hidden /> Core Identity</SectionHeading>
@@ -345,16 +346,16 @@ export function CreateOffroadTripPage() {
                   ))}
                 </OffroadTagGrid>
               </BuilderSection>
-            </motion.div>
+            </StepPanel>
           )}
 
           {activeStep === 'routes' && (
-            <motion.div
+            <StepPanel
               key="routes"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
             >
               <BuilderSection>
                 <RoutesHeader>
@@ -433,16 +434,16 @@ export function CreateOffroadTripPage() {
                   <FiPlusCircle /> Add another route
                 </CenteredGhostBtn>
               )}
-            </motion.div>
+            </StepPanel>
           )}
 
           {activeStep === 'overview' && (
-            <motion.div
+            <StepPanel
               key="overview"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
             >
               <BuilderSection style={{ textAlign: 'center' }}>
                 <CheckIcon />
@@ -501,9 +502,10 @@ export function CreateOffroadTripPage() {
                   ))}
                 </OffroadRouteSummaryList>
               </BuilderSection>
-            </motion.div>
+            </StepPanel>
           )}
         </AnimatePresence>
+        </StepViewport>
 
         <CreateActions>
           {!isFirst && (
@@ -635,6 +637,17 @@ const LeadText = styled.p`
   max-width: 480px;
   margin: 0.5rem auto 0;
   line-height: 1.6;
+`
+
+const StepViewport = styled.div`
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  isolation: isolate;
+`
+
+const StepPanel = styled(motion.div)`
+  width: 100%;
 `
 
 const BuilderStepsRow = styled.div`
@@ -901,13 +914,40 @@ const PrimaryBtnLg = styled(PrimaryBtn)<{ $minWidth: string }>`
   padding: 0.85rem 2rem;
   font-size: 1.05rem;
   min-height: 52px;
+  box-sizing: border-box;
+
+  @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
+    width: 100%;
+    min-width: 0;
+  }
 `
 
 const CreateActions = styled.div`
   margin-top: 2rem;
   display: flex;
-  gap: 1rem;
+  flex-wrap: wrap;
+  gap: 0.75rem;
   justify-content: center;
+  align-items: stretch;
+  width: 100%;
+  position: relative;
+  z-index: 5;
+  clear: both;
+
+  & > button {
+    flex: 1 1 12rem;
+    max-width: 100%;
+  }
+
+  @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
+    flex-direction: column;
+    align-items: stretch;
+
+    & > button {
+      width: 100%;
+      flex: 1 1 auto;
+    }
+  }
 `
 
 const CheckIcon = styled(FiCheckCircle).attrs({ size: 48 })`

@@ -16,7 +16,7 @@ interface TabBarProps {
   variant?: 'default' | 'pill'
 }
 
-const Wrapper = styled.div`
+const Wrapper = styled.div<{ $pill: boolean }>`
   width: 100%;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
@@ -24,21 +24,30 @@ const Wrapper = styled.div`
   touch-action: pan-x;
   scrollbar-width: none;
   -ms-overflow-style: none;
+  box-sizing: border-box;
 
   &::-webkit-scrollbar {
     display: none;
   }
+
+  ${({ $pill, theme }) =>
+    $pill &&
+    `
+    background: ${theme.colors.surface[900]};
+    border: 1px solid ${theme.colors.lineSoft};
+    border-radius: ${theme.radii.pill};
+    padding: ${theme.spacing.xs};
+  `}
 `
 
 const TabList = styled.div<{ $variant: 'default' | 'pill' }>`
   position: relative;
   display: flex;
-  gap: ${({ $variant }) => $variant === 'pill' ? '0.25rem' : '0'};
-  border-bottom: ${({ $variant, theme }) => $variant === 'default' ? `1px solid ${theme.colors.lineSoft}` : 'none'};
-  padding: ${({ $variant, theme }) => $variant === 'pill' ? theme.spacing.xs : '0'};
-  border-radius: ${({ $variant, theme }) => $variant === 'pill' ? theme.radii.pill : '0'};
-  background: ${({ $variant }) => $variant === 'pill' ? 'rgba(9, 14, 10, 0.75)' : 'transparent'};
-  border: ${({ $variant, theme }) => $variant === 'pill' ? `1px solid ${theme.colors.lineSoft}` : 'none'};
+  gap: ${({ $variant }) => ($variant === 'pill' ? '0.25rem' : '0')};
+  min-width: ${({ $variant }) => ($variant === 'pill' ? '100%' : 'auto')};
+  width: ${({ $variant }) => ($variant === 'pill' ? 'max-content' : '100%')};
+  border-bottom: ${({ $variant, theme }) =>
+    $variant === 'default' ? `1px solid ${theme.colors.lineSoft}` : 'none'};
 `
 
 const Tab = styled.button<{ $active: boolean; $variant: 'default' | 'pill' }>`
@@ -159,7 +168,7 @@ export function TabBar({ tabs, activeTab, onChange, variant = 'default' }: TabBa
   }
 
   return (
-    <Wrapper data-tab-wrapper>
+    <Wrapper $pill={isPill} data-tab-wrapper>
       <TabList $variant={variant} role="tablist">
         {!isPill && (
           <UnderlineIndicator
