@@ -579,7 +579,7 @@ const ScrollButton = styled.button`
 
   @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
     right: 1rem;
-    bottom: 100px;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 5.5rem);
   }
 `
 

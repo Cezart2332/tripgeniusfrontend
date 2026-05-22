@@ -5,7 +5,7 @@ import styled from 'styled-components'
 import { FiHome, FiMap, FiCpu, FiLogIn, FiMessageCircle, FiSettings } from 'react-icons/fi'
 import type { IconType } from 'react-icons'
 import { getAvatarUrl } from '../../utils/userUtils'
-import { isFullscreenMapPath } from '../../utils/mapRoutes'
+import { isAiAdvisorPath, isFullscreenMapPath } from '../../utils/mapRoutes'
 import type { User } from '../../types/models'
 
 interface AuthStoreState {
@@ -107,7 +107,7 @@ export function MobileBottomNav() {
   const user = useSelector((state: AuthStoreState) => state.auth.user)
   const location = useLocation()
 
-  if (isFullscreenMapPath(location.pathname)) return null
+  if (isFullscreenMapPath(location.pathname) || isAiAdvisorPath(location.pathname)) return null
 
   const items = user ? loggedInItems : guestItems
 

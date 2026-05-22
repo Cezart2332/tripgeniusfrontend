@@ -12,7 +12,7 @@ import { SplashScreen } from './layout/SplashScreen'
 import { logout as logoutAction, setUser } from '../data/authSlice'
 import api from '../data/api'
 import type { Notification, User } from '../types/models'
-import { isFullscreenMapPath } from '../utils/mapRoutes'
+import { isAiAdvisorPath, isFullscreenMapPath } from '../utils/mapRoutes'
 import { syncPushSubscriptionForCurrentUser } from '../utils/notifications'
 
 interface AuthStoreState {
@@ -76,10 +76,6 @@ function isRead(n: Notification): boolean {
   return Boolean(n.isRead ?? n.read ?? n.IsRead ?? n.Read)
 }
 
-function isAiRoute(pathname: string): boolean {
-  return pathname === '/app/ai' || pathname === '/ai'
-}
-
 export function AppLayout() {
   const location = useLocation()
   const navigate = useNavigate()
@@ -93,7 +89,7 @@ export function AppLayout() {
   const isSyncingUserRef = useRef(false)
   const hasAttemptedInit = useRef(false)
   const outlet = useOutlet()
-  const aiStandalone = isAiRoute(location.pathname)
+  const aiStandalone = isAiAdvisorPath(location.pathname)
   const mapFullscreen = isFullscreenMapPath(location.pathname)
 
   const syncUserFromProfileFetch = useCallback(async () => {
@@ -239,7 +235,6 @@ export function AppLayout() {
         >
           {outlet}
         </FullBleedMain>
-        <MobileBottomNav />
         <PWAInstallPopup
           show={showInstallPopup}
           isIos={isIos}
