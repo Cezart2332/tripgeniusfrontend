@@ -12,6 +12,7 @@ import { SplashScreen } from './layout/SplashScreen'
 import { logout as logoutAction, setUser } from '../data/authSlice'
 import api from '../data/api'
 import type { Notification, User } from '../types/models'
+import { isFullscreenMapPath } from '../utils/mapRoutes'
 
 interface AuthStoreState {
   auth: {
@@ -62,7 +63,7 @@ const FullBleedMain = styled(motion.main)`
 
   @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
     top: 0;
-    bottom: calc(3.5rem + env(safe-area-inset-bottom));
+    bottom: 0;
   }
 `
 
@@ -92,6 +93,7 @@ export function AppLayout() {
   const hasAttemptedInit = useRef(false)
   const outlet = useOutlet()
   const aiStandalone = isAiRoute(location.pathname)
+  const mapFullscreen = isFullscreenMapPath(location.pathname)
 
   const syncUserFromProfileFetch = useCallback(async () => {
     if (isSyncingUserRef.current) return
@@ -232,6 +234,28 @@ export function AppLayout() {
           {outlet}
         </FullBleedMain>
         <MobileBottomNav />
+        <PWAInstallPopup
+          show={showInstallPopup}
+          isIos={isIos}
+          onDismiss={dismissPopup}
+          onInstall={handleInstallClick}
+        />
+        <SplashScreen show={isAppInitializing} />
+      </>
+    )
+  }
+
+  if (mapFullscreen) {
+    return (
+      <>
+        <FullBleedMain
+          key={location.pathname}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.2 }}
+        >
+          {outlet}
+        </FullBleedMain>
         <PWAInstallPopup
           show={showInstallPopup}
           isIos={isIos}

@@ -741,11 +741,14 @@ export function OffroadTripModal({ trip, isOpen, onClose, onTripUpdate }: Offroa
   }
 
   const requestMembership = async () => {
-    if (!trip) return
+    if (!trip || !user?.id) return
     setIsJoining(true)
     setJoinError(null)
     try {
-      await api.post('api/OffroadTrip/membership-request', { tripId: Number(trip.id) })
+      await api.post('api/OffroadTrip/membership-request', {
+        tripId: Number(trip.id),
+        userId: user.id,
+      })
       const res = await api.get(`api/OffroadTrip/get-offroad-trip/${trip.id}`)
       onTripUpdate(res.data)
     } catch (err) {
@@ -760,8 +763,9 @@ export function OffroadTripModal({ trip, isOpen, onClose, onTripUpdate }: Offroa
     try {
       await api.patch('api/OffroadTrip/membership-response', {
         tripId: Number(trip.id),
-        memberId: Number(memberId),
-        accept,
+        invitedId: Number(memberId),
+        memberStatus: 'Requested',
+        action: accept ? 'accept' : 'decline',
       })
       const res = await api.get(`api/OffroadTrip/get-offroad-trip/${trip.id}`)
       onTripUpdate(res.data)
@@ -785,9 +789,9 @@ export function OffroadTripModal({ trip, isOpen, onClose, onTripUpdate }: Offroa
     if (!trip) return
     try {
       await api.patch('api/OffroadTrip/change-role', {
+        id: Number(memberId),
         tripId: Number(trip.id),
-        memberId: Number(memberId),
-        newRole,
+        role: newRole,
       })
       const res = await api.get(`api/OffroadTrip/get-offroad-trip/${trip.id}`)
       onTripUpdate(res.data)

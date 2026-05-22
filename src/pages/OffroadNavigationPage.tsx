@@ -20,6 +20,8 @@ import {
   hasNavigableTrack,
   nearestPointOnLngLatPolyline,
   remainingDistanceOnTrackMeters,
+  trackAheadCoords,
+  trackCheckpointFeatures,
 } from '../utils/trackProximity'
 
 const ARRIVAL_RADIUS_M = 30
@@ -65,6 +67,18 @@ export function OffroadNavigationPage() {
   const arrived = useMemo(
     () => canStart && remainingM != null && remainingM < ARRIVAL_RADIUS_M,
     [canStart, remainingM]
+  )
+
+  /** Full trail before navigation; only the path ahead once on the track. */
+  const visibleTrackCoords = useMemo((): [number, number][] => {
+    if (trackPoints.length < 2) return trackPoints
+    if (!canStart || !position) return trackPoints
+    return trackAheadCoords(position.lat, position.lng, trackPoints)
+  }, [trackPoints, canStart, position])
+
+  const checkpointData = useMemo(
+    () => trackCheckpointFeatures(trackPoints),
+    [trackPoints]
   )
 
   const hudInstruction = useMemo(() => {
@@ -126,17 +140,13 @@ export function OffroadNavigationPage() {
     mapRef.current = map
 
     map.on('load', () => {
-      const lineFeature = {
-        type: 'Feature' as const,
-        properties: {},
-        geometry: {
-          type: 'LineString' as const,
-          coordinates: trackPoints,
-        },
-      }
       map.addSource('offroad-track', {
         type: 'geojson',
-        data: { type: 'FeatureCollection', features: [lineFeature] },
+        data: {
+          type: 'Feature',
+          properties: {},
+          geometry: { type: 'LineString', coordinates: trackPoints },
+        },
       })
       map.addLayer({
         id: 'offroad-track-casing',
@@ -153,6 +163,40 @@ export function OffroadNavigationPage() {
         layout: { 'line-join': 'round', 'line-cap': 'round' },
       })
 
+      map.addSource('offroad-checkpoints', {
+        type: 'geojson',
+        data: trackCheckpointFeatures(trackPoints),
+      })
+      map.addLayer({
+        id: 'offroad-checkpoint-ring',
+        type: 'circle',
+        source: 'offroad-checkpoints',
+        paint: {
+          'circle-radius': 14,
+          'circle-color': '#ffffff',
+          'circle-opacity': 0.95,
+        },
+      })
+      map.addLayer({
+        id: 'offroad-checkpoint-dot',
+        type: 'circle',
+        source: 'offroad-checkpoints',
+        paint: {
+          'circle-radius': 9,
+          'circle-color': [
+            'match',
+            ['get', 'kind'],
+            'start',
+            '#17f702',
+            'finish',
+            '#ef4444',
+            offroadMapTrackColors.line,
+          ],
+          'circle-stroke-width': 2,
+          'circle-stroke-color': '#0d0f0d',
+        },
+      })
+
       const bounds = new maplibregl.LngLatBounds()
       trackPoints.forEach(([lng, lat]) => bounds.extend([lng, lat]))
       map.fitBounds(bounds, { padding: 80, maxZoom: 15 })
@@ -165,6 +209,25 @@ export function OffroadNavigationPage() {
       mapRef.current = null
     }
   }, [trackPoints])
+
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || trackPoints.length < 2) return
+
+    const trackSource = map.getSource('offroad-track') as maplibregl.GeoJSONSource | undefined
+    if (trackSource) {
+      trackSource.setData({
+        type: 'Feature',
+        properties: {},
+        geometry: { type: 'LineString', coordinates: visibleTrackCoords },
+      })
+    }
+
+    const checkpointSource = map.getSource('offroad-checkpoints') as maplibregl.GeoJSONSource | undefined
+    if (checkpointSource) {
+      checkpointSource.setData(checkpointData)
+    }
+  }, [visibleTrackCoords, checkpointData, trackPoints.length])
 
   useEffect(() => {
     const map = mapRef.current
@@ -251,6 +314,8 @@ export function OffroadNavigationPage() {
             {distanceToTrack != null && (
               <NavStatPill>{Math.round(distanceToTrack)} m from line</NavStatPill>
             )}
+            <CheckpointPill $kind="start">Start</CheckpointPill>
+            <CheckpointPill $kind="finish">Finish</CheckpointPill>
           </NavStatsRow>
         </NavHud>
       )}
@@ -399,6 +464,27 @@ const NavStatPill = styled.div`
   border-radius: 20px;
   font-size: 0.85rem;
   font-weight: 700;
+`
+
+const CheckpointPill = styled.div<{ $kind: 'start' | 'finish' }>`
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.4rem 0.8rem;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  background: ${({ $kind }) =>
+    $kind === 'start' ? 'rgba(23, 247, 2, 0.12)' : 'rgba(239, 68, 68, 0.12)'};
+  color: ${({ $kind }) => ($kind === 'start' ? '#5cf752' : '#f87171')};
+
+  &::before {
+    content: '';
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: ${({ $kind }) => ($kind === 'start' ? '#17f702' : '#ef4444')};
+  }
 `
 
 const ArrivalScreen = styled.div`

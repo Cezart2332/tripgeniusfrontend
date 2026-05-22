@@ -13,7 +13,6 @@ import { OSM_STYLE } from "../map/osmStyle"
 import { createMarkerElement, getPoiColor } from "../utils/mapMarkers"
 import { prefetchWorldBase, isWorldMapCached } from "../utils/mapTileCache"
 import type { User } from "../types/models"
-import { MobileBottomNav } from "../components/layout/MobileBottomNav"
 
 interface AuthStoreState {
     auth: {
@@ -266,8 +265,6 @@ export function MapPage() {
             <CenterUserBtn onClick={centerOnUser}>
                 <FiTarget size={24} />
             </CenterUserBtn>
-
-            <MobileBottomNav />
         </FullMapPage>
     )
 }
@@ -539,7 +536,7 @@ const CenterUserBtn = styled.button`
   &:hover { transform: scale(1.05); }
 
   @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
-    bottom: calc(75px + env(safe-area-inset-bottom)) !important;
+    bottom: calc(1.25rem + env(safe-area-inset-bottom)) !important;
     right: 1rem !important;
   }
 `

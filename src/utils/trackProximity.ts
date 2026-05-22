@@ -102,6 +102,51 @@ export function aheadVertexIndex(segmentIndex: number, pointCount: number, lookA
   return Math.min(segmentIndex + lookAhead, pointCount - 1)
 }
 
+/**
+ * Polyline from the user's nearest point on the track through the finish (excludes the part already traveled).
+ */
+export function trackAheadCoords(
+  lat: number,
+  lng: number,
+  points: [number, number][]
+): [number, number][] {
+  if (points.length < 2) return points
+
+  const nearest = nearestPointOnLngLatPolyline(lat, lng, points)
+  if (!nearest) return points
+
+  const ahead: [number, number][] = [[nearest.lng, nearest.lat]]
+  for (let i = nearest.segmentIndex + 1; i < points.length; i++) {
+    ahead.push(points[i])
+  }
+
+  if (ahead.length >= 2) return ahead
+
+  const end = points[points.length - 1]
+  if (ahead.length === 1) return [ahead[0], end]
+  return [points[points.length - 2], end]
+}
+
+export function trackCheckpointFeatures(points: [number, number][]) {
+  if (points.length < 2) return { type: 'FeatureCollection' as const, features: [] as never[] }
+
+  return {
+    type: 'FeatureCollection' as const,
+    features: [
+      {
+        type: 'Feature' as const,
+        properties: { kind: 'start' },
+        geometry: { type: 'Point' as const, coordinates: points[0] },
+      },
+      {
+        type: 'Feature' as const,
+        properties: { kind: 'finish' },
+        geometry: { type: 'Point' as const, coordinates: points[points.length - 1] },
+      },
+    ],
+  }
+}
+
 export function bearingDegrees(lat1: number, lng1: number, lat2: number, lng2: number): number {
   const φ1 = (lat1 * Math.PI) / 180
   const φ2 = (lat2 * Math.PI) / 180

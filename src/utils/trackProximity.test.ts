@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import { buildLineStringGeoJson } from './coords'
+import { lineStringToLngLatCoords } from './coords'
 import {
   OFFROAD_TRACK_START_PROXIMITY_M,
   canStartOffroadTrack,
   distanceToTrackMeters,
   haversineMeters,
+  trackAheadCoords,
 } from './trackProximity'
 
 describe('trackProximity', () => {
@@ -30,5 +32,15 @@ describe('trackProximity', () => {
     const a = haversineMeters(45, 25, 45.001, 25.001)
     const b = haversineMeters(45.001, 25.001, 45, 25)
     expect(a).toBeCloseTo(b, 5)
+  })
+
+  it('trackAheadCoords drops vertices behind the user', () => {
+    const points = lineStringToLngLatCoords(track)
+    const ahead = trackAheadCoords(45.002, 25.002, points)
+    expect(ahead.length).toBeGreaterThanOrEqual(2)
+    expect(ahead[0][0]).toBeCloseTo(25.002, 3)
+    expect(ahead[0][1]).toBeCloseTo(45.002, 3)
+    expect(ahead[ahead.length - 1]).toEqual(points[points.length - 1])
+    expect(ahead.length).toBeLessThan(points.length)
   })
 })

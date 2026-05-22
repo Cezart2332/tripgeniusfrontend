@@ -314,11 +314,14 @@ export function OffroadTripPage() {
   }
 
   const handleRequestToJoin = async () => {
-    if (!tripId || isJoining) return
+    if (!tripId || isJoining || !currentUser?.id) return
     setIsJoining(true)
     setJoinError(null)
     try {
-      await api.post('api/OffroadTrip/membership-request', { tripId: Number(tripId) })
+      await api.post('api/OffroadTrip/membership-request', {
+        tripId: Number(tripId),
+        userId: currentUser.id,
+      })
       const res = await api.get(`api/OffroadTrip/get-offroad-trip/${tripId}`)
       setTrip(res.data)
       await cacheOffroadTripForOffline(res.data)
@@ -379,8 +382,9 @@ export function OffroadTripPage() {
     try {
       await api.patch('api/OffroadTrip/membership-response', {
         tripId: Number(tripId),
-        invitedId: member.id,
-        action
+        invitedId: Number(member.id),
+        memberStatus: 'Requested',
+        action: action === 'Accepted' ? 'accept' : 'decline',
       })
       if (action === 'Accepted') {
         setMembers((prev) => prev.map((m) => (m.id === member.id ? { ...m, status: 'accepted' } : m)))
@@ -397,9 +401,9 @@ export function OffroadTripPage() {
     setIsUpdatingRoleMemberId(memberId)
     try {
       await api.patch('api/OffroadTrip/change-role', {
+        id: Number(memberId),
         tripId: Number(tripId),
-        memberId,
-        role: newRole
+        role: newRole,
       })
       setMembers((prev) => prev.map((m) => (m.id === memberId ? { ...m, role: newRole } : m)))
     } catch {
