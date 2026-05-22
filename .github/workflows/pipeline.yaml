@@ -132,12 +132,18 @@ jobs:
 
       - name: Start app container
         run: |
-          docker run -d --name app -p 8080:8080 cezarique/tripgenius:sha-${{ github.sha }}
+          docker run -d --name app -p 8080:80 cezarique/tripgenius:sha-${{ github.sha }}
 
           for i in {1..30}; do
-            curl -sf http://localhost:8080 && break
+            if curl -sf http://localhost:8080/health; then
+              echo "App ready on http://localhost:8080"
+              exit 0
+            fi
             sleep 2
           done
+          echo "Container failed to become ready"
+          docker logs app
+          exit 1
 
       - name: Run ZAP baseline scan
         uses: zaproxy/action-baseline@v0.14.0
