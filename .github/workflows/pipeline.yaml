@@ -132,7 +132,7 @@ jobs:
 
       - name: Start app container
         run: |
-          docker run -d --name app -p 8080:80 cezarique/tripgenius:sha-${{ github.sha }}
+          docker run -d --name app -p 8080:8080 cezarique/tripgenius:sha-${{ github.sha }}
 
           for i in {1..30}; do
             curl -sf http://localhost:8080 && break
