@@ -5,10 +5,11 @@ export const glassMorphism = (strong = false) => css`
   border: 1px solid ${({ theme }) => theme.glass.border};
   backdrop-filter: blur(${({ theme }) => theme.glass.blur});
   -webkit-backdrop-filter: blur(${({ theme }) => theme.glass.blur});
+  box-shadow: inset 0 1px 0 rgba(247, 243, 232, 0.05);
 `
 
 export const textGradient = (theme: DefaultTheme, from?: string, to?: string) => css`
-  background: linear-gradient(135deg, ${from ?? theme.colors.text[100]} 30%, ${to ?? theme.colors.green[500]} 100%);
+  background: linear-gradient(140deg, ${from ?? theme.colors.text[100]} 20%, ${to ?? theme.colors.green[400]} 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -20,8 +21,12 @@ export const buttonBase = css`
   justify-content: center;
   gap: 0.5rem;
   font-weight: 600;
-  border-radius: ${({ theme }) => theme.radii.pill};
-  transition: all ${({ theme }) => theme.animation.duration.normal}s ${({ theme }) => theme.animation.easeOut.join(',')};
+  border-radius: ${({ theme }) => theme.radii.lg};
+  transition: background ${({ theme }) => theme.animation.duration.normal}s ${({ theme }) => theme.animation.easeOut.join(',')},
+    border-color ${({ theme }) => theme.animation.duration.normal}s ${({ theme }) => theme.animation.easeOut.join(',')},
+    color ${({ theme }) => theme.animation.duration.normal}s ${({ theme }) => theme.animation.easeOut.join(',')},
+    transform ${({ theme }) => theme.animation.duration.fast}s ease,
+    box-shadow ${({ theme }) => theme.animation.duration.normal}s ease;
   min-height: 44px;
   min-width: 44px;
   white-space: nowrap;
@@ -32,14 +37,14 @@ export const buttonBase = css`
 export const buttonPrimary = css`
   ${buttonBase}
   padding: 0.65rem 1.5rem;
-  background: linear-gradient(135deg, ${({ theme }) => theme.colors.green[580]}, ${({ theme }) => theme.colors.green[500]});
-  color: #0a1e08;
+  background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[400]}, ${({ theme }) => theme.colors.offroad.accent});
+  color: ${({ theme }) => theme.colors.bg[980]};
   box-shadow: ${({ theme }) => theme.shadows.glowGreen};
 
   &:hover {
-    background: linear-gradient(135deg, ${({ theme }) => theme.colors.green[500]}, ${({ theme }) => theme.colors.green[300]});
+    background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[300]}, ${({ theme }) => theme.colors.offroad.accent});
     transform: translateY(-1px);
-    box-shadow: 0 0 40px rgba(23, 247, 2, 0.3), 0 0 80px rgba(23, 247, 2, 0.1);
+    box-shadow: ${({ theme }) => theme.shadows.glowGold};
   }
 
   &:active {
@@ -59,16 +64,16 @@ export const buttonGhost = css`
   padding: 0.55rem 1.2rem;
   background: transparent;
   color: ${({ theme }) => theme.colors.text[220]};
-  border: 1px solid ${({ theme }) => theme.colors.lineSoft};
+  border: 1px solid ${({ theme }) => theme.glass.border};
 
   &:hover {
-    background: rgba(65, 162, 56, 0.08);
+    background: rgba(247, 243, 232, 0.06);
     border-color: ${({ theme }) => theme.colors.line};
     color: ${({ theme }) => theme.colors.text[100]};
   }
 
   &:active {
-    background: rgba(65, 162, 56, 0.12);
+    background: rgba(247, 243, 232, 0.09);
   }
 
   &:disabled {
@@ -107,9 +112,9 @@ export const buttonLarge = css`
 export const inputField = css`
   width: 100%;
   padding: 0.7rem 1rem;
-  border-radius: ${({ theme }) => theme.radii.lg};
-  border: 1px solid ${({ theme }) => theme.colors.lineSoft};
-  background: ${({ theme }) => theme.glass.bg};
+  border-radius: ${({ theme }) => theme.radii.md};
+  border: 1px solid ${({ theme }) => theme.glass.border};
+  background: ${({ theme }) => theme.colors.surface[900]};
   color: ${({ theme }) => theme.colors.text[100]};
   font-size: ${({ theme }) => theme.typography.body};
   transition: border-color ${({ theme }) => theme.animation.duration.fast}s ease;
@@ -123,7 +128,7 @@ export const inputField = css`
   &:focus {
     outline: none;
     border-color: ${({ theme }) => theme.colors.green[500]};
-    box-shadow: 0 0 0 3px rgba(23, 247, 2, 0.1);
+    box-shadow: 0 0 0 3px rgba(143, 179, 106, 0.14);
   }
 
   &:disabled {
@@ -134,13 +139,13 @@ export const inputField = css`
 
 export const cardSurface = css`
   ${glassMorphism()}
-  border-radius: ${({ theme }) => theme.radii.xl};
+  border-radius: ${({ theme }) => theme.radii.lg};
   padding: ${({ theme }) => theme.spacing.lg};
   transition: all ${({ theme }) => theme.animation.duration.normal}s ${({ theme }) => theme.animation.easeOut.join(',')};
 
   &:hover {
     border-color: ${({ theme }) => theme.colors.line};
-    box-shadow: ${({ theme }) => theme.shadows.glow};
+    box-shadow: ${({ theme }) => theme.shadows.md};
     transform: translateY(-1px);
   }
 `
@@ -148,9 +153,9 @@ export const cardSurface = css`
 export const skeletonShimmer = css`
   background: linear-gradient(
     90deg,
-    rgba(65, 162, 56, 0.06) 25%,
-    rgba(65, 162, 56, 0.12) 50%,
-    rgba(65, 162, 56, 0.06) 75%
+    rgba(247, 243, 232, 0.045) 25%,
+    rgba(247, 243, 232, 0.10) 50%,
+    rgba(247, 243, 232, 0.045) 75%
   );
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
@@ -170,7 +175,7 @@ export const glowingBorder = (color?: string) => css`
     inset: -1px;
     border-radius: inherit;
     padding: 1px;
-    background: linear-gradient(135deg, ${color ?? 'var(--green-500)'}, transparent 60%);
+    background: linear-gradient(140deg, ${color ?? 'rgba(143, 179, 106, 0.72)'}, transparent 62%);
     -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
     mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
     -webkit-mask-composite: xor;
@@ -194,7 +199,7 @@ export const showOnMobile = css`
 `
 
 export const pageContainer = css`
-  width: min(1200px, 100% - 2rem);
+  width: min(1320px, 100% - 2rem);
   margin: 0 auto;
   padding-top: ${({ theme }) => theme.spacing.lg};
   padding-bottom: ${({ theme }) => theme.spacing['3xl']};
@@ -203,7 +208,7 @@ export const pageContainer = css`
   gap: ${({ theme }) => theme.spacing.lg};
 
   @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
-    width: min(1200px, 100% - 1rem);
+    width: min(1320px, 100% - 1rem);
     padding-bottom: 7rem;
     gap: ${({ theme }) => theme.spacing.md};
   }

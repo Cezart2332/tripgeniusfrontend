@@ -13,7 +13,7 @@ const Overlay = styled.div`
   position: fixed;
   inset: 0;
   z-index: 2000;
-  background: rgba(0, 0, 0, 0.55);
+  background: rgba(5, 7, 4, 0.68);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   display: flex;
@@ -24,7 +24,9 @@ const Overlay = styled.div`
 
 const Card = styled(motion.div)`
   position: relative;
-  background: ${({ theme }) => theme.glass.bgStrong};
+  background:
+    linear-gradient(145deg, rgba(247, 243, 232, 0.055), rgba(247, 243, 232, 0.02)),
+    ${({ theme }) => theme.colors.surface[900]};
   border: 1px solid ${({ theme }) => theme.glass.border};
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
@@ -33,7 +35,7 @@ const Card = styled(motion.div)`
   max-width: 400px;
   width: 100%;
   text-align: center;
-  box-shadow: ${({ theme }) => theme.shadows.glowGreen}, ${({ theme }) => theme.shadows.xl};
+  box-shadow: ${({ theme }) => theme.shadows.xl};
 
   h2 {
     font-size: ${({ theme }) => theme.typography.h2};
@@ -54,18 +56,18 @@ const CloseBtn = styled.button`
   right: 0.75rem;
   width: 32px;
   height: 32px;
-  border-radius: ${({ theme }) => theme.radii.full};
+  border-radius: ${({ theme }) => theme.radii.md};
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(243, 255, 241, 0.06);
+  background: rgba(247, 243, 232, 0.06);
   color: ${({ theme }) => theme.colors.text[380]};
   border: none;
   cursor: pointer;
   transition: all 0.2s ease;
 
   &:hover {
-    background: rgba(243, 255, 241, 0.12);
+    background: rgba(247, 243, 232, 0.12);
     color: ${({ theme }) => theme.colors.text[100]};
   }
 `
@@ -75,7 +77,7 @@ const IconCircle = styled.div`
   height: 72px;
   border-radius: ${({ theme }) => theme.radii.full};
   background: ${({ theme }) => theme.glass.bg};
-  border: 2px solid ${({ theme }) => theme.colors.green[580]};
+  border: 1px solid ${({ theme }) => theme.colors.line};
   display: flex;
   align-items: center;
   justify-content: center;
@@ -143,15 +145,14 @@ const InstallBtn = styled.button`
   font-size: ${({ theme }) => theme.typography.body};
   font-weight: 700;
   border: none;
-  border-radius: ${({ theme }) => theme.radii.pill};
-  background: ${({ theme }) => theme.colors.green[580]};
-  color: ${({ theme }) => theme.colors.text[100]};
+  border-radius: ${({ theme }) => theme.radii.lg};
+  background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[400]}, ${({ theme }) => theme.colors.offroad.accent});
+  color: ${({ theme }) => theme.colors.bg[980]};
   cursor: pointer;
   transition: background 0.2s ease, box-shadow 0.2s ease;
 
   &:hover {
-    background: ${({ theme }) => theme.colors.green[700]};
-    box-shadow: ${({ theme }) => theme.shadows.glowGreen};
+    box-shadow: ${({ theme }) => theme.shadows.glowGold};
   }
 `
 
@@ -162,14 +163,14 @@ const LaterBtn = styled.button`
   font-size: ${({ theme }) => theme.typography.bodySmall};
   font-weight: 500;
   border: none;
-  border-radius: ${({ theme }) => theme.radii.pill};
-  background: rgba(243, 255, 241, 0.06);
+  border-radius: ${({ theme }) => theme.radii.lg};
+  background: rgba(247, 243, 232, 0.06);
   color: ${({ theme }) => theme.colors.text[380]};
   cursor: pointer;
   transition: all 0.15s ease;
 
   &:hover {
-    background: rgba(243, 255, 241, 0.12);
+    background: rgba(247, 243, 232, 0.12);
     color: ${({ theme }) => theme.colors.text[100]};
   }
 `

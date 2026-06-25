@@ -44,7 +44,7 @@ const BackButton = styled.button`
   align-items: center;
   gap: 0.5rem;
   padding: 0.55rem 1.2rem;
-  border-radius: ${({ theme }) => theme.radii.pill};
+  border-radius: ${({ theme }) => theme.radii.lg};
   background: transparent;
   border: 1px solid ${({ theme }) => theme.colors.lineSoft};
   color: ${({ theme }) => theme.colors.text[220]};
@@ -58,7 +58,7 @@ const BackButton = styled.button`
   transition: all 0.2s;
 
   &:hover {
-    background: rgba(65, 162, 56, 0.08);
+    background: rgba(143, 179, 106, 0.08);
     border-color: ${({ theme }) => theme.colors.line};
     color: ${({ theme }) => theme.colors.text[100]};
   }
@@ -170,9 +170,9 @@ const Chip = styled.button<{ $selected?: boolean }>`
   align-items: center;
   gap: 0.25rem;
   padding: 0.35rem 0.85rem;
-  border-radius: ${({ theme }) => theme.radii.pill};
+  border-radius: ${({ theme }) => theme.radii.lg};
   border: 1px solid ${({ $selected, theme }) => ($selected ? theme.colors.green[580] : theme.colors.lineSoft)};
-  background: ${({ $selected }) => ($selected ? 'rgba(65, 162, 56, 0.15)' : 'transparent')};
+  background: ${({ $selected }) => ($selected ? 'rgba(143, 179, 106, 0.15)' : 'transparent')};
   color: ${({ $selected, theme }) => ($selected ? theme.colors.green[300] : theme.colors.text[380])};
   font-size: ${({ theme }) => theme.typography.bodySmall};
   font-weight: ${({ $selected }) => ($selected ? 600 : 400)};
@@ -181,7 +181,7 @@ const Chip = styled.button<{ $selected?: boolean }>`
 
   &:hover {
     border-color: ${({ theme }) => theme.colors.green[580]};
-    background: rgba(65, 162, 56, 0.08);
+    background: rgba(143, 179, 106, 0.08);
   }
 `
 
@@ -194,17 +194,17 @@ const SubmitButton = styled.button`
   height: 60px;
   font-size: 1.2rem;
   font-weight: 700;
-  border-radius: ${({ theme }) => theme.radii.pill};
+  border-radius: ${({ theme }) => theme.radii.lg};
   border: none;
   cursor: pointer;
-  background: linear-gradient(135deg, ${({ theme }) => theme.colors.green[580]} 0%, ${({ theme }) => theme.colors.green[700]} 100%);
+  background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[580]} 0%, ${({ theme }) => theme.colors.green[700]} 100%);
   color: white;
   box-shadow: 0 10px 30px rgba(154, 198, 148, 0.2);
   margin-top: 1rem;
   transition: all 0.3s;
 
   &:hover:not(:disabled) {
-    background: linear-gradient(135deg, ${({ theme }) => theme.colors.green[500]} 0%, ${({ theme }) => theme.colors.green[580]} 100%);
+    background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[500]} 0%, ${({ theme }) => theme.colors.green[580]} 100%);
     box-shadow: 0 10px 40px rgba(154, 198, 148, 0.35);
     transform: translateY(-1px);
   }

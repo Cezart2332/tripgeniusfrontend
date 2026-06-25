@@ -30,68 +30,87 @@ const steps = [
 ]
 
 const Page = styled.section`
-  width: min(1000px, 100% - 2rem);
+  width: min(1240px, 100% - 2rem);
   margin: 0 auto;
-  padding: 3rem 0 6rem;
+  padding: 1.5rem 0 7rem;
   display: flex;
   flex-direction: column;
-  gap: 5rem;
+  gap: 6.5rem;
 
   @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
     padding: 1.5rem 0 4rem;
-    gap: 3.5rem;
+    gap: 4rem;
   }
 `
 
 const Hero = styled(motion.header)`
-  display: flex;
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(280px, 0.75fr);
   align-items: center;
-  justify-content: space-between;
-  gap: 3rem;
-  padding-top: 1rem;
+  gap: 4rem;
+  min-height: calc(100dvh - 7rem);
+  padding: 2rem 0 4rem;
+  overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 10% -8% auto 44%;
+    height: 70%;
+    pointer-events: none;
+    background: radial-gradient(circle, rgba(143, 179, 106, 0.18), transparent 68%);
+    opacity: 0.8;
+  }
 
   @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
-    flex-direction: column-reverse;
-    text-align: center;
-    gap: 2rem;
-    padding-top: 3rem;
+    grid-template-columns: 1fr;
+    gap: 2.5rem;
+    padding: 1rem 0 2rem;
+    min-height: auto;
   }
 `
 
 const HeroText = styled.div`
   flex: 1;
-  max-width: 540px;
+  max-width: 620px;
+  align-self: center;
+  position: relative;
+  z-index: 1;
 `
 
 const Eyebrow = styled.p`
   font-size: ${({ theme }) => theme.typography.eyebrow};
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: ${({ theme }) => theme.colors.green[500]};
+  letter-spacing: 0.08em;
+  color: ${({ theme }) => theme.colors.offroad.accent};
   margin-bottom: 0.75rem;
 `
 
 const HeroTitle = styled.h1`
-  font-size: clamp(2.2rem, 5vw, 3.4rem);
-  letter-spacing: -0.03em;
-  line-height: 1.08;
+  font-size: 4rem;
+  letter-spacing: 0;
+  line-height: 0.98;
   margin-bottom: 1rem;
   color: ${({ theme }) => theme.colors.text[100]};
 
   span {
-    background: linear-gradient(135deg, ${({ theme }) => theme.colors.green[500]}, ${({ theme }) => theme.colors.green[300]});
+    background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[300]}, ${({ theme }) => theme.colors.offroad.accent});
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
+  }
+
+  @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
+    font-size: 2.7rem;
   }
 `
 
 const Lead = styled.p`
   font-size: ${({ theme }) => theme.typography.body};
   color: ${({ theme }) => theme.colors.text[380]};
-  max-width: 440px;
-  line-height: 1.6;
+  max-width: 58ch;
   margin-bottom: 1.5rem;
 
   @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
@@ -117,9 +136,9 @@ const PrimaryLink = styled(Link)`
   align-items: center;
   gap: 0.5rem;
   padding: 0.75rem 1.8rem;
-  border-radius: ${({ theme }) => theme.radii.pill};
-  background: linear-gradient(135deg, ${({ theme }) => theme.colors.green[580]}, ${({ theme }) => theme.colors.green[500]});
-  color: #0a1e08;
+  border-radius: ${({ theme }) => theme.radii.lg};
+  background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[400]}, ${({ theme }) => theme.colors.offroad.accent});
+  color: ${({ theme }) => theme.colors.bg[980]};
   font-weight: 700;
   font-size: 0.95rem;
   text-decoration: none;
@@ -129,7 +148,7 @@ const PrimaryLink = styled(Link)`
 
   &:hover {
     transform: translateY(-1px);
-    box-shadow: 0 0 40px rgba(23, 247, 2, 0.25);
+    box-shadow: ${({ theme }) => theme.shadows.glowGold};
   }
 `
 
@@ -138,7 +157,7 @@ const GhostLink = styled(Link)`
   align-items: center;
   gap: 0.5rem;
   padding: 0.65rem 1.5rem;
-  border-radius: ${({ theme }) => theme.radii.pill};
+  border-radius: ${({ theme }) => theme.radii.lg};
   color: ${({ theme }) => theme.colors.text[220]};
   font-weight: 600;
   font-size: 0.925rem;
@@ -150,25 +169,32 @@ const GhostLink = styled(Link)`
 
   &:hover {
     border-color: ${({ theme }) => theme.colors.line};
-    background: rgba(65, 162, 56, 0.06);
+    background: rgba(247, 243, 232, 0.06);
     color: ${({ theme }) => theme.colors.text[100]};
   }
 `
 
 const HeroIllustration = styled.div`
-  flex-shrink: 0;
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  min-height: 24rem;
+  background:
+    radial-gradient(circle at 50% 42%, rgba(192, 163, 91, 0.24), transparent 12rem),
+    radial-gradient(circle at 60% 70%, rgba(143, 179, 106, 0.14), transparent 14rem);
 
   @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
-    width: 180px;
+    min-height: 14rem;
   }
 `
 
 const HeroSticker = styled.img`
   width: 100%;
-  max-width: 320px;
+  max-width: 360px;
   height: auto;
   opacity: 0.85;
-  filter: drop-shadow(0 8px 32px rgba(23, 247, 2, 0.12));
+  filter: drop-shadow(0 18px 42px rgba(5, 7, 4, 0.42));
 
   @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
     max-width: 200px;
@@ -176,8 +202,9 @@ const HeroSticker = styled.img`
 `
 
 const SectionHeader = styled.div`
-  text-align: center;
+  text-align: left;
   margin-bottom: 2.5rem;
+  max-width: 38rem;
 `
 
 const SectionTitle = styled.h2`
@@ -192,33 +219,47 @@ const SectionLead = styled.p`
 
 const FeatureGrid = styled(motion.section)`
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 1.5rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0;
+  border-top: 1px solid ${({ theme }) => theme.colors.lineSoft};
+  border-bottom: 1px solid ${({ theme }) => theme.colors.lineSoft};
 
   @media (max-width: ${({ theme }) => theme.breakpoints.tablet}) {
     grid-template-columns: 1fr;
-    max-width: 440px;
-    margin: 0 auto;
+    border-bottom: 0;
   }
 `
 
 const FeatureCard = styled(motion.article)`
   display: flex;
   flex-direction: column;
-  align-items: center;
-  text-align: center;
-  padding: 1.75rem 1.5rem;
-  background: ${({ theme }) => theme.glass.bg};
-  border: 1px solid ${({ theme }) => theme.glass.border};
-  backdrop-filter: blur(${({ theme }) => theme.glass.blur});
-  -webkit-backdrop-filter: blur(${({ theme }) => theme.glass.blur});
-  border-radius: ${({ theme }) => theme.radii.xl};
+  align-items: flex-start;
+  text-align: left;
+  padding: 2rem 2rem 2rem 0;
+  border-right: 1px solid ${({ theme }) => theme.colors.lineSoft};
   gap: 0.75rem;
-  transition: border-color 0.3s ease, transform 0.3s ease;
+  transition: color 0.3s ease, transform 0.3s ease;
+
+  &:not(:first-child) {
+    padding-left: 2rem;
+  }
+
+  &:last-child {
+    border-right: 0;
+  }
 
   &:hover {
-    border-color: ${({ theme }) => theme.colors.line};
     transform: translateY(-2px);
+  }
+
+  @media (max-width: ${({ theme }) => theme.breakpoints.tablet}) {
+    padding: 1.5rem 0;
+    border-right: 0;
+    border-bottom: 1px solid ${({ theme }) => theme.colors.lineSoft};
+
+    &:not(:first-child) {
+      padding-left: 0;
+    }
   }
 `
 
@@ -229,8 +270,8 @@ const FeatureIcon = styled.span`
   width: 48px;
   height: 48px;
   border-radius: ${({ theme }) => theme.radii.md};
-  background: rgba(23, 247, 2, 0.08);
-  color: ${({ theme }) => theme.colors.green[500]};
+  background: rgba(192, 163, 91, 0.12);
+  color: ${({ theme }) => theme.colors.offroad.accent};
   font-size: 1.3rem;
   margin-bottom: 0.25rem;
 `
@@ -254,31 +295,37 @@ const StepsWrap = styled(motion.section)`
 const StepsList = styled.div`
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 1.5rem;
+  gap: 0;
 
   @media (max-width: ${({ theme }) => theme.breakpoints.tablet}) {
     grid-template-columns: 1fr;
-    max-width: 440px;
-    margin: 0 auto;
   }
 `
 
 const StepCard = styled(motion.div)`
   display: flex;
   gap: 1rem;
-  padding: 1.5rem;
-  background: ${({ theme }) => theme.glass.bg};
-  border: 1px solid ${({ theme }) => theme.glass.border};
-  backdrop-filter: blur(${({ theme }) => theme.glass.blur});
-  -webkit-backdrop-filter: blur(${({ theme }) => theme.glass.blur});
-  border-radius: ${({ theme }) => theme.radii.xl};
+  padding: 1.5rem 1.5rem 1.5rem 0;
+  border-top: 1px solid ${({ theme }) => theme.colors.lineSoft};
+
+  &:not(:first-child) {
+    padding-left: 1.5rem;
+  }
+
+  @media (max-width: ${({ theme }) => theme.breakpoints.tablet}) {
+    padding: 1.25rem 0;
+
+    &:not(:first-child) {
+      padding-left: 0;
+    }
+  }
 `
 
 const StepNum = styled.span`
   font-size: 1.6rem;
   font-weight: 800;
-  letter-spacing: -0.02em;
-  color: ${({ theme }) => theme.colors.green[500]};
+  letter-spacing: 0;
+  color: ${({ theme }) => theme.colors.offroad.accent};
   line-height: 1;
   flex-shrink: 0;
   opacity: 0.6;
@@ -305,17 +352,16 @@ const CTAWrap = styled(motion.section)`
   align-items: center;
   justify-content: space-between;
   gap: 2rem;
-  padding: 2.5rem;
-  background: ${({ theme }) => theme.glass.bg};
-  border: 1px solid ${({ theme }) => theme.glass.border};
-  backdrop-filter: blur(${({ theme }) => theme.glass.blur});
-  -webkit-backdrop-filter: blur(${({ theme }) => theme.glass.blur});
-  border-radius: ${({ theme }) => theme.radii.xl};
+  padding: 3rem 0 0;
+  background:
+    linear-gradient(90deg, ${({ theme }) => theme.colors.lineSoft}, transparent) top left / 100% 1px no-repeat,
+    radial-gradient(circle at 80% 0%, rgba(143, 179, 106, 0.12), transparent 18rem);
 
   @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
     flex-direction: column;
-    text-align: center;
-    padding: 2rem 1.5rem;
+    text-align: left;
+    align-items: flex-start;
+    padding-top: 2rem;
   }
 `
 
@@ -352,8 +398,8 @@ const MiniCard = styled.div`
   align-items: center;
   gap: 0.5rem;
   padding: 0.5rem 0.85rem;
-  border-radius: ${({ theme }) => theme.radii.pill};
-  background: ${({ theme }) => theme.glass.bg};
+  border-radius: ${({ theme }) => theme.radii.md};
+  background: rgba(247, 243, 232, 0.055);
   border: 1px solid ${({ theme }) => theme.glass.border};
   color: ${({ theme }) => theme.colors.text[220]};
   font-size: ${({ theme }) => theme.typography.bodySmall};
@@ -361,7 +407,7 @@ const MiniCard = styled.div`
   white-space: nowrap;
 
   svg {
-    color: ${({ theme }) => theme.colors.green[500]};
+    color: ${({ theme }) => theme.colors.offroad.accent};
     font-size: 1rem;
   }
 `

@@ -217,7 +217,7 @@ export function OffroadNavigationPage() {
             'match',
             ['get', 'kind'],
             'start',
-            '#17f702',
+            '#8fb36a',
             'finish',
             '#dc2626',
             offroadMapTrackColors.line,
@@ -404,7 +404,7 @@ const BackLink = styled.button`
   color: #1a1408;
   font-weight: 700;
   padding: 0.65rem 1.25rem;
-  border-radius: ${({ theme }) => theme.radii.pill};
+  border-radius: ${({ theme }) => theme.radii.lg};
   cursor: pointer;
 `
 
@@ -538,7 +538,7 @@ const CheckpointPill = styled.div<{ $kind: 'start' | 'finish' }>`
     width: 10px;
     height: 10px;
     border-radius: 50%;
-    background: ${({ $kind }) => ($kind === 'start' ? '#17f702' : '#ef4444')};
+    background: ${({ $kind }) => ($kind === 'start' ? '#8fb36a' : '#ef4444')};
     border: 2px solid #f8faf8;
     flex-shrink: 0;
   }
@@ -574,6 +574,6 @@ const ArrivalCloseBtn = styled.button`
   color: #1a1408;
   font-weight: 700;
   padding: 0.85rem 2rem;
-  border-radius: ${({ theme }) => theme.radii.pill};
+  border-radius: ${({ theme }) => theme.radii.lg};
   cursor: pointer;
 `

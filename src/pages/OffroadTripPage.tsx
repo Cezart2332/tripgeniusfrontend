@@ -947,7 +947,7 @@ const BackLink = styled(Link)`
   justify-content: center;
   gap: 0.5rem;
   font-weight: 600;
-  border-radius: ${({ theme }) => theme.radii.pill};
+  border-radius: ${({ theme }) => theme.radii.lg};
   transition: all ${({ theme }) => theme.animation.duration.normal}s ${({ theme }) => theme.animation.easeOut.join(',')};
   min-height: 36px;
   min-width: 36px;
@@ -961,7 +961,7 @@ const BackLink = styled(Link)`
   border: 1px solid ${({ theme }) => theme.colors.lineSoft};
 
   &:hover {
-    background: rgba(65, 162, 56, 0.08);
+    background: rgba(143, 179, 106, 0.08);
     border-color: ${({ theme }) => theme.colors.line};
     color: ${({ theme }) => theme.colors.text[100]};
   }
@@ -973,7 +973,7 @@ const PrimaryLink = styled(Link)`
   justify-content: center;
   gap: 0.5rem;
   font-weight: 600;
-  border-radius: ${({ theme }) => theme.radii.pill};
+  border-radius: ${({ theme }) => theme.radii.lg};
   transition: all ${({ theme }) => theme.animation.duration.normal}s ${({ theme }) => theme.animation.easeOut.join(',')};
   min-height: 44px;
   min-width: 44px;
@@ -981,12 +981,12 @@ const PrimaryLink = styled(Link)`
   text-decoration: none;
   line-height: 1;
   padding: 0.65rem 1.5rem;
-  background: linear-gradient(135deg, ${({ theme }) => theme.colors.green[580]}, ${({ theme }) => theme.colors.green[500]});
-  color: #0a1e08;
+  background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[580]}, ${({ theme }) => theme.colors.green[500]});
+  color: #10120f;
   box-shadow: ${({ theme }) => theme.shadows.glowGreen};
 
   &:hover {
-    background: linear-gradient(135deg, ${({ theme }) => theme.colors.green[500]}, ${({ theme }) => theme.colors.green[300]});
+    background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[500]}, ${({ theme }) => theme.colors.green[300]});
     transform: translateY(-1px);
   }
 `
@@ -1004,7 +1004,7 @@ const GhostBtnSm = styled.button`
   justify-content: center;
   gap: 0.5rem;
   font-weight: 600;
-  border-radius: ${({ theme }) => theme.radii.pill};
+  border-radius: ${({ theme }) => theme.radii.lg};
   transition: all ${({ theme }) => theme.animation.duration.normal}s ${({ theme }) => theme.animation.easeOut.join(',')};
   min-height: 36px;
   min-width: 36px;
@@ -1020,7 +1020,7 @@ const GhostBtnSm = styled.button`
   max-width: 100%;
 
   &:hover {
-    background: rgba(65, 162, 56, 0.08);
+    background: rgba(143, 179, 106, 0.08);
     border-color: ${({ theme }) => theme.colors.line};
     color: ${({ theme }) => theme.colors.text[100]};
   }
@@ -1033,7 +1033,7 @@ const GhostLinkSm = styled(Link)`
   justify-content: center;
   gap: 0.5rem;
   font-weight: 600;
-  border-radius: ${({ theme }) => theme.radii.pill};
+  border-radius: ${({ theme }) => theme.radii.lg};
   transition: all ${({ theme }) => theme.animation.duration.normal}s ${({ theme }) => theme.animation.easeOut.join(',')};
   min-height: 36px;
   min-width: 36px;
@@ -1047,7 +1047,7 @@ const GhostLinkSm = styled(Link)`
   border: 1px solid ${({ theme }) => theme.colors.lineSoft};
 
   &:hover {
-    background: rgba(65, 162, 56, 0.08);
+    background: rgba(143, 179, 106, 0.08);
     border-color: ${({ theme }) => theme.colors.line};
     color: ${({ theme }) => theme.colors.text[100]};
   }
@@ -1059,21 +1059,21 @@ const PrimaryBtn = styled.button`
   justify-content: center;
   gap: 0.5rem;
   font-weight: 600;
-  border-radius: ${({ theme }) => theme.radii.pill};
+  border-radius: ${({ theme }) => theme.radii.lg};
   transition: all ${({ theme }) => theme.animation.duration.normal}s ${({ theme }) => theme.animation.easeOut.join(',')};
   min-height: 44px;
   min-width: 44px;
   white-space: nowrap;
   line-height: 1;
   padding: 0.65rem 1.5rem;
-  background: linear-gradient(135deg, ${({ theme }) => theme.colors.green[580]}, ${({ theme }) => theme.colors.green[500]});
-  color: #0a1e08;
+  background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[580]}, ${({ theme }) => theme.colors.green[500]});
+  color: #10120f;
   box-shadow: ${({ theme }) => theme.shadows.glowGreen};
   border: none;
   cursor: pointer;
 
   &:hover {
-    background: linear-gradient(135deg, ${({ theme }) => theme.colors.green[500]}, ${({ theme }) => theme.colors.green[300]});
+    background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[500]}, ${({ theme }) => theme.colors.green[300]});
     transform: translateY(-1px);
   }
   &:disabled { opacity: 0.5; transform: none; box-shadow: none; cursor: not-allowed; }
@@ -1118,7 +1118,7 @@ const StatusBadge = styled.span`
   align-items: center;
   gap: 0.4rem;
   padding: 0.25rem 0.75rem;
-  border-radius: ${({ theme }) => theme.radii.pill};
+  border-radius: ${({ theme }) => theme.radii.lg};
   font-size: ${({ theme }) => theme.typography.caption};
   font-weight: 600;
   background: ${({ theme }) => theme.colors.offroad.accentSoft};
@@ -1371,10 +1371,10 @@ const RouteSource = styled.span<{ $isDrawn: boolean }>`
   display: inline-flex;
   align-items: center;
   padding: 0.1rem 0.5rem;
-  border-radius: ${({ theme }) => theme.radii.pill};
+  border-radius: ${({ theme }) => theme.radii.lg};
   font-size: ${({ theme }) => theme.typography.caption};
   font-weight: 600;
-  background: ${({ $isDrawn }) => $isDrawn ? 'rgba(201, 162, 39, 0.15)' : 'rgba(65, 162, 56, 0.15)'};
+  background: ${({ $isDrawn }) => $isDrawn ? 'rgba(201, 162, 39, 0.15)' : 'rgba(143, 179, 106, 0.15)'};
   color: ${({ $isDrawn, theme }) => $isDrawn ? theme.colors.offroad.accent : theme.colors.green[580]};
 `
 
@@ -1669,7 +1669,7 @@ const InviteCandidateItem = styled.div`
 `
 
 const FeedbackMessage = styled.p<{ $tone: 'success' | 'error' }>`
-  background: ${({ $tone }) => $tone === 'success' ? 'rgba(23, 247, 2, 0.1)' : 'rgba(219, 74, 91, 0.1)'};
+  background: ${({ $tone }) => $tone === 'success' ? 'rgba(143, 179, 106, 0.1)' : 'rgba(219, 74, 91, 0.1)'};
   border: 1px solid ${({ $tone, theme }) => $tone === 'success' ? theme.colors.green[580] : theme.colors.danger[500]};
   color: ${({ $tone, theme }) => $tone === 'success' ? theme.colors.green[500] : theme.colors.danger[500]};
   padding: 0.5rem 0.75rem;

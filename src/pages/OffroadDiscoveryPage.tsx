@@ -233,16 +233,16 @@ export function OffroadDiscoveryPage() {
 // --- Styled Components ---
 
 const OffroadPage = styled.section`
-  width: min(1200px, 100% - 2rem);
+  width: min(1320px, 100% - 2rem);
   margin: 0 auto;
   padding-top: ${({ theme }) => theme.spacing.lg};
   padding-bottom: ${({ theme }) => theme.spacing['3xl']};
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }) => theme.spacing.lg};
+  gap: ${({ theme }) => theme.spacing.xl};
 
   @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
-    width: min(1200px, 100% - 1rem);
+    width: min(1320px, 100% - 1rem);
     padding-bottom: 7rem;
     gap: ${({ theme }) => theme.spacing.md};
   }
@@ -272,7 +272,7 @@ const PrimaryLink = styled(Link)`
   justify-content: center;
   gap: 0.5rem;
   font-weight: 600;
-  border-radius: ${({ theme }) => theme.radii.pill};
+  border-radius: ${({ theme }) => theme.radii.lg};
   transition: all ${({ theme }) => theme.animation.duration.normal}s ${({ theme }) => theme.animation.easeOut.join(',')};
   min-height: 44px;
   min-width: 44px;
@@ -280,14 +280,14 @@ const PrimaryLink = styled(Link)`
   text-decoration: none;
   line-height: 1;
   padding: 0.65rem 1.5rem;
-  background: linear-gradient(135deg, ${({ theme }) => theme.colors.green[580]}, ${({ theme }) => theme.colors.green[500]});
-  color: #0a1e08;
+  background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[400]}, ${({ theme }) => theme.colors.offroad.accent});
+  color: ${({ theme }) => theme.colors.bg[980]};
   box-shadow: ${({ theme }) => theme.shadows.glowGreen};
 
   &:hover {
-    background: linear-gradient(135deg, ${({ theme }) => theme.colors.green[500]}, ${({ theme }) => theme.colors.green[300]});
+    background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[500]}, ${({ theme }) => theme.colors.green[300]});
     transform: translateY(-1px);
-    box-shadow: 0 0 40px rgba(23, 247, 2, 0.3), 0 0 80px rgba(23, 247, 2, 0.1);
+    box-shadow: 0 0 40px rgba(143, 179, 106, 0.3), 0 0 80px rgba(143, 179, 106, 0.1);
   }
 `
 
@@ -297,7 +297,7 @@ const AiPlannerLink = styled(Link)`
   justify-content: center;
   gap: 0.5rem;
   font-weight: 600;
-  border-radius: ${({ theme }) => theme.radii.pill};
+  border-radius: ${({ theme }) => theme.radii.lg};
   transition: all ${({ theme }) => theme.animation.duration.normal}s ${({ theme }) => theme.animation.easeOut.join(',')};
   min-height: 44px;
   min-width: 44px;
@@ -316,12 +316,19 @@ const AiPlannerLink = styled(Link)`
 `
 
 const DiscoveryHeader = styled(motion.header)`
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   justify-content: space-between;
   align-items: flex-start;
-  flex-wrap: wrap;
   gap: ${({ theme }) => theme.spacing.md};
-  padding: ${({ theme }) => theme.spacing.lg} 0;
+  padding: ${({ theme }) => theme.spacing.xl} 0;
+  border-bottom: 1px solid ${({ theme }) => theme.colors.lineSoft};
+  background:
+    radial-gradient(circle at 82% 0%, rgba(192, 163, 91, 0.16), transparent 22rem);
+
+  @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
+    grid-template-columns: 1fr;
+  }
 `
 
 const OffroadBadge = styled.span`
@@ -329,7 +336,7 @@ const OffroadBadge = styled.span`
   align-items: center;
   gap: 0.4rem;
   padding: 0.25rem 0.75rem;
-  border-radius: ${({ theme }) => theme.radii.pill};
+  border-radius: ${({ theme }) => theme.radii.lg};
   font-size: ${({ theme }) => theme.typography.caption};
   font-weight: 600;
   background: ${({ theme }) => theme.colors.offroad.accentSoft};
@@ -354,6 +361,8 @@ const Toolbar = styled.div`
   gap: ${({ theme }) => theme.spacing.sm};
   align-items: center;
   flex-wrap: wrap;
+  padding: 0 0 ${({ theme }) => theme.spacing.md};
+  border-bottom: 1px solid ${({ theme }) => theme.colors.lineSoft};
 `
 
 const SearchGroup = styled.div`
@@ -366,7 +375,7 @@ const SearchInput = styled.input`
   padding: 0.7rem 1rem;
   border-radius: ${({ theme }) => theme.radii.lg};
   border: 1px solid ${({ theme }) => theme.colors.lineSoft};
-  background: ${({ theme }) => theme.glass.bg};
+  background: ${({ theme }) => theme.colors.surface[860]};
   color: ${({ theme }) => theme.colors.text[100]};
   font-size: ${({ theme }) => theme.typography.body};
   transition: border-color ${({ theme }) => theme.animation.duration.fast}s ease;
@@ -377,7 +386,7 @@ const SearchInput = styled.input`
   &:focus {
     outline: none;
     border-color: ${({ theme }) => theme.colors.green[500]};
-    box-shadow: 0 0 0 3px rgba(23, 247, 2, 0.1);
+    box-shadow: 0 0 0 3px rgba(143, 179, 106, 0.1);
   }
 `
 
@@ -387,7 +396,7 @@ const FiltersBtn = styled.button`
   justify-content: center;
   gap: 0.5rem;
   font-weight: 600;
-  border-radius: ${({ theme }) => theme.radii.pill};
+  border-radius: ${({ theme }) => theme.radii.lg};
   transition: all ${({ theme }) => theme.animation.duration.normal}s ${({ theme }) => theme.animation.easeOut.join(',')};
   min-height: 44px;
   min-width: 44px;
@@ -399,7 +408,7 @@ const FiltersBtn = styled.button`
   border: 1px solid ${({ theme }) => theme.colors.lineSoft};
 
   &:hover {
-    background: rgba(65, 162, 56, 0.08);
+    background: rgba(247, 243, 232, 0.07);
     border-color: ${({ theme }) => theme.colors.line};
     color: ${({ theme }) => theme.colors.text[100]};
   }
@@ -411,7 +420,8 @@ const FiltersPanel = styled(motion.div)`
   flex-wrap: wrap;
   align-items: flex-end;
   overflow: hidden;
-  padding-bottom: ${({ theme }) => theme.spacing.sm};
+  padding: 0 0 ${({ theme }) => theme.spacing.lg};
+  border-bottom: 1px solid ${({ theme }) => theme.colors.lineSoft};
 `
 
 const FilterItem = styled.div`
@@ -446,7 +456,7 @@ const FilterSelect = styled.select`
   padding: 0.7rem 1rem;
   border-radius: ${({ theme }) => theme.radii.lg};
   border: 1px solid ${({ theme }) => theme.colors.lineSoft};
-  background: ${({ theme }) => theme.glass.bg};
+  background: ${({ theme }) => theme.colors.surface[860]};
   color: ${({ theme }) => theme.colors.text[100]};
   font-size: ${({ theme }) => theme.typography.body};
   min-height: 44px;
@@ -480,26 +490,29 @@ const TripList = styled.div`
 `
 
 const TripRow = styled(motion.article)`
-  display: flex;
+  display: grid;
+  grid-template-columns: 190px minmax(0, 1fr) auto;
   gap: ${({ theme }) => theme.spacing.md};
   padding: ${({ theme }) => theme.spacing.lg};
-  background: ${({ theme }) => theme.glass.bg};
+  background:
+    linear-gradient(145deg, rgba(247, 243, 232, 0.045), rgba(247, 243, 232, 0.015)),
+    ${({ theme }) => theme.colors.surface[900]};
   border: 1px solid ${({ theme }) => theme.glass.border};
   border-radius: ${({ theme }) => theme.radii.xl};
   backdrop-filter: blur(${({ theme }) => theme.glass.blur});
   align-items: center;
 
   @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
-    flex-direction: column;
+    grid-template-columns: 1fr;
     align-items: stretch;
   }
 `
 
 const TripThumb = styled.img`
-  width: 180px;
+  width: 100%;
   height: 120px;
   object-fit: cover;
-  border-radius: ${({ theme }) => theme.radii.md};
+  border-radius: ${({ theme }) => theme.radii.lg};
   flex-shrink: 0;
 
   @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
@@ -509,12 +522,12 @@ const TripThumb = styled.img`
 `
 
 const TripThumbPlaceholder = styled.div`
-  width: 180px;
+  width: 100%;
   height: 120px;
-  background: linear-gradient(135deg, rgba(201,162,39,0.25), rgba(44,51,43,0.9));
+  background: linear-gradient(140deg, rgba(201,162,39,0.25), rgba(44,51,43,0.9));
   display: grid;
   place-items: center;
-  border-radius: ${({ theme }) => theme.radii.md};
+  border-radius: ${({ theme }) => theme.radii.lg};
   flex-shrink: 0;
 
   @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
@@ -532,7 +545,7 @@ const TripInfo = styled.div`
 
 const TripStatus = styled.span`
   font-size: ${({ theme }) => theme.typography.caption};
-  color: ${({ theme }) => theme.colors.green[580]};
+  color: ${({ theme }) => theme.colors.offroad.accent};
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -566,7 +579,7 @@ const RoutePill = styled.span`
   align-items: center;
   gap: 0.25rem;
   padding: 0.15rem 0.5rem;
-  border-radius: ${({ theme }) => theme.radii.pill};
+  border-radius: ${({ theme }) => theme.radii.lg};
   background: rgba(201, 162, 39, 0.12);
   color: ${({ theme }) => theme.colors.offroad.accent};
   font-weight: 600;
@@ -588,12 +601,12 @@ const Tag = styled.span`
   display: inline-flex;
   align-items: center;
   padding: 0.2rem 0.6rem;
-  border-radius: ${({ theme }) => theme.radii.pill};
+  border-radius: ${({ theme }) => theme.radii.lg};
   font-size: ${({ theme }) => theme.typography.caption};
   font-weight: 600;
   border: 1px solid ${({ theme }) => theme.colors.lineSoft};
   color: ${({ theme }) => theme.colors.text[220]};
-  background: rgba(65, 162, 56, 0.08);
+  background: rgba(143, 179, 106, 0.10);
 `
 
 const ViewLink = styled(Link)`
@@ -602,7 +615,7 @@ const ViewLink = styled(Link)`
   justify-content: center;
   gap: 0.5rem;
   font-weight: 600;
-  border-radius: ${({ theme }) => theme.radii.pill};
+  border-radius: ${({ theme }) => theme.radii.lg};
   transition: all ${({ theme }) => theme.animation.duration.normal}s ${({ theme }) => theme.animation.easeOut.join(',')};
   min-height: 36px;
   min-width: 36px;
@@ -611,13 +624,13 @@ const ViewLink = styled(Link)`
   line-height: 1;
   padding: 0.4rem 0.9rem;
   font-size: ${({ theme }) => theme.typography.bodySmall};
-  background: linear-gradient(135deg, ${({ theme }) => theme.colors.green[580]}, ${({ theme }) => theme.colors.green[500]});
-  color: #0a1e08;
+  background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[400]}, ${({ theme }) => theme.colors.offroad.accent});
+  color: ${({ theme }) => theme.colors.bg[980]};
   box-shadow: ${({ theme }) => theme.shadows.glowGreen};
   flex-shrink: 0;
 
   &:hover {
-    background: linear-gradient(135deg, ${({ theme }) => theme.colors.green[500]}, ${({ theme }) => theme.colors.green[300]});
+    background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[500]}, ${({ theme }) => theme.colors.green[300]});
     transform: translateY(-1px);
   }
 `

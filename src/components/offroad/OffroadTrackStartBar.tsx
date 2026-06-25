@@ -112,12 +112,12 @@ const StartBtn = styled.button`
   gap: 0.5rem;
   font-weight: 700;
   border: none;
-  border-radius: ${({ theme }) => theme.radii.pill};
+  border-radius: ${({ theme }) => theme.radii.lg};
   padding: 0.65rem 1.25rem;
   min-height: 44px;
   cursor: pointer;
   white-space: nowrap;
-  background: linear-gradient(135deg, ${({ theme }) => theme.colors.offroad.accent}, #a8841f);
+  background: linear-gradient(140deg, ${({ theme }) => theme.colors.offroad.accent}, #a8841f);
   color: #1a1408;
   box-shadow: 0 4px 20px rgba(201, 162, 39, 0.35);
   transition: transform 0.15s ease, opacity 0.15s ease;

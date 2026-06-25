@@ -45,7 +45,7 @@ const PoiBadge = styled.div`
   -webkit-backdrop-filter: blur(10px);
   padding: 0.5rem 1rem;
   border-radius: 12px;
-  border: 1px solid rgba(65, 162, 56, 0.3);
+  border: 1px solid rgba(143, 179, 106, 0.3);
   display: flex;
   align-items: center;
   gap: 0.75rem;
@@ -123,7 +123,7 @@ const NavMenu = styled.div`
   background: rgba(17, 34, 26, 0.95);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(65, 162, 56, 0.4);
+  border: 1px solid rgba(143, 179, 106, 0.4);
   border-radius: 20px;
   padding: 0.75rem;
   display: grid;
@@ -390,7 +390,7 @@ export function TripRouteMap({ timeline, selectedDay, showOverlay = true }: Trip
         <OverlayColumn>
           <motion.div>
             <PoiBadge>
-              <FiMapPin style={{ color: '#17f702' }} />
+              <FiMapPin style={{ color: '#8fb36a' }} />
               <PoiLabel>Points of Interest</PoiLabel>
             </PoiBadge>
           </motion.div>

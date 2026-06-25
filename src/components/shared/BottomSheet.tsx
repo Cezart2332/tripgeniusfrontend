@@ -16,7 +16,7 @@ const Overlay = styled(motion.div)`
   position: fixed;
   inset: 0;
   z-index: 1000;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(5, 7, 4, 0.62);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
 `
@@ -29,7 +29,9 @@ const Sheet = styled(motion.div)<{ $height: string }>`
   z-index: 1001;
   max-height: ${({ $height }) => $height};
   height: ${({ $height }) => $height};
-  background: ${({ theme }) => theme.glass.bgStrong};
+  background:
+    linear-gradient(145deg, rgba(247, 243, 232, 0.045), rgba(247, 243, 232, 0.015)),
+    ${({ theme }) => theme.colors.surface[900]};
   border: 1px solid ${({ theme }) => theme.glass.border};
   border-bottom: none;
   backdrop-filter: blur(16px);
@@ -65,16 +67,16 @@ const Title = styled.h3`
 const CloseButton = styled.button`
   width: 36px;
   height: 36px;
-  border-radius: ${({ theme }) => theme.radii.full};
+  border-radius: ${({ theme }) => theme.radii.md};
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(243, 255, 241, 0.06);
+  background: rgba(247, 243, 232, 0.06);
   color: ${({ theme }) => theme.colors.text[380]};
   transition: all 0.2s ease;
 
   &:hover {
-    background: rgba(243, 255, 241, 0.12);
+    background: rgba(247, 243, 232, 0.12);
     color: ${({ theme }) => theme.colors.text[100]};
   }
 `

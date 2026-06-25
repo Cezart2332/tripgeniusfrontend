@@ -51,7 +51,7 @@ const InputShell = styled.div`
 
   &:focus-within {
     border-color: ${({ theme }) => theme.colors.green[580]};
-    box-shadow: 0 0 0 3px rgba(23, 247, 2, 0.06);
+    box-shadow: 0 0 0 3px rgba(143, 179, 106, 0.06);
   }
 `
 
@@ -90,7 +90,7 @@ const LocateButton = styled.button`
   transition: all 0.15s ease;
 
   &:hover {
-    background: rgba(23, 247, 2, 0.08);
+    background: rgba(143, 179, 106, 0.08);
   }
 `
 
@@ -125,7 +125,7 @@ const OptionButton = styled.button`
   transition: background 0.1s ease;
 
   &:hover {
-    background: rgba(23, 247, 2, 0.06);
+    background: rgba(143, 179, 106, 0.06);
   }
 
   &:not(:last-child) {

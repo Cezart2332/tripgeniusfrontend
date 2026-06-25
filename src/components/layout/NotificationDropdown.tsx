@@ -22,15 +22,15 @@ const Trigger = styled.button<{ $open: boolean }>`
   justify-content: center;
   width: 40px;
   height: 40px;
-  border-radius: ${({ theme }) => theme.radii.full};
-  background: ${({ $open }) => $open ? 'rgba(243, 255, 241, 0.1)' : 'transparent'};
+  border-radius: ${({ theme }) => theme.radii.md};
+  background: ${({ $open }) => $open ? 'rgba(247, 243, 232, 0.1)' : 'transparent'};
   color: ${({ theme }) => theme.colors.text[380]};
   transition: all 0.15s ease;
   position: relative;
 
   &:hover {
     color: ${({ theme }) => theme.colors.text[100]};
-    background: rgba(243, 255, 241, 0.06);
+    background: rgba(247, 243, 232, 0.06);
   }
 `
 
@@ -54,7 +54,7 @@ const Badge = styled.span`
 const Spinner = styled.span`
   width: 16px;
   height: 16px;
-  border: 2px solid rgba(243, 255, 241, 0.2);
+  border: 2px solid rgba(247, 243, 232, 0.2);
   border-top-color: ${({ theme }) => theme.colors.green[500]};
   border-radius: 50%;
   animation: spin 0.6s linear infinite;
@@ -71,11 +71,11 @@ const Dropdown = styled(motion.div)`
   width: 340px;
   max-height: 400px;
   overflow-y: auto;
-  background: ${({ theme }) => theme.glass.bgStrong};
+  background: ${({ theme }) => theme.colors.surface[900]};
   border: 1px solid ${({ theme }) => theme.glass.border};
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border-radius: ${({ theme }) => theme.radii.lg};
+  border-radius: ${({ theme }) => theme.radii.xl};
   box-shadow: ${({ theme }) => theme.shadows.xl};
   z-index: 100;
 
@@ -110,7 +110,7 @@ const ActionsRow = styled.div`
 
 const ActionBtn = styled.button`
   font-size: ${({ theme }) => theme.typography.caption};
-  color: ${({ theme }) => theme.colors.green[500]};
+  color: ${({ theme }) => theme.colors.green[300]};
   background: none;
   border: none;
   padding: 0;
@@ -128,7 +128,7 @@ const Item = styled.div`
   transition: background 0.15s ease;
 
   &:hover {
-    background: rgba(243, 255, 241, 0.04);
+    background: rgba(247, 243, 232, 0.05);
   }
 `
 

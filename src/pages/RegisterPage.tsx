@@ -34,10 +34,10 @@ const createInitialState = (): RegisterState => ({
 })
 
 const Page = styled.section`
-  width: min(960px, 100% - 2rem);
+  width: min(1040px, 100% - 2rem);
   margin: 0 auto;
-  padding: 2rem 0;
-  min-height: 80vh;
+  padding: 3rem 0;
+  min-height: 86dvh;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -48,13 +48,14 @@ const Page = styled.section`
 `
 
 const Split = styled.div`
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(300px, 0.88fr) minmax(0, 1fr);
   width: 100%;
   align-items: center;
-  gap: 3rem;
+  gap: 4rem;
 
   @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
-    flex-direction: column;
+    grid-template-columns: 1fr;
     gap: 1.5rem;
   }
 `
@@ -62,13 +63,26 @@ const Split = styled.div`
 const FormSide = styled.div`
   flex: 1;
   max-width: 440px;
+  width: 100%;
+  padding: 0 2.5rem 0 0;
+  border-right: 1px solid ${({ theme }) => theme.colors.lineSoft};
+
+  @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
+    max-width: none;
+    padding: 0;
+    border-right: 0;
+  }
 `
 
 const Illustration = styled.aside`
   flex: 1;
+  min-height: 30rem;
   display: flex;
   justify-content: center;
   align-items: center;
+  background:
+    radial-gradient(circle at 50% 42%, rgba(192, 163, 91, 0.22), transparent 12rem),
+    radial-gradient(circle at 56% 68%, rgba(143, 179, 106, 0.13), transparent 15rem);
 
   @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
     display: none;
@@ -79,7 +93,7 @@ const Sticker = styled.img`
   width: 240px;
   height: auto;
   opacity: 0.8;
-  filter: drop-shadow(0 8px 24px rgba(23, 247, 2, 0.1));
+  filter: drop-shadow(0 18px 42px rgba(5, 7, 4, 0.42));
 `
 
 const Header = styled.header`
@@ -100,7 +114,7 @@ const TabBar = styled.nav`
   display: inline-flex;
   gap: 0.25rem;
   padding: 0.25rem;
-  border-radius: ${({ theme }) => theme.radii.pill};
+  border-radius: ${({ theme }) => theme.radii.lg};
   border: 1px solid ${({ theme }) => theme.colors.lineSoft};
   background: rgba(9, 14, 10, 0.75);
   margin-bottom: 1.5rem;
@@ -108,18 +122,18 @@ const TabBar = styled.nav`
 
 const TabLink = styled(Link)<{ $active: boolean }>`
   padding: 0.45rem 1.1rem;
-  border-radius: ${({ theme }) => theme.radii.pill};
+  border-radius: ${({ theme }) => theme.radii.lg};
   font-size: ${({ theme }) => theme.typography.bodySmall};
   font-weight: 700;
   text-decoration: none;
-  color: ${({ $active, theme }) => $active ? '#0a1e08' : theme.colors.text[380]};
-  background: ${({ $active, theme }) => $active ? `linear-gradient(135deg, ${theme.colors.green[580]}, ${theme.colors.green[500]})` : 'transparent'};
-  box-shadow: ${({ $active }) => $active ? `0 2px 12px rgba(23, 247, 2, 0.2)` : 'none'};
+  color: ${({ $active, theme }) => $active ? theme.colors.bg[980] : theme.colors.text[380]};
+  background: ${({ $active, theme }) => $active ? `linear-gradient(140deg, ${theme.colors.green[400]}, ${theme.colors.offroad.accent})` : 'transparent'};
+  box-shadow: ${({ $active, theme }) => $active ? theme.shadows.glowGreen : 'none'};
   transition: all 0.2s ease;
 
   &:hover:not([style]) {
     color: ${({ theme }) => theme.colors.text[220]};
-    background: rgba(65, 162, 56, 0.08);
+    background: rgba(143, 179, 106, 0.08);
   }
 `
 
@@ -140,9 +154,9 @@ const FieldLabel = styled.label`
 const Input = styled.input`
   width: 100%;
   padding: 0.7rem 1rem;
-  border-radius: ${({ theme }) => theme.radii.lg};
+  border-radius: ${({ theme }) => theme.radii.md};
   border: 1px solid ${({ theme }) => theme.colors.lineSoft};
-  background: ${({ theme }) => theme.glass.bg};
+  background: ${({ theme }) => theme.colors.surface[860]};
   backdrop-filter: blur(${({ theme }) => theme.glass.blur});
   color: ${({ theme }) => theme.colors.text[100]};
   font-size: ${({ theme }) => theme.typography.body};
@@ -180,13 +194,13 @@ const ChipRow = styled.div`
 
 const Chip = styled.button<{ $selected: boolean }>`
   padding: 0.4rem 0.9rem;
-  border-radius: ${({ theme }) => theme.radii.pill};
+  border-radius: ${({ theme }) => theme.radii.md};
   border: 1px solid ${({ $selected, theme }) => $selected ? 'transparent' : theme.colors.lineSoft};
   background: ${({ $selected, theme }) =>
     $selected
-      ? `linear-gradient(135deg, ${theme.colors.green[580]}, ${theme.colors.green[500]})`
+      ? `linear-gradient(140deg, ${theme.colors.green[400]}, ${theme.colors.offroad.accent})`
       : 'transparent'};
-  color: ${({ $selected, theme }) => $selected ? '#0a1e08' : theme.colors.text[380]};
+  color: ${({ $selected, theme }) => $selected ? theme.colors.bg[980] : theme.colors.text[380]};
   font-size: ${({ theme }) => theme.typography.caption};
   font-weight: 600;
   font-family: inherit;
@@ -195,11 +209,11 @@ const Chip = styled.button<{ $selected: boolean }>`
 
   &:hover:not(:disabled) {
     border-color: ${({ $selected, theme }) => $selected ? 'transparent' : theme.colors.line};
-    color: ${({ $selected, theme }) => $selected ? '#0a1e08' : theme.colors.text[220]};
+    color: ${({ $selected, theme }) => $selected ? '#10120f' : theme.colors.text[220]};
     background: ${({ $selected, theme }) =>
       $selected
-        ? `linear-gradient(135deg, ${theme.colors.green[580]}, ${theme.colors.green[500]})`
-        : 'rgba(65, 162, 56, 0.08)'};
+        ? `linear-gradient(140deg, ${theme.colors.green[400]}, ${theme.colors.offroad.accent})`
+        : 'rgba(143, 179, 106, 0.08)'};
   }
 
   &:disabled {
@@ -214,9 +228,9 @@ const SubmitBtn = styled.button`
   justify-content: center;
   gap: 0.5rem;
   padding: 0.7rem 1.5rem;
-  border-radius: ${({ theme }) => theme.radii.pill};
-  background: linear-gradient(135deg, ${({ theme }) => theme.colors.green[580]}, ${({ theme }) => theme.colors.green[500]});
-  color: #0a1e08;
+  border-radius: ${({ theme }) => theme.radii.lg};
+  background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[400]}, ${({ theme }) => theme.colors.offroad.accent});
+  color: ${({ theme }) => theme.colors.bg[980]};
   font-weight: 700;
   font-size: ${({ theme }) => theme.typography.body};
   min-height: 44px;
@@ -224,7 +238,7 @@ const SubmitBtn = styled.button`
   transition: box-shadow 0.15s ease;
 
   &:hover:not(:disabled) {
-    box-shadow: 0 0 30px rgba(23, 247, 2, 0.2);
+    box-shadow: ${({ theme }) => theme.shadows.glowGold};
   }
 
   &:disabled {
@@ -238,7 +252,7 @@ const Spinner = styled.span`
   width: 16px;
   height: 16px;
   border: 2px solid rgba(0, 0, 0, 0.2);
-  border-top-color: #0a1e08;
+  border-top-color: #10120f;
   border-radius: 50%;
   animation: spin 0.6s linear infinite;
   @keyframes spin { to { transform: rotate(360deg); } }
@@ -252,7 +266,7 @@ const FooterNote = styled.p`
 `
 
 const TextLink = styled(Link)`
-  color: ${({ theme }) => theme.colors.green[500]};
+  color: ${({ theme }) => theme.colors.green[300]};
   font-weight: 600;
   text-decoration: none;
 

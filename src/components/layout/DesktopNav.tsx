@@ -1,6 +1,6 @@
 import { NavLink } from 'react-router-dom'
 import styled from 'styled-components'
-import { FiHome, FiMap, FiCpu } from 'react-icons/fi'
+import { PiCompassRose, PiMapTrifold, PiSparkle } from 'react-icons/pi'
 import type { IconType } from 'react-icons'
 import type { User } from '../../types/models'
 
@@ -16,15 +16,16 @@ interface NavItem {
 }
 
 const items: NavItem[] = [
-  { to: '/app', label: 'Home', Icon: FiHome, end: true },
-  { to: '/map', label: 'Map', Icon: FiMap },
-  { to: '/app/ai', label: 'AI', Icon: FiCpu },
+  { to: '/app', label: 'Discover', Icon: PiCompassRose, end: true },
+  { to: '/map', label: 'Map', Icon: PiMapTrifold },
+  { to: '/app/ai', label: 'Advisor', Icon: PiSparkle },
 ]
 
 const Wrapper = styled.nav`
   display: flex;
   align-items: center;
-  gap: 0.15rem;
+  gap: 0.35rem;
+  padding: 0;
 
   @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
     width: 100%;
@@ -36,8 +37,8 @@ const Link = styled(NavLink)`
   position: relative;
   display: flex;
   align-items: center;
-  gap: 0.4rem;
-  padding: 0.45rem 0.9rem;
+  gap: 0.45rem;
+  padding: 0.5rem 0.95rem;
   border-radius: ${({ theme }) => theme.radii.md};
   font-size: ${({ theme }) => theme.typography.bodySmall};
   font-weight: 600;
@@ -47,14 +48,14 @@ const Link = styled(NavLink)`
   min-height: 36px;
 
   &.is-active {
-    color: #0a1e08;
-    background: linear-gradient(135deg, ${({ theme }) => theme.colors.green[580]}, ${({ theme }) => theme.colors.green[500]});
-    box-shadow: 0 2px 12px rgba(23, 247, 2, 0.2);
+    color: ${({ theme }) => theme.colors.bg[980]};
+    background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[400]}, ${({ theme }) => theme.colors.offroad.accent});
+    box-shadow: ${({ theme }) => theme.shadows.glowGreen};
   }
 
   &:hover:not(.is-active) {
     color: ${({ theme }) => theme.colors.text[220]};
-    background: rgba(65, 162, 56, 0.08);
+    background: rgba(247, 243, 232, 0.07);
   }
 
   svg {

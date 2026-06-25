@@ -2,7 +2,8 @@ import { NavLink, useLocation } from 'react-router-dom'
 import { useSelector } from 'react-redux'
 import { motion } from 'framer-motion'
 import styled from 'styled-components'
-import { FiHome, FiMap, FiCpu, FiLogIn, FiMessageCircle, FiSettings } from 'react-icons/fi'
+import { FiLogIn, FiMessageCircle, FiSettings } from 'react-icons/fi'
+import { PiCompassRose, PiMapTrifold, PiSparkle } from 'react-icons/pi'
 import type { IconType } from 'react-icons'
 import { getAvatarUrl } from '../../utils/userUtils'
 import { isAiAdvisorPath, isFullscreenMapPath } from '../../utils/mapRoutes'
@@ -29,8 +30,8 @@ const Nav = styled.nav`
   display: flex;
   align-items: stretch;
   justify-content: space-around;
-  padding: 0.35rem 0.5rem;
-  padding-bottom: calc(env(safe-area-inset-bottom) + 0.35rem);
+  padding: 0.45rem 0.55rem;
+  padding-bottom: calc(env(safe-area-inset-bottom) + 0.45rem);
   background: ${({ theme }) => theme.glass.bgStrong};
   border-top: 1px solid ${({ theme }) => theme.glass.border};
   backdrop-filter: blur(20px);
@@ -49,11 +50,11 @@ const NavItem = styled(NavLink)`
   justify-content: center;
   flex: 1;
   flex-direction: column;
-  gap: 0.15rem;
+  gap: 0.18rem;
   padding: 0.35rem 0.25rem;
   min-height: 44px;
   max-width: 72px;
-  border-radius: ${({ theme }) => theme.radii.md};
+  border-radius: ${({ theme }) => theme.radii.lg};
   color: ${({ theme }) => theme.colors.text[380]};
   font-size: 0.6rem;
   font-weight: 500;
@@ -61,7 +62,7 @@ const NavItem = styled(NavLink)`
   transition: color 0.2s ease;
 
   &.active {
-    color: #0a1e08;
+    color: ${({ theme }) => theme.colors.bg[980]};
   }
 
   &:hover {
@@ -79,10 +80,14 @@ const IconWrap = styled.span`
 const ActiveBg = styled(motion.div)`
   position: absolute;
   inset: 0;
-  border-radius: ${({ theme }) => theme.radii.md};
-  background: linear-gradient(135deg, ${({ theme }) => theme.colors.green[580]}, ${({ theme }) => theme.colors.green[500]});
-  box-shadow: 0 2px 16px rgba(23, 247, 2, 0.25);
+  border-radius: ${({ theme }) => theme.radii.lg};
+  background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[400]}, ${({ theme }) => theme.colors.offroad.accent});
+  box-shadow: ${({ theme }) => theme.shadows.glowGreen};
   z-index: -1;
+`
+
+const Label = styled.span`
+  line-height: 1;
 `
 
 const AvatarImg = styled.img`
@@ -93,13 +98,13 @@ const AvatarImg = styled.img`
 `
 
 const loggedInItems: NavItem[] = [
-  { to: '/app', label: 'Home', Icon: FiHome, end: true },
-  { to: '/map', label: 'Map', Icon: FiMap },
-  { to: '/app/ai', label: 'AI', Icon: FiCpu, requiresAuth: true },
+  { to: '/app', label: 'Trips', Icon: PiCompassRose, end: true },
+  { to: '/map', label: 'Map', Icon: PiMapTrifold },
+  { to: '/app/ai', label: 'AI', Icon: PiSparkle, requiresAuth: true },
 ]
 
 const guestItems: NavItem[] = [
-  { to: '/app', label: 'Home', Icon: FiHome, end: true },
+  { to: '/app', label: 'Trips', Icon: PiCompassRose, end: true },
   { to: '/login', label: 'Login', Icon: FiLogIn },
 ]
 
@@ -132,6 +137,7 @@ export function MobileBottomNav() {
                 <IconWrap>
                   <item.Icon />
                 </IconWrap>
+                <Label>{item.label}</Label>
               </>
             )}
           </NavItem>
@@ -152,6 +158,7 @@ export function MobileBottomNav() {
                   alt=""
                 />
               </IconWrap>
+              <Label>Profile</Label>
             </>
           )}
         </NavItem>
@@ -169,6 +176,7 @@ export function MobileBottomNav() {
               <IconWrap>
                 <FiMessageCircle />
               </IconWrap>
+              <Label>Chat</Label>
             </>
           )}
         </NavItem>
@@ -184,6 +192,7 @@ export function MobileBottomNav() {
               <IconWrap>
                 <FiSettings />
               </IconWrap>
+              <Label>Settings</Label>
             </>
           )}
         </NavItem>

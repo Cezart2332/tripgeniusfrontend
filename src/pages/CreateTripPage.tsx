@@ -776,7 +776,7 @@ const LinkBtn = styled(Link)`
   justify-content: center;
   gap: 0.5rem;
   font-weight: 600;
-  border-radius: ${({ theme }) => theme.radii.pill};
+  border-radius: ${({ theme }) => theme.radii.lg};
   transition: all ${({ theme }) => theme.animation.duration.normal}s ${({ theme }) => theme.animation.easeOut.join(',')};
   min-height: 44px;
   min-width: 44px;
@@ -784,14 +784,14 @@ const LinkBtn = styled(Link)`
   text-decoration: none;
   line-height: 1;
   padding: 0.65rem 1.5rem;
-  background: linear-gradient(135deg, ${({ theme }) => theme.colors.green[580]}, ${({ theme }) => theme.colors.green[500]});
-  color: #0a1e08;
+  background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[580]}, ${({ theme }) => theme.colors.green[500]});
+  color: #10120f;
   box-shadow: ${({ theme }) => theme.shadows.glowGreen};
 
   &:hover {
-    background: linear-gradient(135deg, ${({ theme }) => theme.colors.green[500]}, ${({ theme }) => theme.colors.green[300]});
+    background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[500]}, ${({ theme }) => theme.colors.green[300]});
     transform: translateY(-1px);
-    box-shadow: 0 0 40px rgba(23, 247, 2, 0.3), 0 0 80px rgba(23, 247, 2, 0.1);
+    box-shadow: 0 0 40px rgba(143, 179, 106, 0.3), 0 0 80px rgba(143, 179, 106, 0.1);
   }
 `
 
@@ -903,7 +903,7 @@ const Input = styled.input<{ $pl?: string }>`
   &:focus {
     outline: none;
     border-color: ${({ theme }) => theme.colors.green[500]};
-    box-shadow: 0 0 0 3px rgba(23, 247, 2, 0.1);
+    box-shadow: 0 0 0 3px rgba(143, 179, 106, 0.1);
   }
   &:disabled { opacity: 0.5; cursor: not-allowed; }
 `
@@ -926,7 +926,7 @@ const Textarea = styled.textarea`
   &:focus {
     outline: none;
     border-color: ${({ theme }) => theme.colors.green[500]};
-    box-shadow: 0 0 0 3px rgba(23, 247, 2, 0.1);
+    box-shadow: 0 0 0 3px rgba(143, 179, 106, 0.1);
   }
 `
 
@@ -982,11 +982,11 @@ const Chip = styled.button<{ $selected: boolean }>`
   align-items: center;
   gap: 0.35rem;
   padding: 0.4rem 0.9rem;
-  border-radius: ${({ theme }) => theme.radii.pill};
+  border-radius: ${({ theme }) => theme.radii.lg};
   font-size: ${({ theme }) => theme.typography.bodySmall};
   font-weight: 600;
   border: 1px solid ${({ $selected, theme }) => $selected ? theme.colors.green[580] : theme.colors.lineSoft};
-  background: ${({ $selected }) => $selected ? 'rgba(65, 162, 56, 0.2)' : 'transparent'};
+  background: ${({ $selected }) => $selected ? 'rgba(143, 179, 106, 0.2)' : 'transparent'};
   color: ${({ $selected, theme }) => $selected ? theme.colors.green[500] : theme.colors.text[220]};
   transition: all 0.15s ease;
 
@@ -1000,12 +1000,12 @@ const StaticChip = styled.span`
   display: inline-flex;
   align-items: center;
   padding: 0.4rem 0.9rem;
-  border-radius: ${({ theme }) => theme.radii.pill};
+  border-radius: ${({ theme }) => theme.radii.lg};
   font-size: ${({ theme }) => theme.typography.bodySmall};
   font-weight: 600;
   border: 1px solid ${({ theme }) => theme.colors.lineSoft};
   color: ${({ theme }) => theme.colors.text[220]};
-  background: rgba(65, 162, 56, 0.08);
+  background: rgba(143, 179, 106, 0.08);
 `
 
 const InputWrapper = styled.div`
@@ -1080,7 +1080,7 @@ const DayMarker = styled.div`
   background: ${({ theme }) => theme.colors.green[580]};
   margin-top: 1.5rem;
   flex-shrink: 0;
-  box-shadow: 0 0 12px rgba(23, 247, 2, 0.3);
+  box-shadow: 0 0 12px rgba(143, 179, 106, 0.3);
 `
 
 const StopHeader = styled.div`
@@ -1152,7 +1152,7 @@ const GhostBtn = styled.button`
   justify-content: center;
   gap: 0.5rem;
   font-weight: 600;
-  border-radius: ${({ theme }) => theme.radii.pill};
+  border-radius: ${({ theme }) => theme.radii.lg};
   transition: all ${({ theme }) => theme.animation.duration.normal}s ${({ theme }) => theme.animation.easeOut.join(',')};
   min-height: 44px;
   min-width: 44px;
@@ -1165,7 +1165,7 @@ const GhostBtn = styled.button`
   border: 1px solid ${({ theme }) => theme.colors.lineSoft};
 
   &:hover {
-    background: rgba(65, 162, 56, 0.08);
+    background: rgba(143, 179, 106, 0.08);
     border-color: ${({ theme }) => theme.colors.line};
     color: ${({ theme }) => theme.colors.text[100]};
   }
@@ -1207,7 +1207,7 @@ const DangerBtn = styled.button`
   min-height: 36px;
   min-width: 36px;
   font-weight: 600;
-  border-radius: ${({ theme }) => theme.radii.pill};
+  border-radius: ${({ theme }) => theme.radii.lg};
   background: transparent;
   color: ${({ theme }) => theme.colors.danger[500]};
   border: 1px solid rgba(219, 74, 91, 0.25);
@@ -1312,7 +1312,7 @@ const PrimaryBtnLg = styled.button<{ $minWidth: string }>`
   justify-content: center;
   gap: 0.5rem;
   font-weight: 600;
-  border-radius: ${({ theme }) => theme.radii.pill};
+  border-radius: ${({ theme }) => theme.radii.lg};
   transition: all ${({ theme }) => theme.animation.duration.normal}s ${({ theme }) => theme.animation.easeOut.join(',')};
   min-height: 52px;
   white-space: nowrap;
@@ -1321,17 +1321,17 @@ const PrimaryBtnLg = styled.button<{ $minWidth: string }>`
   padding: 0.85rem 2rem;
   font-size: 1.05rem;
   min-width: ${({ $minWidth }) => $minWidth};
-  background: linear-gradient(135deg, ${({ theme }) => theme.colors.green[580]}, ${({ theme }) => theme.colors.green[500]});
-  color: #0a1e08;
+  background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[580]}, ${({ theme }) => theme.colors.green[500]});
+  color: #10120f;
   box-shadow: ${({ theme }) => theme.shadows.glowGreen};
   border: none;
   cursor: pointer;
   box-sizing: border-box;
 
   &:hover {
-    background: linear-gradient(135deg, ${({ theme }) => theme.colors.green[500]}, ${({ theme }) => theme.colors.green[300]});
+    background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[500]}, ${({ theme }) => theme.colors.green[300]});
     transform: translateY(-1px);
-    box-shadow: 0 0 40px rgba(23, 247, 2, 0.3), 0 0 80px rgba(23, 247, 2, 0.1);
+    box-shadow: 0 0 40px rgba(143, 179, 106, 0.3), 0 0 80px rgba(143, 179, 106, 0.1);
   }
   &:active { transform: translateY(0); }
   &:disabled { opacity: 0.5; transform: none; box-shadow: none; cursor: not-allowed; }
@@ -1386,7 +1386,7 @@ const CalendarDay = styled.button<{ $selected: boolean }>`
   line-height: 1;
 
   &:hover {
-    background: ${({ $selected, theme }) => $selected ? theme.colors.green[580] : 'rgba(65, 162, 56, 0.25)'};
+    background: ${({ $selected, theme }) => $selected ? theme.colors.green[580] : 'rgba(143, 179, 106, 0.25)'};
   }
 
   @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {

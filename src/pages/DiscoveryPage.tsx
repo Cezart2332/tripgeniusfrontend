@@ -48,16 +48,16 @@ function useMediaQuery(query: string) {
 }
 
 const Page = styled.section`
-  width: min(1200px, 100% - 2rem);
+  width: min(1320px, 100% - 2rem);
   margin: 0 auto;
   padding-top: ${({ theme }) => theme.spacing.lg};
   padding-bottom: ${({ theme }) => theme.spacing['3xl']};
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }) => theme.spacing.lg};
+  gap: ${({ theme }) => theme.spacing.xl};
 
   @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
-    width: min(1200px, 100% - 1rem);
+    width: min(1320px, 100% - 1rem);
     padding-bottom: 7rem;
     gap: ${({ theme }) => theme.spacing.md};
   }
@@ -99,14 +99,18 @@ const AuthDesc = styled.p`
 `
 
 const HeaderRow = styled(motion.header)`
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: flex-start;
   justify-content: space-between;
   gap: ${({ theme }) => theme.spacing.lg};
-  flex-wrap: wrap;
+  padding: ${({ theme }) => theme.spacing.xl} 0;
+  border-bottom: 1px solid ${({ theme }) => theme.colors.lineSoft};
+  background:
+    radial-gradient(circle at 80% 0%, rgba(143, 179, 106, 0.12), transparent 22rem);
 
   @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
-    flex-direction: column;
+    grid-template-columns: 1fr;
   }
 `
 
@@ -143,7 +147,7 @@ const GhostButton = styled(Link)`
   justify-content: center;
   gap: 0.6rem;
   font-weight: 600;
-  border-radius: ${({ theme }) => theme.radii.pill};
+  border-radius: ${({ theme }) => theme.radii.lg};
   transition: all ${({ theme }) => theme.animation.duration.normal}s ${({ theme }) => theme.animation.easeOut.join(',')};
   min-height: 44px;
   min-width: 44px;
@@ -156,13 +160,13 @@ const GhostButton = styled(Link)`
   border: 1px solid rgba(154, 198, 148, 0.2);
 
   &:hover {
-    background: rgba(65, 162, 56, 0.08);
+    background: rgba(143, 179, 106, 0.08);
     border-color: ${({ theme }) => theme.colors.line};
     color: ${({ theme }) => theme.colors.green[500]};
   }
 
   &:active {
-    background: rgba(65, 162, 56, 0.12);
+    background: rgba(143, 179, 106, 0.12);
   }
 `
 
@@ -172,7 +176,7 @@ const PrimaryButton = styled(Link)`
   justify-content: center;
   gap: 0.5rem;
   font-weight: 600;
-  border-radius: ${({ theme }) => theme.radii.pill};
+  border-radius: ${({ theme }) => theme.radii.lg};
   transition: all ${({ theme }) => theme.animation.duration.normal}s ${({ theme }) => theme.animation.easeOut.join(',')};
   min-height: 44px;
   min-width: 44px;
@@ -180,14 +184,14 @@ const PrimaryButton = styled(Link)`
   text-decoration: none;
   line-height: 1;
   padding: 0.65rem 1.5rem;
-  background: linear-gradient(135deg, ${({ theme }) => theme.colors.green[580]}, ${({ theme }) => theme.colors.green[500]});
-  color: #0a1e08;
+  background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[580]}, ${({ theme }) => theme.colors.green[500]});
+  color: #10120f;
   box-shadow: ${({ theme }) => theme.shadows.glowGreen};
 
   &:hover {
-    background: linear-gradient(135deg, ${({ theme }) => theme.colors.green[500]}, ${({ theme }) => theme.colors.green[300]});
+    background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[500]}, ${({ theme }) => theme.colors.green[300]});
     transform: translateY(-1px);
-    box-shadow: 0 0 40px rgba(23, 247, 2, 0.3), 0 0 80px rgba(23, 247, 2, 0.1);
+    box-shadow: 0 0 40px rgba(143, 179, 106, 0.3), 0 0 80px rgba(143, 179, 106, 0.1);
   }
 
   &:active {
@@ -200,6 +204,8 @@ const Toolbar = styled.div`
   align-items: center;
   gap: ${({ theme }) => theme.spacing.md};
   flex-wrap: wrap;
+  padding: 0 0 ${({ theme }) => theme.spacing.md};
+  border-bottom: 1px solid ${({ theme }) => theme.colors.lineSoft};
 
   @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
     flex-direction: column;
@@ -214,7 +220,7 @@ const FilterToggleBtn = styled.button`
   gap: 0.5rem;
   font-family: inherit;
   font-weight: 600;
-  border-radius: ${({ theme }) => theme.radii.pill};
+  border-radius: ${({ theme }) => theme.radii.lg};
   transition: all ${({ theme }) => theme.animation.duration.normal}s ${({ theme }) => theme.animation.easeOut.join(',')};
   min-height: 36px;
   min-width: 36px;
@@ -223,19 +229,19 @@ const FilterToggleBtn = styled.button`
   line-height: 1;
   padding: 0.4rem 0.9rem;
   font-size: ${({ theme }) => theme.typography.bodySmall};
-  background: transparent;
+  background: rgba(247, 243, 232, 0.035);
   color: ${({ theme }) => theme.colors.text[220]};
   border: 1px solid ${({ theme }) => theme.colors.lineSoft};
   cursor: pointer;
 
   &:hover {
-    background: rgba(65, 162, 56, 0.08);
+    background: rgba(247, 243, 232, 0.07);
     border-color: ${({ theme }) => theme.colors.line};
     color: ${({ theme }) => theme.colors.text[100]};
   }
 
   &:active {
-    background: rgba(65, 162, 56, 0.12);
+    background: rgba(247, 243, 232, 0.10);
   }
 `
 
@@ -244,7 +250,7 @@ const PrefToggle = styled.label`
   align-items: center;
   gap: 0.45rem;
   padding: 0.35rem 0.9rem;
-  border-radius: ${({ theme }) => theme.radii.pill};
+  border-radius: ${({ theme }) => theme.radii.lg};
   cursor: pointer;
   font-size: ${({ theme }) => theme.typography.bodySmall};
   color: ${({ theme }) => theme.colors.text[380]};
@@ -271,12 +277,8 @@ const FiltersPanel = styled(motion.div)`
   display: flex;
   gap: ${({ theme }) => theme.spacing.lg};
   flex-wrap: wrap;
-  padding: ${({ theme }) => theme.spacing.lg};
-  background: ${({ theme }) => theme.glass.bg};
-  border: 1px solid ${({ theme }) => theme.glass.border};
-  border-radius: ${({ theme }) => theme.radii.xl};
-  backdrop-filter: blur(${({ theme }) => theme.glass.blur});
-  -webkit-backdrop-filter: blur(${({ theme }) => theme.glass.blur});
+  padding: 0 0 ${({ theme }) => theme.spacing.lg};
+  border-bottom: 1px solid ${({ theme }) => theme.colors.lineSoft};
 
   @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
     flex-direction: column;
@@ -303,7 +305,7 @@ const SelectInput = styled.select`
   padding: 0.7rem 1rem;
   border-radius: ${({ theme }) => theme.radii.lg};
   border: 1px solid ${({ theme }) => theme.colors.lineSoft};
-  background: ${({ theme }) => theme.colors.bg[940]};
+  background: ${({ theme }) => theme.colors.surface[860]};
   color: ${({ theme }) => theme.colors.text[100]};
   font-size: ${({ theme }) => theme.typography.body};
   transition: border-color 0.15s ease;
@@ -314,7 +316,7 @@ const SelectInput = styled.select`
   &:focus {
     outline: none;
     border-color: ${({ theme }) => theme.colors.green[500]};
-    box-shadow: 0 0 0 3px rgba(23, 247, 2, 0.1);
+    box-shadow: 0 0 0 3px rgba(143, 179, 106, 0.1);
   }
 
   &:disabled {
@@ -339,8 +341,8 @@ const RangeInput = styled.input`
 const InfoBanner = styled.p`
   padding: ${({ theme }) => theme.spacing.sm} ${({ theme }) => theme.spacing.md};
   border-radius: ${({ theme }) => theme.radii.md};
-  background: rgba(23, 247, 2, 0.06);
-  border: 1px solid rgba(23, 247, 2, 0.15);
+  background: rgba(143, 179, 106, 0.06);
+  border: 1px solid rgba(143, 179, 106, 0.15);
   color: ${({ theme }) => theme.colors.green[400]};
   font-size: ${({ theme }) => theme.typography.bodySmall};
 `
@@ -369,10 +371,13 @@ const TripList = styled.div`
 `
 
 const TripCard = styled(motion.article)`
-  display: flex;
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr) auto;
   gap: ${({ theme }) => theme.spacing.lg};
   padding: ${({ theme }) => theme.spacing.lg};
-  background: ${({ theme }) => theme.glass.bg};
+  background:
+    linear-gradient(145deg, rgba(247, 243, 232, 0.045), rgba(247, 243, 232, 0.015)),
+    ${({ theme }) => theme.colors.surface[900]};
   border: 1px solid ${({ theme }) => theme.glass.border};
   border-radius: ${({ theme }) => theme.radii.xl};
   backdrop-filter: blur(${({ theme }) => theme.glass.blur});
@@ -382,19 +387,19 @@ const TripCard = styled(motion.article)`
 
   &:hover {
     border-color: ${({ theme }) => theme.colors.line};
-    box-shadow: ${({ theme }) => theme.shadows.glow};
+    box-shadow: ${({ theme }) => theme.shadows.lg};
     transform: translateY(-2px);
   }
 
   @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
-    flex-direction: column;
+    grid-template-columns: 1fr;
   }
 `
 
 const Thumb = styled.img`
-  width: 200px;
-  height: 140px;
-  border-radius: ${({ theme }) => theme.radii.md};
+  width: 100%;
+  height: 150px;
+  border-radius: ${({ theme }) => theme.radii.lg};
   object-fit: cover;
   flex-shrink: 0;
 
@@ -416,7 +421,7 @@ const TripStatus = styled.span`
   font-size: ${({ theme }) => theme.typography.eyebrow};
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: ${({ theme }) => theme.colors.green[580]};
+  color: ${({ theme }) => theme.colors.offroad.accent};
   font-weight: 600;
 `
 
@@ -461,10 +466,10 @@ const Chip = styled.span`
   display: inline-flex;
   align-items: center;
   padding: 0.2rem 0.6rem;
-  border-radius: ${({ theme }) => theme.radii.pill};
+  border-radius: ${({ theme }) => theme.radii.lg};
   font-size: ${({ theme }) => theme.typography.caption};
   font-weight: 500;
-  background: ${({ theme }) => theme.colors.green[700]};
+  background: rgba(143, 179, 106, 0.12);
   color: ${({ theme }) => theme.colors.green[300]};
 `
 
@@ -474,7 +479,7 @@ const ViewButton = styled(Link)`
   justify-content: center;
   gap: 0.5rem;
   font-weight: 600;
-  border-radius: ${({ theme }) => theme.radii.pill};
+  border-radius: ${({ theme }) => theme.radii.lg};
   transition: all ${({ theme }) => theme.animation.duration.normal}s ${({ theme }) => theme.animation.easeOut.join(',')};
   min-height: 36px;
   min-width: 36px;
@@ -483,15 +488,15 @@ const ViewButton = styled(Link)`
   line-height: 1;
   padding: 0.4rem 1rem;
   font-size: ${({ theme }) => theme.typography.bodySmall};
-  background: linear-gradient(135deg, ${({ theme }) => theme.colors.green[580]}, ${({ theme }) => theme.colors.green[500]});
-  color: #0a1e08;
+  background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[400]}, ${({ theme }) => theme.colors.offroad.accent});
+  color: ${({ theme }) => theme.colors.bg[980]};
   box-shadow: ${({ theme }) => theme.shadows.glowGreen};
   flex-shrink: 0;
 
   &:hover {
-    background: linear-gradient(135deg, ${({ theme }) => theme.colors.green[500]}, ${({ theme }) => theme.colors.green[300]});
+    background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[300]}, ${({ theme }) => theme.colors.offroad.accent});
     transform: translateY(-1px);
-    box-shadow: 0 0 40px rgba(23, 247, 2, 0.3), 0 0 80px rgba(23, 247, 2, 0.1);
+    box-shadow: ${({ theme }) => theme.shadows.glowGold};
   }
 `
 

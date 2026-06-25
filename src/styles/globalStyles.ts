@@ -1,7 +1,7 @@
 import { createGlobalStyle } from 'styled-components'
 
 const GlobalStyles = createGlobalStyle`
-  @import url('https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700;800&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap');
 
   *, *::before, *::after {
     box-sizing: border-box;
@@ -13,6 +13,7 @@ const GlobalStyles = createGlobalStyle`
     background-color: ${({ theme }) => theme.colors.bg[980]};
     overflow-y: auto;
     overflow-x: hidden;
+    scroll-behavior: smooth;
     touch-action: pan-x pan-y;
     -webkit-text-size-adjust: 100%;
     height: 100%;
@@ -23,7 +24,10 @@ const GlobalStyles = createGlobalStyle`
     min-height: 100dvh;
     font-family: ${({ theme }) => theme.typography.fontFamily};
     color: ${({ theme }) => theme.colors.text[100]};
-    background: ${({ theme }) => theme.colors.bg[980]};
+    background:
+      radial-gradient(circle at 18% 0%, rgba(143, 179, 106, 0.12), transparent 28rem),
+      radial-gradient(circle at 92% 18%, rgba(192, 163, 91, 0.10), transparent 26rem),
+      linear-gradient(180deg, ${({ theme }) => theme.colors.bg[960]}, ${({ theme }) => theme.colors.bg[980]} 38rem);
     background-attachment: fixed;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -41,31 +45,12 @@ const GlobalStyles = createGlobalStyle`
     inset: 0;
     pointer-events: none;
     z-index: 0;
-    background-image: radial-gradient(rgba(207, 255, 236, 0.09) 0.6px, transparent 0.6px);
-    background-size: 3.2px 3.2px;
-    opacity: 0.12;
-  }
-
-  body::after {
-    content: '';
-    position: fixed;
-    width: 50vw;
-    height: 50vw;
-    left: -10vw;
-    bottom: -18vw;
-    pointer-events: none;
-    z-index: 0;
-    border-radius: 50%;
-    background: radial-gradient(circle, rgba(23, 247, 2, 0.12), transparent 64%);
-    filter: blur(14px);
-    animation: orb-drift 22s ease-in-out infinite;
-  }
-
-  @keyframes orb-drift {
-    0%, 100% { transform: translate(0, 0) scale(1); }
-    25% { transform: translate(3vw, -2vw) scale(1.08); }
-    50% { transform: translate(-1vw, -4vw) scale(0.94); }
-    75% { transform: translate(-3vw, 1vw) scale(1.04); }
+    background-image:
+      linear-gradient(rgba(247, 243, 232, 0.025) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(247, 243, 232, 0.018) 1px, transparent 1px);
+    background-size: 44px 44px;
+    mask-image: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent 78%);
+    opacity: 0.55;
   }
 
   #root {
@@ -95,27 +80,54 @@ const GlobalStyles = createGlobalStyle`
     outline: none;
   }
 
+  button:focus-visible,
+  a:focus-visible,
+  input:focus-visible,
+  textarea:focus-visible,
+  select:focus-visible,
+  [tabindex]:focus-visible {
+    outline: 2px solid ${({ theme }) => theme.colors.green[400]};
+    outline-offset: 3px;
+  }
+
+  button:active,
+  .btn:active,
+  [role="button"]:active {
+    transform: translateY(1px);
+  }
+
   h1, h2, h3, h4, h5, h6, p {
     margin: 0;
   }
 
   h1, h2, h3, h4, h5, h6 {
     font-family: ${({ theme }) => theme.typography.headingFamily};
-    letter-spacing: -0.025em;
+    letter-spacing: 0;
     line-height: 1.15;
+    text-wrap: balance;
   }
 
   h1 { font-size: ${({ theme }) => theme.typography.h1}; }
   h2 { font-size: ${({ theme }) => theme.typography.h2}; }
   h3 { font-size: ${({ theme }) => theme.typography.h3}; }
 
-  p { line-height: 1.55; }
+  p {
+    line-height: 1.6;
+    text-wrap: pretty;
+  }
 
   input, textarea, select {
     font-family: inherit;
     color: inherit;
     -webkit-appearance: none;
     appearance: none;
+  }
+
+  input,
+  textarea,
+  select,
+  button {
+    font-variant-numeric: tabular-nums;
   }
 
   img {
@@ -153,6 +165,24 @@ const GlobalStyles = createGlobalStyle`
     border: 0;
   }
 
+  .skip-link {
+    position: fixed;
+    top: 0.75rem;
+    left: 0.75rem;
+    z-index: 3000;
+    transform: translateY(-160%);
+    padding: 0.65rem 0.9rem;
+    border-radius: ${({ theme }) => theme.radii.md};
+    background: ${({ theme }) => theme.colors.text[100]};
+    color: ${({ theme }) => theme.colors.bg[980]};
+    font-weight: 700;
+    transition: transform 0.18s ease;
+  }
+
+  .skip-link:focus {
+    transform: translateY(0);
+  }
+
   .custom-marker-wrapper {
     cursor: pointer;
   }
@@ -164,7 +194,7 @@ const GlobalStyles = createGlobalStyle`
     display: flex;
     align-items: center;
     justify-content: center;
-    border: 2px solid rgba(243, 255, 241, 0.95);
+    border: 2px solid rgba(247, 243, 232, 0.95);
     box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
   }
 

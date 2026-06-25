@@ -227,7 +227,7 @@ function TimelineStopCard({ stop, isSelected, onSelect, canManage, onEdit, onRem
                   <ActivitiesToggle
                     onClick={(e) => { e.stopPropagation(); setIsExpanded(!isExpanded); }}
                   >
-                    <FiActivity size={14} color="#17f702" />
+                    <FiActivity size={14} color="#8fb36a" />
                     {stop.activities.length} Activities
                     {isExpanded ? <FiChevronUp /> : <FiChevronDown />}
                   </ActivitiesToggle>
@@ -1681,18 +1681,18 @@ const PrimaryLink = styled(Link)`
   justify-content: center;
   gap: 0.5rem;
   padding: 0.65rem 1.5rem;
-  border-radius: ${({ theme }) => theme.radii.pill};
+  border-radius: ${({ theme }) => theme.radii.lg};
   font-size: ${({ theme }) => theme.typography.bodySmall};
   font-weight: 700;
   text-decoration: none;
-  background: linear-gradient(135deg, ${({ theme }) => theme.colors.green[580]}, ${({ theme }) => theme.colors.green[500]});
+  background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[580]}, ${({ theme }) => theme.colors.green[500]});
   color: ${({ theme }) => theme.colors.text[100]};
   cursor: pointer;
   border: none;
   transition: all 0.2s ease;
 
   &:hover {
-    background: linear-gradient(135deg, ${({ theme }) => theme.colors.green[500]}, ${({ theme }) => theme.colors.green[300]});
+    background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[500]}, ${({ theme }) => theme.colors.green[300]});
     transform: translateY(-1px);
   }
 `
@@ -1703,17 +1703,17 @@ const PrimaryButton = styled.button`
   justify-content: center;
   gap: 0.5rem;
   padding: 0.65rem 1.5rem;
-  border-radius: ${({ theme }) => theme.radii.pill};
+  border-radius: ${({ theme }) => theme.radii.lg};
   font-size: ${({ theme }) => theme.typography.bodySmall};
   font-weight: 700;
-  background: linear-gradient(135deg, ${({ theme }) => theme.colors.green[580]}, ${({ theme }) => theme.colors.green[500]});
+  background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[580]}, ${({ theme }) => theme.colors.green[500]});
   color: ${({ theme }) => theme.colors.text[100]};
   cursor: pointer;
   border: none;
   transition: all 0.2s ease;
 
   &:hover:not(:disabled) {
-    background: linear-gradient(135deg, ${({ theme }) => theme.colors.green[500]}, ${({ theme }) => theme.colors.green[300]});
+    background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[500]}, ${({ theme }) => theme.colors.green[300]});
     transform: translateY(-1px);
   }
 
@@ -1750,7 +1750,7 @@ const GhostButton = styled.button`
 
   &:hover:not(:disabled) {
     color: ${({ theme }) => theme.colors.text[220]};
-    background: rgba(243, 255, 241, 0.05);
+    background: rgba(247, 243, 232, 0.05);
   }
 
   &:disabled {
@@ -1842,7 +1842,7 @@ const StaticChip = styled.span`
   display: inline-flex;
   align-items: center;
   padding: 0.2rem 0.7rem;
-  border-radius: ${({ theme }) => theme.radii.pill};
+  border-radius: ${({ theme }) => theme.radii.lg};
   font-size: ${({ theme }) => theme.typography.caption};
   font-weight: 600;
   background: ${({ theme }) => theme.colors.green[700]};
@@ -2274,7 +2274,7 @@ const ExportStrip = styled.div`
   flex-wrap: wrap;
   gap: 0.75rem;
   padding: 1rem 1.25rem;
-  background: linear-gradient(135deg, rgba(17, 34, 26, 0.7), rgba(9, 18, 13, 0.6));
+  background: linear-gradient(140deg, rgba(17, 34, 26, 0.7), rgba(9, 18, 13, 0.6));
   border: 1px solid ${({ theme }) => theme.colors.lineSoft};
   border-radius: ${({ theme }) => theme.radii.md};
   align-items: center;
@@ -2304,7 +2304,7 @@ const ExportButton = styled.button`
   transition: all 0.2s ease;
 
   &:hover:not(:disabled) {
-    background: rgba(243, 255, 241, 0.05);
+    background: rgba(247, 243, 232, 0.05);
     border-color: ${({ theme }) => theme.colors.line};
   }
 
@@ -2317,7 +2317,7 @@ const ExportButton = styled.button`
 const InlineSpinner = styled.span`
   width: 15px;
   height: 15px;
-  border: 2px solid rgba(243, 255, 241, 0.2);
+  border: 2px solid rgba(247, 243, 232, 0.2);
   border-top-color: ${({ theme }) => theme.colors.green[500]};
   border-radius: ${({ theme }) => theme.radii.full};
   animation: spin 0.6s linear infinite;
@@ -2446,8 +2446,8 @@ const ChatBubble = styled.div<{ $isOwn: boolean }>`
   max-width: 70%;
   padding: 0.8rem 1rem;
   border-radius: ${({ theme }) => theme.radii.lg};
-  background: ${({ theme, $isOwn }) => $isOwn ? 'rgba(23, 247, 2, 0.1)' : theme.colors.surface[860]};
-  border: 1px solid ${({ theme, $isOwn }) => $isOwn ? 'rgba(23, 247, 2, 0.2)' : theme.colors.lineSoft};
+  background: ${({ theme, $isOwn }) => $isOwn ? 'rgba(143, 179, 106, 0.1)' : theme.colors.surface[860]};
+  border: 1px solid ${({ theme, $isOwn }) => $isOwn ? 'rgba(143, 179, 106, 0.2)' : theme.colors.lineSoft};
   align-self: ${({ $isOwn }) => $isOwn ? 'flex-end' : 'flex-start'};
   color: ${({ theme }) => theme.colors.text[100]};
 `
@@ -2676,12 +2676,12 @@ const InfoBanner = styled.span<{ $tone: 'success' | 'info' | 'error' }>`
     theme.colors.text[220]
   };
   background: ${({ $tone }) =>
-    $tone === 'success' ? 'rgba(23, 247, 2, 0.1)' :
+    $tone === 'success' ? 'rgba(143, 179, 106, 0.1)' :
     $tone === 'error' ? 'rgba(219, 74, 91, 0.1)' :
-    'rgba(243, 255, 241, 0.06)'
+    'rgba(247, 243, 232, 0.06)'
   };
   border: 1px solid ${({ theme, $tone }) =>
-    $tone === 'success' ? 'rgba(23, 247, 2, 0.2)' :
+    $tone === 'success' ? 'rgba(143, 179, 106, 0.2)' :
     $tone === 'error' ? 'rgba(219, 74, 91, 0.2)' :
     theme.colors.lineSoft
   };

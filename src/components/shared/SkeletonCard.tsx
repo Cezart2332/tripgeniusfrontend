@@ -3,12 +3,13 @@ import { SkeletonBlock } from './SkeletonBlock'
 
 const Card = styled.div`
   display: flex;
-  gap: ${({ theme }) => theme.spacing.md};
+  gap: ${({ theme }) => theme.spacing.lg};
   padding: ${({ theme }) => theme.spacing.lg};
-  background: ${({ theme }) => theme.glass.bg};
+  background: ${({ theme }) => theme.colors.surface[900]};
   border: 1px solid ${({ theme }) => theme.glass.border};
-  border-radius: ${({ theme }) => theme.radii.xl};
+  border-radius: ${({ theme }) => theme.radii.lg};
   backdrop-filter: blur(${({ theme }) => theme.glass.blur});
+  box-shadow: ${({ theme }) => theme.shadows.sm};
 
   @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
     flex-direction: column;
@@ -18,7 +19,7 @@ const Card = styled.div`
 const Thumb = styled(SkeletonBlock)`
   width: 180px;
   height: 120px;
-  border-radius: ${({ theme }) => theme.radii.md};
+  border-radius: ${({ theme }) => theme.radii.lg};
   flex-shrink: 0;
 
   @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {

@@ -86,7 +86,7 @@ const OffroadBadge = styled.span`
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  border-radius: ${({ theme }) => theme.radii.pill};
+  border-radius: ${({ theme }) => theme.radii.lg};
   background: ${({ theme }) => theme.colors.offroad.accentSoft};
   color: ${({ theme }) => theme.colors.offroad.accent};
   border: 1px solid rgba(201, 162, 39, 0.3);
@@ -121,7 +121,7 @@ const CloseButton = styled.button`
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(243, 255, 241, 0.06);
+  background: rgba(247, 243, 232, 0.06);
   color: ${({ theme }) => theme.colors.text[380]};
   border: none;
   cursor: pointer;
@@ -129,7 +129,7 @@ const CloseButton = styled.button`
   transition: all 0.2s ease;
 
   &:hover {
-    background: rgba(243, 255, 241, 0.12);
+    background: rgba(247, 243, 232, 0.12);
     color: ${({ theme }) => theme.colors.text[100]};
   }
 `
@@ -286,7 +286,7 @@ const RouteSource = styled.span<{ $drawn: boolean }>`
   font-weight: 600;
   text-transform: uppercase;
   padding: 0.15rem 0.5rem;
-  border-radius: ${({ theme }) => theme.radii.pill};
+  border-radius: ${({ theme }) => theme.radii.lg};
   background: rgba(169, 200, 163, 0.1);
   color: ${({ theme }) => theme.colors.text[380]};
 
@@ -331,7 +331,7 @@ const GhostBtn = styled.button<{ $danger?: boolean }>`
   font-weight: 500;
   border: none;
   border-radius: ${({ theme }) => theme.radii.sm};
-  background: rgba(243, 255, 241, 0.06);
+  background: rgba(247, 243, 232, 0.06);
   color: ${({ $danger, theme }) => $danger ? theme.colors.danger[500] : theme.colors.text[380]};
   cursor: pointer;
   transition: all 0.15s ease;
@@ -342,7 +342,7 @@ const GhostBtn = styled.button<{ $danger?: boolean }>`
   max-width: 100%;
 
   &:hover {
-    background: rgba(243, 255, 241, 0.12);
+    background: rgba(247, 243, 232, 0.12);
     color: ${({ $danger, theme }) => $danger ? theme.colors.danger[400] : theme.colors.text[100]};
   }
 
@@ -370,7 +370,7 @@ const GhostLink = styled(Link)<{ $danger?: boolean }>`
   font-weight: 500;
   border: none;
   border-radius: ${({ theme }) => theme.radii.sm};
-  background: rgba(243, 255, 241, 0.06);
+  background: rgba(247, 243, 232, 0.06);
   color: ${({ $danger, theme }) => $danger ? theme.colors.danger[500] : theme.colors.text[380]};
   cursor: pointer;
   transition: all 0.15s ease;
@@ -378,7 +378,7 @@ const GhostLink = styled(Link)<{ $danger?: boolean }>`
   white-space: nowrap;
 
   &:hover {
-    background: rgba(243, 255, 241, 0.12);
+    background: rgba(247, 243, 232, 0.12);
     color: ${({ $danger, theme }) => $danger ? theme.colors.danger[400] : theme.colors.text[100]};
   }
 `
@@ -576,8 +576,8 @@ const ChatEmpty = styled.div`
 const ChatBubble = styled.div<{ $self: boolean }>`
   padding: 0.6rem 0.8rem;
   border-radius: ${({ theme }) => theme.radii.md};
-  background: ${({ $self, theme }) => $self ? 'rgba(23, 247, 2, 0.08)' : theme.glass.bg};
-  border: 1px solid ${({ $self, theme }) => $self ? 'rgba(23, 247, 2, 0.15)' : theme.glass.border};
+  background: ${({ $self, theme }) => $self ? 'rgba(143, 179, 106, 0.08)' : theme.glass.bg};
+  border: 1px solid ${({ $self, theme }) => $self ? 'rgba(143, 179, 106, 0.15)' : theme.glass.border};
   margin-left: ${({ $self }) => $self ? 'auto' : '0'};
   margin-right: ${({ $self }) => $self ? '0' : 'auto'};
   max-width: 85%;

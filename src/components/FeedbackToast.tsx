@@ -22,9 +22,9 @@ const toastTransition = {
 } as const
 
 const toneColors: Record<FeedbackToastTone, { bg: string; border: string }> = {
-  success: { bg: 'rgba(23, 247, 2, 0.1)', border: 'rgba(23, 247, 2, 0.3)' },
+  success: { bg: 'rgba(143, 179, 106, 0.1)', border: 'rgba(143, 179, 106, 0.3)' },
   error: { bg: 'rgba(219, 74, 91, 0.1)', border: 'rgba(219, 74, 91, 0.3)' },
-  info: { bg: 'rgba(65, 162, 56, 0.1)', border: 'rgba(65, 162, 56, 0.3)' },
+  info: { bg: 'rgba(143, 179, 106, 0.1)', border: 'rgba(143, 179, 106, 0.3)' },
 }
 
 const Shell = styled.div`
@@ -82,7 +82,7 @@ const DismissButton = styled.button`
 
   &:hover {
     color: ${({ theme }) => theme.colors.text[100]};
-    background: rgba(243, 255, 241, 0.08);
+    background: rgba(247, 243, 232, 0.08);
   }
 `
 

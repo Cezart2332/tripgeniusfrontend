@@ -140,7 +140,7 @@ export function NavigationPage() {
         id: 'nav-route',
         type: 'line',
         source: 'nav-route',
-        paint: { 'line-color': '#17f702', 'line-width': 10, 'line-opacity': 0.85 }
+        paint: { 'line-color': '#8fb36a', 'line-width': 10, 'line-opacity': 0.85 }
       })
     })
 
@@ -560,7 +560,7 @@ const CachedRouteBtn = styled.button`
   cursor: pointer;
 
   &:hover {
-    background: rgba(65, 162, 56, 0.08);
+    background: rgba(143, 179, 106, 0.08);
   }
 `
 
@@ -594,7 +594,7 @@ const ArrivalCloseBtn = styled.button`
   justify-content: center;
   gap: 0.5rem;
   font-weight: 600;
-  border-radius: ${({ theme }) => theme.radii.pill};
+  border-radius: ${({ theme }) => theme.radii.lg};
   transition: all ${({ theme }) => theme.animation.duration.normal}s ${({ theme }) => theme.animation.easeOut.join(',')};
   min-height: 44px;
   min-width: 44px;

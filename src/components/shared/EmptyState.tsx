@@ -17,14 +17,20 @@ const Wrapper = styled(motion.div)`
   align-items: center;
   justify-content: center;
   text-align: center;
-  padding: ${({ theme }) => theme.spacing['3xl']} ${({ theme }) => theme.spacing.lg};
+  padding: ${({ theme }) => theme.spacing['3xl']} ${({ theme }) => theme.spacing.xl};
   gap: ${({ theme }) => theme.spacing.md};
+  border: 1px solid ${({ theme }) => theme.glass.border};
+  border-radius: ${({ theme }) => theme.radii.xl};
+  background:
+    linear-gradient(145deg, rgba(247, 243, 232, 0.05), rgba(247, 243, 232, 0.015)),
+    ${({ theme }) => theme.colors.surface[900]};
+  box-shadow: ${({ theme }) => theme.shadows.md};
 `
 
 const IconWrap = styled.div`
   font-size: 2.5rem;
-  color: ${({ theme }) => theme.colors.green[580]};
-  opacity: 0.6;
+  color: ${({ theme }) => theme.colors.offroad.accent};
+  opacity: 0.85;
   margin-bottom: ${({ theme }) => theme.spacing.sm};
 `
 
@@ -37,6 +43,7 @@ const Illustration = styled.img`
 
 const Title = styled.h2`
   color: ${({ theme }) => theme.colors.text[100]};
+  font-size: ${({ theme }) => theme.typography.h2};
 `
 
 const Description = styled.p`

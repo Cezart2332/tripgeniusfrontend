@@ -14,7 +14,6 @@
     "@microsoft/signalr": "^10.0.0",
     "@react-oauth/google": "^0.13.5",
     "@reduxjs/toolkit": "^2.11.2",
-    "@studio-freight/lenis": "^1.0.42",
     "axios": "^1.14.0",
     "framer-motion": "^12.38.0",
     "maplibre-gl": "^5.24.0",

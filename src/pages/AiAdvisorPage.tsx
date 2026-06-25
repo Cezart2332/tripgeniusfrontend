@@ -102,7 +102,7 @@ const ToggleTrack = styled.span`
   position: relative;
   width: 44px;
   height: 24px;
-  border-radius: ${({ theme }) => theme.radii.pill};
+  border-radius: ${({ theme }) => theme.radii.lg};
   background: ${({ theme }) => theme.colors.surface[820]};
   transition: background 0.25s;
   flex-shrink: 0;
@@ -256,7 +256,7 @@ const SuggestionIcon = styled.div`
   width: 40px;
   height: 40px;
   border-radius: ${({ theme }) => theme.radii.full};
-  background: rgba(65, 162, 56, 0.1);
+  background: rgba(143, 179, 106, 0.1);
   color: ${({ theme }) => theme.colors.green[500]};
   font-size: 1.1rem;
 `
@@ -295,7 +295,7 @@ const MessageInner = styled.div<{ $sender: 'user' | 'assistant'; $thinking?: boo
   border-radius: ${({ theme }) => theme.radii.xl};
   border-bottom-right-radius: ${({ $sender, theme }) => ($sender === 'user' ? theme.radii.sm : theme.radii.xl)};
   border-bottom-left-radius: ${({ $sender, theme }) => ($sender === 'assistant' ? theme.radii.sm : theme.radii.xl)};
-  background: ${({ $sender, theme }) => ($sender === 'user' ? `linear-gradient(135deg, ${theme.colors.green[580]}, ${theme.colors.green[700]})` : theme.glass.bg)};
+  background: ${({ $sender, theme }) => ($sender === 'user' ? `linear-gradient(140deg, ${theme.colors.green[580]}, ${theme.colors.green[700]})` : theme.glass.bg)};
   border: 1px solid ${({ $sender, theme }) => ($sender === 'user' ? 'transparent' : theme.glass.border)};
   backdrop-filter: blur(${({ theme }) => theme.glass.blur});
 
@@ -339,7 +339,7 @@ const MessageContent = styled.div`
   }
 
   code {
-    background: rgba(65, 162, 56, 0.1);
+    background: rgba(143, 179, 106, 0.1);
     padding: 0.15em 0.4em;
     border-radius: ${({ theme }) => theme.radii.sm};
     font-size: 0.85em;
@@ -382,9 +382,9 @@ const StreamStatus = styled.div`
   gap: 0.4rem;
   margin-top: 0.5rem;
   padding: 0.35rem 0.7rem;
-  border-radius: ${({ theme }) => theme.radii.pill};
-  background: rgba(65, 162, 56, 0.08);
-  border: 1px solid rgba(65, 162, 56, 0.15);
+  border-radius: ${({ theme }) => theme.radii.lg};
+  background: rgba(143, 179, 106, 0.08);
+  border: 1px solid rgba(143, 179, 106, 0.15);
   font-size: ${({ theme }) => theme.typography.caption};
   color: ${({ theme }) => theme.colors.text[380]};
 `
@@ -460,14 +460,14 @@ const LinkCard = styled.a`
   gap: 0.75rem;
   padding: 0.6rem 0.85rem;
   border-radius: ${({ theme }) => theme.radii.md};
-  background: rgba(65, 162, 56, 0.04);
+  background: rgba(143, 179, 106, 0.04);
   border: 1px solid ${({ theme }) => theme.glass.border};
   text-decoration: none;
   color: ${({ theme }) => theme.colors.text[100]};
   transition: all 0.2s;
 
   &:hover {
-    background: rgba(65, 162, 56, 0.08);
+    background: rgba(143, 179, 106, 0.08);
     border-color: ${({ theme }) => theme.colors.line};
   }
 `
@@ -479,7 +479,7 @@ const LinkIcon = styled.div`
   width: 32px;
   height: 32px;
   border-radius: ${({ theme }) => theme.radii.md};
-  background: rgba(65, 162, 56, 0.1);
+  background: rgba(143, 179, 106, 0.1);
   color: ${({ theme }) => theme.colors.green[500]};
   flex-shrink: 0;
 `
@@ -638,7 +638,7 @@ const ComposerTextarea = styled.textarea`
   &:focus {
     outline: none;
     border-color: ${({ theme }) => theme.colors.green[500]};
-    box-shadow: 0 0 0 3px rgba(23, 247, 2, 0.1);
+    box-shadow: 0 0 0 3px rgba(143, 179, 106, 0.1);
   }
 
   &:disabled {
@@ -656,14 +656,14 @@ const ComposerSubmit = styled.button`
   border-radius: ${({ theme }) => theme.radii.full};
   background: ${({ theme }) => theme.colors.green[580]};
   border: none;
-  color: #0a1e08;
+  color: #10120f;
   cursor: pointer;
   flex-shrink: 0;
   transition: all 0.2s;
 
   &:hover:not(:disabled) {
     background: ${({ theme }) => theme.colors.green[500]};
-    box-shadow: 0 0 16px rgba(23, 247, 2, 0.2);
+    box-shadow: 0 0 16px rgba(143, 179, 106, 0.2);
   }
 
   &:disabled {
@@ -730,9 +730,9 @@ const OfflineLink = styled(Link)`
   justify-content: center;
   gap: 0.5rem;
   padding: 0.65rem 1.5rem;
-  border-radius: ${({ theme }) => theme.radii.pill};
-  background: linear-gradient(135deg, ${({ theme }) => theme.colors.green[580]}, ${({ theme }) => theme.colors.green[500]});
-  color: #0a1e08;
+  border-radius: ${({ theme }) => theme.radii.lg};
+  background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[580]}, ${({ theme }) => theme.colors.green[500]});
+  color: #10120f;
   font-weight: 600;
   font-size: ${({ theme }) => theme.typography.bodySmall};
   text-decoration: none;
@@ -740,7 +740,7 @@ const OfflineLink = styled(Link)`
   transition: all 0.2s;
 
   &:hover {
-    box-shadow: 0 0 30px rgba(23, 247, 2, 0.2);
+    box-shadow: 0 0 30px rgba(143, 179, 106, 0.2);
     transform: translateY(-1px);
   }
 `

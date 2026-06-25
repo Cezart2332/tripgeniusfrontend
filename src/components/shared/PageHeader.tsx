@@ -16,14 +16,18 @@ interface PageHeaderProps {
 }
 
 const Wrapper = styled.div`
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: flex-start;
   justify-content: space-between;
   gap: ${({ theme }) => theme.spacing.lg};
-  flex-wrap: wrap;
+  padding: ${({ theme }) => theme.spacing.xl} 0;
+  border-bottom: 1px solid ${({ theme }) => theme.colors.lineSoft};
+  background:
+    radial-gradient(circle at 82% 0%, rgba(143, 179, 106, 0.10), transparent 20rem);
 
   @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
-    flex-direction: column;
+    grid-template-columns: 1fr;
     gap: ${({ theme }) => theme.spacing.md};
   }
 `
@@ -35,7 +39,7 @@ const HeadingGroup = styled.div`
 `
 
 const Title = styled.h1`
-  background: linear-gradient(135deg, ${({ theme }) => theme.colors.text[100]} 30%, ${({ theme }) => theme.colors.green[500]} 100%);
+  background: linear-gradient(140deg, ${({ theme }) => theme.colors.text[100]} 30%, ${({ theme }) => theme.colors.offroad.accent} 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -62,11 +66,11 @@ const Stat = styled.div`
   padding: 0.3rem 0.7rem;
   background: ${({ theme }) => theme.glass.bg};
   border: 1px solid ${({ theme }) => theme.glass.border};
-  border-radius: ${({ theme }) => theme.radii.pill};
+  border-radius: ${({ theme }) => theme.radii.md};
 `
 
 const StatIcon = styled.span`
-  color: ${({ theme }) => theme.colors.green[500]};
+  color: ${({ theme }) => theme.colors.offroad.accent};
   display: flex;
   font-size: 0.9rem;
 `

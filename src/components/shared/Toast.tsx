@@ -9,9 +9,9 @@ interface ToastContainerProps {
 }
 
 const toneColors = {
-  success: '#17f702',
+  success: '#8fb36a',
   error: '#db4a5b',
-  info: '#41a238',
+  info: '#c0a35b',
 } as const
 
 const Wrapper = styled.div`
@@ -38,12 +38,12 @@ const ToastItem = styled(motion.div)<{ $tone: 'success' | 'error' | 'info' }>`
   align-items: center;
   gap: 0.65rem;
   padding: 0.75rem 1rem;
-  background: ${({ theme }) => theme.glass.bgStrong};
+  background: ${({ theme }) => theme.colors.surface[900]};
   border: 1px solid ${({ $tone }) => toneColors[$tone]};
   border-radius: ${({ theme }) => theme.radii.lg};
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  box-shadow: ${({ theme }) => theme.shadows.lg};
+  box-shadow: ${({ theme }) => theme.shadows.xl};
   pointer-events: auto;
   color: ${({ theme }) => theme.colors.text[100]};
   font-size: ${({ theme }) => theme.typography.bodySmall};
@@ -52,7 +52,7 @@ const ToastItem = styled(motion.div)<{ $tone: 'success' | 'error' | 'info' }>`
 const Dot = styled.span<{ $tone: 'success' | 'error' | 'info' }>`
   width: 8px;
   height: 8px;
-  border-radius: 50%;
+  border-radius: ${({ theme }) => theme.radii.sm};
   background: ${({ $tone }) => toneColors[$tone]};
   flex-shrink: 0;
 `

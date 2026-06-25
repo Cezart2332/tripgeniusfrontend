@@ -97,7 +97,7 @@ const UnauthedLink = styled(Link)`
   justify-content: center;
   gap: 0.5rem;
   font-weight: 600;
-  border-radius: ${({ theme }) => theme.radii.pill};
+  border-radius: ${({ theme }) => theme.radii.lg};
   transition: all ${({ theme }) => theme.animation.duration.normal}s;
   min-height: 44px;
   min-width: 44px;
@@ -105,14 +105,14 @@ const UnauthedLink = styled(Link)`
   text-decoration: none;
   line-height: 1;
   padding: 0.65rem 1.5rem;
-  background: linear-gradient(135deg, ${({ theme }) => theme.colors.green[580]}, ${({ theme }) => theme.colors.green[500]});
-  color: #0a1e08;
+  background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[580]}, ${({ theme }) => theme.colors.green[500]});
+  color: #10120f;
   box-shadow: ${({ theme }) => theme.shadows.glowGreen};
 
   &:hover {
-    background: linear-gradient(135deg, ${({ theme }) => theme.colors.green[500]}, ${({ theme }) => theme.colors.green[300]});
+    background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[500]}, ${({ theme }) => theme.colors.green[300]});
     transform: translateY(-1px);
-    box-shadow: 0 0 40px rgba(23, 247, 2, 0.3), 0 0 80px rgba(23, 247, 2, 0.1);
+    box-shadow: 0 0 40px rgba(143, 179, 106, 0.3), 0 0 80px rgba(143, 179, 106, 0.1);
   }
 `
 
@@ -306,7 +306,7 @@ const IconCircle = styled.div<{ $danger?: boolean }>`
   width: 44px;
   height: 44px;
   border-radius: ${({ theme }) => theme.radii.lg};
-  background: ${({ $danger }) => ($danger ? 'rgba(219, 74, 91, 0.15)' : 'rgba(65, 162, 56, 0.12)')};
+  background: ${({ $danger }) => ($danger ? 'rgba(219, 74, 91, 0.15)' : 'rgba(143, 179, 106, 0.12)')};
   color: ${({ $danger, theme }) => ($danger ? theme.colors.danger[500] : theme.colors.green[580])};
   display: flex;
   align-items: center;
@@ -362,7 +362,7 @@ const Input = styled.input`
   &:focus {
     outline: none;
     border-color: ${({ theme }) => theme.colors.green[500]};
-    box-shadow: 0 0 0 3px rgba(23, 247, 2, 0.1);
+    box-shadow: 0 0 0 3px rgba(143, 179, 106, 0.1);
   }
 
   &:disabled {
@@ -387,7 +387,7 @@ const TextArea = styled.textarea`
   &:focus {
     outline: none;
     border-color: ${({ theme }) => theme.colors.green[500]};
-    box-shadow: 0 0 0 3px rgba(23, 247, 2, 0.1);
+    box-shadow: 0 0 0 3px rgba(143, 179, 106, 0.1);
   }
 
   &:disabled {
@@ -403,24 +403,24 @@ const PrimaryBtn = styled.button`
   gap: 0.5rem;
   font-weight: 600;
   font-family: inherit;
-  border-radius: ${({ theme }) => theme.radii.pill};
+  border-radius: ${({ theme }) => theme.radii.lg};
   transition: all ${({ theme }) => theme.animation.duration.normal}s;
   min-height: 44px;
   min-width: 44px;
   white-space: nowrap;
   line-height: 1;
   padding: 0.65rem 1.5rem;
-  background: linear-gradient(135deg, ${({ theme }) => theme.colors.green[580]}, ${({ theme }) => theme.colors.green[500]});
-  color: #0a1e08;
+  background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[580]}, ${({ theme }) => theme.colors.green[500]});
+  color: #10120f;
   box-shadow: ${({ theme }) => theme.shadows.glowGreen};
   border: none;
   cursor: pointer;
   align-self: flex-start;
 
   &:hover {
-    background: linear-gradient(135deg, ${({ theme }) => theme.colors.green[500]}, ${({ theme }) => theme.colors.green[300]});
+    background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[500]}, ${({ theme }) => theme.colors.green[300]});
     transform: translateY(-1px);
-    box-shadow: 0 0 40px rgba(23, 247, 2, 0.3), 0 0 80px rgba(23, 247, 2, 0.1);
+    box-shadow: 0 0 40px rgba(143, 179, 106, 0.3), 0 0 80px rgba(143, 179, 106, 0.1);
   }
 
   &:active {
@@ -441,14 +441,14 @@ const DangerBtn = styled.button`
   gap: 0.5rem;
   font-weight: 600;
   font-family: inherit;
-  border-radius: ${({ theme }) => theme.radii.pill};
+  border-radius: ${({ theme }) => theme.radii.lg};
   transition: all ${({ theme }) => theme.animation.duration.normal}s;
   min-height: 44px;
   min-width: 44px;
   white-space: nowrap;
   line-height: 1;
   padding: 0.65rem 1.5rem;
-  background: linear-gradient(135deg, ${({ theme }) => theme.colors.danger[500]}, ${({ theme }) => theme.colors.danger[400]});
+  background: linear-gradient(140deg, ${({ theme }) => theme.colors.danger[500]}, ${({ theme }) => theme.colors.danger[400]});
   color: #fff;
   border: none;
   cursor: pointer;
@@ -456,7 +456,7 @@ const DangerBtn = styled.button`
   font-size: ${({ theme }) => theme.typography.bodySmall};
 
   &:hover {
-    background: linear-gradient(135deg, ${({ theme }) => theme.colors.danger[400]}, ${({ theme }) => theme.colors.danger[500]});
+    background: linear-gradient(140deg, ${({ theme }) => theme.colors.danger[400]}, ${({ theme }) => theme.colors.danger[500]});
     transform: translateY(-1px);
     box-shadow: 0 0 36px rgba(219, 74, 91, 0.35);
   }

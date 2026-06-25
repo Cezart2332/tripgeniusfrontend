@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import Lenis from '@studio-freight/lenis'
 import { motion } from 'framer-motion'
 import { useDispatch, useSelector } from 'react-redux'
 import { useLocation, useNavigate, useOutlet } from 'react-router-dom'
@@ -23,9 +22,9 @@ interface AuthStoreState {
 }
 
 const Shell = styled.div`
-  width: min(1200px, 100% - 2rem);
+  width: min(1320px, 100% - 2rem);
   margin: 0 auto;
-  padding: 4.5rem 0 5rem;
+  padding: 5.25rem 0 5.75rem;
   flex: 1;
 
   @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
@@ -38,6 +37,7 @@ const Main = styled(motion.main)`
   min-height: calc(100vh - 8rem);
   display: flex;
   flex-direction: column;
+  isolation: isolate;
 
   @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
     min-height: auto;
@@ -81,7 +81,6 @@ export function AppLayout() {
   const navigate = useNavigate()
   const dispatch = useDispatch()
   const user = useSelector((state: AuthStoreState) => state.auth.user)
-  const [hideHeader, setHideHeader] = useState(false)
   const [isAppInitializing, setIsAppInitializing] = useState(true)
   const [isLoggingOut, setIsLoggingOut] = useState(false)
   const [isSyncingUser, setIsSyncingUser] = useState(false)
@@ -139,44 +138,19 @@ export function AppLayout() {
   }
 
   useEffect(() => {
-    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    const isCoarsePointer = window.matchMedia('(pointer: coarse)').matches
-    const isNarrow = window.matchMedia('(max-width: 850px)').matches
-    if (prefersReducedMotion || isCoarsePointer || isNarrow || aiStandalone) return
-
-    const lenis = new Lenis({ lerp: 0.12, smoothWheel: true, wheelMultiplier: 1, touchMultiplier: 1.5 })
-    let rafId = 0
-    const raf = (time: number) => { lenis.raf(time); rafId = window.requestAnimationFrame(raf) }
-    rafId = window.requestAnimationFrame(raf)
-    return () => { window.cancelAnimationFrame(rafId); lenis.destroy() }
-  }, [aiStandalone])
-
-  useEffect(() => {
-    if (aiStandalone) return
-    let prevY = window.scrollY
-    const onScroll = () => {
-      const currentY = window.scrollY
-      setHideHeader(currentY > prevY && currentY > 80)
-      prevY = currentY
-    }
-    window.addEventListener('scroll', onScroll, { passive: true })
-    return () => window.removeEventListener('scroll', onScroll)
-  }, [aiStandalone])
-
-  useEffect(() => {
-    if (!aiStandalone) {
+    if (!aiStandalone && !mapFullscreen) {
       window.scrollTo(0, 0)
     }
-  }, [location.pathname, aiStandalone])
+  }, [location.pathname, aiStandalone, mapFullscreen])
 
   useEffect(() => {
-    if (!aiStandalone) return
+    if (!aiStandalone && !mapFullscreen) return
     const prevOverflow = document.body.style.overflow
     document.body.style.overflow = 'hidden'
     return () => {
       document.body.style.overflow = prevOverflow
     }
-  }, [aiStandalone])
+  }, [aiStandalone, mapFullscreen])
 
   useEffect(() => {
     if (hasAttemptedInit.current) return
@@ -211,7 +185,7 @@ export function AppLayout() {
     <>
       <DesktopTopbar
         user={user}
-        hideHeader={hideHeader}
+        hideHeader={false}
         isLoggingOut={isLoggingOut}
         isSyncingUser={isSyncingUser}
         deferredPrompt={!!deferredPrompt}
@@ -226,8 +200,10 @@ export function AppLayout() {
   if (aiStandalone) {
     return (
       <>
+        <a href="#app-content" className="skip-link">Skip to content</a>
         {topbar}
         <FullBleedMain
+          id="app-content"
           key={location.pathname}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -249,7 +225,9 @@ export function AppLayout() {
   if (mapFullscreen) {
     return (
       <>
+        <a href="#app-content" className="skip-link">Skip to content</a>
         <FullBleedMain
+          id="app-content"
           key={location.pathname}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -270,10 +248,12 @@ export function AppLayout() {
 
   return (
     <>
+      <a href="#app-content" className="skip-link">Skip to content</a>
       <Shell>
         <AmbientLayer aria-hidden="true" />
         {topbar}
         <Main
+          id="app-content"
           key={location.pathname}
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}

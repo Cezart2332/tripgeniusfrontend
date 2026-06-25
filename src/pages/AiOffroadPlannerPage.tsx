@@ -47,7 +47,7 @@ const BackButton = styled.button`
   align-items: center;
   gap: 0.5rem;
   padding: 0.55rem 1.2rem;
-  border-radius: ${({ theme }) => theme.radii.pill};
+  border-radius: ${({ theme }) => theme.radii.lg};
   background: transparent;
   border: 1px solid ${({ theme }) => theme.colors.lineSoft};
   color: ${({ theme }) => theme.colors.text[220]};
@@ -173,7 +173,7 @@ const Chip = styled.button<{ $selected?: boolean }>`
   align-items: center;
   gap: 0.25rem;
   padding: 0.35rem 0.85rem;
-  border-radius: ${({ theme }) => theme.radii.pill};
+  border-radius: ${({ theme }) => theme.radii.lg};
   border: 1px solid ${({ $selected, theme }) => ($selected ? theme.colors.offroad.accent : theme.colors.lineSoft)};
   background: ${({ $selected }) => ($selected ? 'rgba(201, 162, 39, 0.15)' : 'transparent')};
   color: ${({ $selected, theme }) => ($selected ? theme.colors.offroad.accent : theme.colors.text[380])};
@@ -205,10 +205,10 @@ const SubmitButton = styled.button`
   height: 60px;
   font-size: 1.2rem;
   font-weight: 700;
-  border-radius: ${({ theme }) => theme.radii.pill};
+  border-radius: ${({ theme }) => theme.radii.lg};
   border: none;
   cursor: pointer;
-  background: linear-gradient(135deg, ${({ theme }) => theme.colors.offroad.accent} 0%, #8b7316 100%);
+  background: linear-gradient(140deg, ${({ theme }) => theme.colors.offroad.accent} 0%, #8b7316 100%);
   color: #1a1408;
   box-shadow: 0 10px 30px rgba(201, 162, 39, 0.15);
   margin-top: 1rem;

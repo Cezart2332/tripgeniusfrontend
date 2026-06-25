@@ -483,11 +483,9 @@ const PageSection = styled.section`
 `
 
 const PageHeader = styled(motion.header)`
-  background: ${({ theme }) => theme.glass.bg};
-  border: 1px solid ${({ theme }) => theme.glass.border};
-  border-radius: ${({ theme }) => theme.radii.xl};
-  padding: ${({ theme }) => theme.spacing.xl};
-  backdrop-filter: blur(${({ theme }) => theme.glass.blur});
+  padding: ${({ theme }) => theme.spacing.xl} 0;
+  border-bottom: 1px solid ${({ theme }) => theme.colors.lineSoft};
+  background: radial-gradient(circle at 85% 0%, rgba(143, 179, 106, 0.10), transparent 18rem);
 
   h1 { color: ${({ theme }) => theme.colors.text[100]}; }
   p { color: ${({ theme }) => theme.colors.text[380]}; }
@@ -507,7 +505,7 @@ const BackLink = styled(Link)`
   justify-content: center;
   gap: 0.5rem;
   font-weight: 600;
-  border-radius: ${({ theme }) => theme.radii.pill};
+  border-radius: ${({ theme }) => theme.radii.lg};
   transition: all ${({ theme }) => theme.animation.duration.normal}s ${({ theme }) => theme.animation.easeOut.join(',')};
   min-height: 44px;
   min-width: 44px;
@@ -520,7 +518,7 @@ const BackLink = styled(Link)`
   border: 1px solid ${({ theme }) => theme.colors.lineSoft};
 
   &:hover {
-    background: rgba(65, 162, 56, 0.08);
+    background: rgba(143, 179, 106, 0.08);
     border-color: ${({ theme }) => theme.colors.line};
     color: ${({ theme }) => theme.colors.text[100]};
   }
@@ -590,7 +588,7 @@ const Input = styled.input`
   &:focus {
     outline: none;
     border-color: ${({ theme }) => theme.colors.green[500]};
-    box-shadow: 0 0 0 3px rgba(23, 247, 2, 0.1);
+    box-shadow: 0 0 0 3px rgba(143, 179, 106, 0.1);
   }
   &:disabled { opacity: 0.5; }
 `
@@ -631,7 +629,7 @@ const SmallTextarea = styled.textarea`
   &:focus {
     outline: none;
     border-color: ${({ theme }) => theme.colors.green[500]};
-    box-shadow: 0 0 0 3px rgba(23, 247, 2, 0.1);
+    box-shadow: 0 0 0 3px rgba(143, 179, 106, 0.1);
   }
 `
 
@@ -679,7 +677,7 @@ const LocationOption = styled.button`
   color: ${({ theme }) => theme.colors.text[100]};
 
   &:last-child { border-bottom: none; }
-  &:hover { background: rgba(65, 162, 56, 0.08); }
+  &:hover { background: rgba(143, 179, 106, 0.08); }
 `
 
 const LocationOptionMain = styled.span`
@@ -760,7 +758,7 @@ const GhostBtnSm = styled.button`
   justify-content: center;
   gap: 0.5rem;
   font-weight: 600;
-  border-radius: ${({ theme }) => theme.radii.pill};
+  border-radius: ${({ theme }) => theme.radii.lg};
   transition: all ${({ theme }) => theme.animation.duration.normal}s ${({ theme }) => theme.animation.easeOut.join(',')};
   min-height: 36px;
   min-width: 36px;
@@ -773,7 +771,7 @@ const GhostBtnSm = styled.button`
   border: 1px solid ${({ theme }) => theme.colors.lineSoft};
 
   &:hover {
-    background: rgba(65, 162, 56, 0.08);
+    background: rgba(143, 179, 106, 0.08);
     border-color: ${({ theme }) => theme.colors.line};
     color: ${({ theme }) => theme.colors.text[100]};
   }
@@ -799,21 +797,21 @@ const PrimaryBtn = styled.button`
   justify-content: center;
   gap: 0.5rem;
   font-weight: 600;
-  border-radius: ${({ theme }) => theme.radii.pill};
+  border-radius: ${({ theme }) => theme.radii.lg};
   transition: all ${({ theme }) => theme.animation.duration.normal}s ${({ theme }) => theme.animation.easeOut.join(',')};
   min-height: 44px;
   min-width: 44px;
   white-space: nowrap;
   line-height: 1;
   padding: 0.65rem 1.5rem;
-  background: linear-gradient(135deg, ${({ theme }) => theme.colors.green[580]}, ${({ theme }) => theme.colors.green[500]});
-  color: #0a1e08;
+  background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[580]}, ${({ theme }) => theme.colors.green[500]});
+  color: #10120f;
   box-shadow: ${({ theme }) => theme.shadows.glowGreen};
   border: none;
   cursor: pointer;
 
   &:hover {
-    background: linear-gradient(135deg, ${({ theme }) => theme.colors.green[500]}, ${({ theme }) => theme.colors.green[300]});
+    background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[500]}, ${({ theme }) => theme.colors.green[300]});
     transform: translateY(-1px);
   }
   &:disabled { opacity: 0.5; transform: none; box-shadow: none; cursor: not-allowed; }
@@ -826,7 +824,7 @@ const Actions = styled.div`
 `
 
 const InfoBanner = styled.p`
-  background: rgba(65, 162, 56, 0.08);
+  background: rgba(143, 179, 106, 0.08);
   border: 1px solid ${({ theme }) => theme.colors.lineSoft};
   color: ${({ theme }) => theme.colors.text[380]};
   padding: 0.75rem 1rem;

@@ -377,7 +377,7 @@ const PrimaryLink = styled(Link)`
   justify-content: center;
   gap: 0.5rem;
   font-weight: 600;
-  border-radius: ${({ theme }) => theme.radii.pill};
+  border-radius: ${({ theme }) => theme.radii.lg};
   transition: all ${({ theme }) => theme.animation.duration.normal}s ${({ theme }) => theme.animation.easeOut.join(',')};
   min-height: 44px;
   min-width: 44px;
@@ -385,12 +385,12 @@ const PrimaryLink = styled(Link)`
   text-decoration: none;
   line-height: 1;
   padding: 0.65rem 1.5rem;
-  background: linear-gradient(135deg, ${({ theme }) => theme.colors.green[580]}, ${({ theme }) => theme.colors.green[500]});
-  color: #0a1e08;
+  background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[580]}, ${({ theme }) => theme.colors.green[500]});
+  color: #10120f;
   box-shadow: ${({ theme }) => theme.shadows.glowGreen};
 
   &:hover {
-    background: linear-gradient(135deg, ${({ theme }) => theme.colors.green[500]}, ${({ theme }) => theme.colors.green[300]});
+    background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[500]}, ${({ theme }) => theme.colors.green[300]});
     transform: translateY(-1px);
   }
 `
@@ -501,10 +501,10 @@ const ExploreChip = styled.span`
   align-items: center;
   gap: 0.35rem;
   padding: 0.4rem 0.9rem;
-  border-radius: ${({ theme }) => theme.radii.pill};
+  border-radius: ${({ theme }) => theme.radii.lg};
   font-size: ${({ theme }) => theme.typography.bodySmall};
   font-weight: 600;
-  background: rgba(23, 247, 2, 0.2);
+  background: rgba(143, 179, 106, 0.2);
   border: 1px solid ${({ theme }) => theme.colors.green[500]};
   color: ${({ theme }) => theme.colors.green[500]};
   white-space: nowrap;
@@ -515,7 +515,7 @@ const LoadingChip = styled.span`
   align-items: center;
   gap: 0.4rem;
   padding: 0.4rem 0.9rem;
-  border-radius: ${({ theme }) => theme.radii.pill};
+  border-radius: ${({ theme }) => theme.radii.lg};
   font-size: ${({ theme }) => theme.typography.bodySmall};
   background: rgba(255,255,255,0.05);
   color: ${({ theme }) => theme.colors.text[220]};
@@ -527,10 +527,10 @@ const DownloadChip = styled.button<{ $downloading: boolean }>`
   align-items: center;
   gap: 0.4rem;
   padding: 0.4rem 0.9rem;
-  border-radius: ${({ theme }) => theme.radii.pill};
+  border-radius: ${({ theme }) => theme.radii.lg};
   font-size: ${({ theme }) => theme.typography.bodySmall};
   font-weight: 600;
-  background: ${({ $downloading }) => $downloading ? 'rgba(23, 247, 2, 0.4)' : 'rgba(23, 247, 2, 0.1)'};
+  background: ${({ $downloading }) => $downloading ? 'rgba(143, 179, 106, 0.4)' : 'rgba(143, 179, 106, 0.1)'};
   border: 1px solid ${({ theme }) => theme.colors.green[580]};
   color: ${({ theme }) => theme.colors.text[100]};
   white-space: nowrap;
@@ -544,10 +544,10 @@ const CachedChip = styled.span`
   align-items: center;
   gap: 0.4rem;
   padding: 0.4rem 0.9rem;
-  border-radius: ${({ theme }) => theme.radii.pill};
+  border-radius: ${({ theme }) => theme.radii.lg};
   font-size: ${({ theme }) => theme.typography.bodySmall};
   font-weight: 600;
-  background: rgba(23, 247, 2, 0.15);
+  background: rgba(143, 179, 106, 0.15);
   border: 1px solid ${({ theme }) => theme.colors.green[580]};
   color: ${({ theme }) => theme.colors.green[500]};
   white-space: nowrap;

@@ -10,13 +10,9 @@ const Wrapper = styled.div<{ $centered?: boolean }>`
 const ModeTabNav = styled.nav`
   display: flex;
   align-items: center;
-  gap: 0.25rem;
-  padding: 0.3rem;
-  background: ${({ theme }) => theme.glass.bgStrong};
-  border: 1px solid ${({ theme }) => theme.glass.border};
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border-radius: ${({ theme }) => theme.radii.pill};
+  gap: 0.5rem;
+  padding: 0;
+  border-bottom: 1px solid ${({ theme }) => theme.colors.lineSoft};
   width: fit-content;
 `
 
@@ -24,8 +20,8 @@ const ModeTab = styled(NavLink)`
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0.5rem 1.2rem;
-  border-radius: ${({ theme }) => theme.radii.pill};
+  padding: 0.55rem 0.2rem;
+  border-radius: 0;
   font-size: ${({ theme }) => theme.typography.bodySmall};
   font-weight: 600;
   color: ${({ theme }) => theme.colors.text[380]};
@@ -37,9 +33,8 @@ const ModeTab = styled(NavLink)`
   }
 
   &.active {
-    background: linear-gradient(135deg, ${({ theme }) => theme.colors.green[580]}, ${({ theme }) => theme.colors.green[500]});
-    color: #0a1e08;
-    box-shadow: 0 2px 12px rgba(23, 247, 2, 0.2);
+    color: ${({ theme }) => theme.colors.green[300]};
+    box-shadow: inset 0 -2px 0 ${({ theme }) => theme.colors.green[500]};
   }
 `
 

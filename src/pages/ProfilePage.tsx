@@ -268,7 +268,7 @@ const UnauthedLink = styled(Link)`
   justify-content: center;
   gap: 0.5rem;
   font-weight: 600;
-  border-radius: ${({ theme }) => theme.radii.pill};
+  border-radius: ${({ theme }) => theme.radii.lg};
   transition: all ${({ theme }) => theme.animation.duration.normal}s;
   min-height: 44px;
   min-width: 44px;
@@ -276,14 +276,14 @@ const UnauthedLink = styled(Link)`
   text-decoration: none;
   line-height: 1;
   padding: 0.65rem 1.5rem;
-  background: linear-gradient(135deg, ${({ theme }) => theme.colors.green[580]}, ${({ theme }) => theme.colors.green[500]});
-  color: #0a1e08;
+  background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[580]}, ${({ theme }) => theme.colors.green[500]});
+  color: #10120f;
   box-shadow: ${({ theme }) => theme.shadows.glowGreen};
 
   &:hover {
-    background: linear-gradient(135deg, ${({ theme }) => theme.colors.green[500]}, ${({ theme }) => theme.colors.green[300]});
+    background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[500]}, ${({ theme }) => theme.colors.green[300]});
     transform: translateY(-1px);
-    box-shadow: 0 0 40px rgba(23, 247, 2, 0.3), 0 0 80px rgba(23, 247, 2, 0.1);
+    box-shadow: 0 0 40px rgba(143, 179, 106, 0.3), 0 0 80px rgba(143, 179, 106, 0.1);
   }
 `
 
@@ -424,7 +424,7 @@ const Input = styled.input`
   &:focus {
     outline: none;
     border-color: ${({ theme }) => theme.colors.green[500]};
-    box-shadow: 0 0 0 3px rgba(23, 247, 2, 0.1);
+    box-shadow: 0 0 0 3px rgba(143, 179, 106, 0.1);
   }
 
   &:disabled {
@@ -449,7 +449,7 @@ const TextArea = styled.textarea`
   &:focus {
     outline: none;
     border-color: ${({ theme }) => theme.colors.green[500]};
-    box-shadow: 0 0 0 3px rgba(23, 247, 2, 0.1);
+    box-shadow: 0 0 0 3px rgba(143, 179, 106, 0.1);
   }
 
   &:disabled {
@@ -465,24 +465,24 @@ const PrimaryBtn = styled.button`
   gap: 0.5rem;
   font-weight: 600;
   font-family: inherit;
-  border-radius: ${({ theme }) => theme.radii.pill};
+  border-radius: ${({ theme }) => theme.radii.lg};
   transition: all ${({ theme }) => theme.animation.duration.normal}s;
   min-height: 44px;
   min-width: 44px;
   white-space: nowrap;
   line-height: 1;
   padding: 0.65rem 1.5rem;
-  background: linear-gradient(135deg, ${({ theme }) => theme.colors.green[580]}, ${({ theme }) => theme.colors.green[500]});
-  color: #0a1e08;
+  background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[580]}, ${({ theme }) => theme.colors.green[500]});
+  color: #10120f;
   box-shadow: ${({ theme }) => theme.shadows.glowGreen};
   border: none;
   cursor: pointer;
   align-self: flex-start;
 
   &:hover {
-    background: linear-gradient(135deg, ${({ theme }) => theme.colors.green[500]}, ${({ theme }) => theme.colors.green[300]});
+    background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[500]}, ${({ theme }) => theme.colors.green[300]});
     transform: translateY(-1px);
-    box-shadow: 0 0 40px rgba(23, 247, 2, 0.3), 0 0 80px rgba(23, 247, 2, 0.1);
+    box-shadow: 0 0 40px rgba(143, 179, 106, 0.3), 0 0 80px rgba(143, 179, 106, 0.1);
   }
 
   &:active {
@@ -503,7 +503,7 @@ const SmallPrimaryBtn = styled.button`
   gap: 0.5rem;
   font-weight: 600;
   font-family: inherit;
-  border-radius: ${({ theme }) => theme.radii.pill};
+  border-radius: ${({ theme }) => theme.radii.lg};
   transition: all ${({ theme }) => theme.animation.duration.normal}s;
   min-height: 36px;
   min-width: 36px;
@@ -511,13 +511,13 @@ const SmallPrimaryBtn = styled.button`
   line-height: 1;
   padding: 0.4rem 0.9rem;
   font-size: ${({ theme }) => theme.typography.bodySmall};
-  background: linear-gradient(135deg, ${({ theme }) => theme.colors.green[580]}, ${({ theme }) => theme.colors.green[500]});
-  color: #0a1e08;
+  background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[580]}, ${({ theme }) => theme.colors.green[500]});
+  color: #10120f;
   border: none;
   cursor: pointer;
 
   &:hover {
-    background: linear-gradient(135deg, ${({ theme }) => theme.colors.green[500]}, ${({ theme }) => theme.colors.green[300]});
+    background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[500]}, ${({ theme }) => theme.colors.green[300]});
   }
 
   &:disabled {
@@ -533,7 +533,7 @@ const GhostBtn = styled.button`
   gap: 0.5rem;
   font-weight: 600;
   font-family: inherit;
-  border-radius: ${({ theme }) => theme.radii.pill};
+  border-radius: ${({ theme }) => theme.radii.lg};
   transition: all ${({ theme }) => theme.animation.duration.normal}s;
   min-height: 36px;
   min-width: 36px;
@@ -547,7 +547,7 @@ const GhostBtn = styled.button`
   cursor: pointer;
 
   &:hover {
-    background: rgba(65, 162, 56, 0.08);
+    background: rgba(143, 179, 106, 0.08);
     border-color: ${({ theme }) => theme.colors.line};
     color: ${({ theme }) => theme.colors.green[500]};
   }
@@ -564,7 +564,7 @@ const GhostLink = styled(Link)`
   justify-content: center;
   gap: 0.5rem;
   font-weight: 600;
-  border-radius: ${({ theme }) => theme.radii.pill};
+  border-radius: ${({ theme }) => theme.radii.lg};
   transition: all ${({ theme }) => theme.animation.duration.normal}s;
   min-height: 36px;
   min-width: 36px;
@@ -578,7 +578,7 @@ const GhostLink = styled(Link)`
   border: 1px solid rgba(154, 198, 148, 0.2);
 
   &:hover {
-    background: rgba(65, 162, 56, 0.08);
+    background: rgba(143, 179, 106, 0.08);
     border-color: ${({ theme }) => theme.colors.line};
     color: ${({ theme }) => theme.colors.green[500]};
   }
@@ -590,7 +590,7 @@ const DiscoverLink = styled(Link)`
   justify-content: center;
   gap: 0.5rem;
   font-weight: 600;
-  border-radius: ${({ theme }) => theme.radii.pill};
+  border-radius: ${({ theme }) => theme.radii.lg};
   transition: all ${({ theme }) => theme.animation.duration.normal}s;
   min-height: 36px;
   min-width: 36px;
@@ -600,13 +600,13 @@ const DiscoverLink = styled(Link)`
   margin-top: 0.5rem;
   padding: 0.4rem 0.9rem;
   font-size: ${({ theme }) => theme.typography.bodySmall};
-  background: linear-gradient(135deg, ${({ theme }) => theme.colors.green[580]}, ${({ theme }) => theme.colors.green[500]});
-  color: #0a1e08;
+  background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[580]}, ${({ theme }) => theme.colors.green[500]});
+  color: #10120f;
   border: none;
   cursor: pointer;
 
   &:hover {
-    background: linear-gradient(135deg, ${({ theme }) => theme.colors.green[500]}, ${({ theme }) => theme.colors.green[300]});
+    background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[500]}, ${({ theme }) => theme.colors.green[300]});
   }
 `
 
@@ -729,14 +729,14 @@ const Chip = styled.button<{ $selected: boolean }>`
   display: inline-flex;
   align-items: center;
   padding: 0.35rem 0.9rem;
-  border-radius: ${({ theme }) => theme.radii.pill};
+  border-radius: ${({ theme }) => theme.radii.lg};
   font-size: ${({ theme }) => theme.typography.bodySmall};
   font-weight: 500;
   font-family: inherit;
   cursor: pointer;
   transition: all 0.15s ease;
   border: 1px solid ${({ $selected, theme }) => ($selected ? theme.colors.green[580] : theme.colors.lineSoft)};
-  background: ${({ $selected }) => ($selected ? 'rgba(65, 162, 56, 0.15)' : 'transparent')};
+  background: ${({ $selected }) => ($selected ? 'rgba(143, 179, 106, 0.15)' : 'transparent')};
   color: ${({ $selected, theme }) => ($selected ? theme.colors.green[500] : theme.colors.text[380])};
 
   &:hover {
@@ -787,7 +787,7 @@ const InviteIcon = styled.div`
   width: 40px;
   height: 40px;
   border-radius: ${({ theme }) => theme.radii.lg};
-  background: rgba(65, 162, 56, 0.12);
+  background: rgba(143, 179, 106, 0.12);
   color: ${({ theme }) => theme.colors.green[580]};
   display: flex;
   align-items: center;
@@ -891,7 +891,7 @@ const CategoryCount = styled.span`
   color: ${({ theme }) => theme.colors.text[380]};
   background: ${({ theme }) => theme.colors.bg[940]};
   padding: 0.15rem 0.6rem;
-  border-radius: ${({ theme }) => theme.radii.pill};
+  border-radius: ${({ theme }) => theme.radii.lg};
 `
 
 const HistoryCategoryContent = styled.div`
@@ -909,7 +909,7 @@ const HistoryRow = styled(Link)<{ $active?: boolean; $past?: boolean }>`
   align-items: center;
   gap: ${({ theme }) => theme.spacing.md};
   padding: ${({ theme }) => theme.spacing.md} ${({ theme }) => theme.spacing.lg};
-  background: ${({ $active }) => ($active ? 'rgba(65, 162, 56, 0.06)' : 'transparent')};
+  background: ${({ $active }) => ($active ? 'rgba(143, 179, 106, 0.06)' : 'transparent')};
   border: 1px solid ${({ $active, theme }) => ($active ? theme.colors.line : 'transparent')};
   border-radius: ${({ theme }) => theme.radii.lg};
   text-decoration: none;
@@ -962,23 +962,23 @@ const HistoryBadgeOffroad = styled.span`
   color: ${({ theme }) => theme.colors.offroad.accent};
   background: ${({ theme }) => theme.colors.offroad.accentSoft};
   padding: 0.1rem 0.5rem;
-  border-radius: ${({ theme }) => theme.radii.pill};
+  border-radius: ${({ theme }) => theme.radii.lg};
 `
 
 const HistoryBadgeActive = styled.span`
   font-size: ${({ theme }) => theme.typography.caption};
   font-weight: 600;
   color: ${({ theme }) => theme.colors.green[500]};
-  background: rgba(23, 247, 2, 0.12);
+  background: rgba(143, 179, 106, 0.12);
   padding: 0.1rem 0.5rem;
-  border-radius: ${({ theme }) => theme.radii.pill};
+  border-radius: ${({ theme }) => theme.radii.lg};
 `
 
 const HistoryBadgeStatus = styled.span<{ $upcoming?: boolean; $past?: boolean }>`
   font-size: ${({ theme }) => theme.typography.caption};
   font-weight: 600;
   padding: 0.1rem 0.5rem;
-  border-radius: ${({ theme }) => theme.radii.pill};
+  border-radius: ${({ theme }) => theme.radii.lg};
   color: ${({ $upcoming, $past, theme }) =>
     $upcoming ? theme.colors.offroad.accent :
     $past ? theme.colors.text[500] :
@@ -986,7 +986,7 @@ const HistoryBadgeStatus = styled.span<{ $upcoming?: boolean; $past?: boolean }>
   background: ${({ $upcoming, $past, theme }) =>
     $upcoming ? theme.colors.offroad.accentSoft :
     $past ? 'rgba(122, 158, 116, 0.1)' :
-    'rgba(65, 162, 56, 0.1)'};
+    'rgba(143, 179, 106, 0.1)'};
 `
 
 const HistoryMetaRow = styled.div`
@@ -1013,9 +1013,9 @@ const HistorySkeletonRow = styled.div`
   height: 64px;
   background: linear-gradient(
     90deg,
-    rgba(65, 162, 56, 0.06) 25%,
-    rgba(65, 162, 56, 0.12) 50%,
-    rgba(65, 162, 56, 0.06) 75%
+    rgba(143, 179, 106, 0.06) 25%,
+    rgba(143, 179, 106, 0.12) 50%,
+    rgba(143, 179, 106, 0.06) 75%
   );
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
@@ -1062,9 +1062,9 @@ const MatchBadge = styled.div`
   padding: 0.25rem 0.7rem;
   font-size: ${({ theme }) => theme.typography.caption};
   font-weight: 700;
-  border-radius: ${({ theme }) => theme.radii.pill};
-  background: linear-gradient(135deg, ${({ theme }) => theme.colors.green[580]}, ${({ theme }) => theme.colors.green[500]});
-  color: #0a1e08;
+  border-radius: ${({ theme }) => theme.radii.lg};
+  background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[580]}, ${({ theme }) => theme.colors.green[500]});
+  color: #10120f;
   z-index: 1;
 `
 
@@ -1164,7 +1164,7 @@ const MatchViewBtn = styled.button`
   gap: 0.5rem;
   font-weight: 600;
   font-family: inherit;
-  border-radius: ${({ theme }) => theme.radii.pill};
+  border-radius: ${({ theme }) => theme.radii.lg};
   transition: all ${({ theme }) => theme.animation.duration.normal}s;
   min-height: 36px;
   min-width: 36px;
@@ -1172,15 +1172,15 @@ const MatchViewBtn = styled.button`
   line-height: 1;
   padding: 0.4rem 0.9rem;
   font-size: ${({ theme }) => theme.typography.bodySmall};
-  background: linear-gradient(135deg, ${({ theme }) => theme.colors.green[580]}, ${({ theme }) => theme.colors.green[500]});
-  color: #0a1e08;
+  background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[580]}, ${({ theme }) => theme.colors.green[500]});
+  color: #10120f;
   border: none;
   cursor: pointer;
   margin-top: 1rem;
   width: 100%;
 
   &:hover {
-    background: linear-gradient(135deg, ${({ theme }) => theme.colors.green[500]}, ${({ theme }) => theme.colors.green[300]});
+    background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[500]}, ${({ theme }) => theme.colors.green[300]});
   }
 `
 
@@ -1196,7 +1196,7 @@ const NotificationRow = styled.div<{ $unread: boolean }>`
   align-items: center;
   gap: ${({ theme }) => theme.spacing.md};
   padding: ${({ theme }) => theme.spacing.md} ${({ theme }) => theme.spacing.lg};
-  background: ${({ $unread, theme }) => ($unread ? 'rgba(65, 162, 56, 0.04)' : theme.colors.bg[940])};
+  background: ${({ $unread, theme }) => ($unread ? 'rgba(143, 179, 106, 0.04)' : theme.colors.bg[940])};
   border-radius: ${({ theme }) => theme.radii.lg};
   border: 1px solid ${({ $unread, theme }) => ($unread ? theme.colors.line : theme.colors.lineSoft)};
   cursor: pointer;
@@ -1216,7 +1216,7 @@ const NotificationIcon = styled.div`
   width: 40px;
   height: 40px;
   border-radius: ${({ theme }) => theme.radii.lg};
-  background: rgba(65, 162, 56, 0.12);
+  background: rgba(143, 179, 106, 0.12);
   color: ${({ theme }) => theme.colors.green[580]};
   display: flex;
   align-items: center;
@@ -1250,7 +1250,7 @@ const NotificationDot = styled.span`
   height: 8px;
   border-radius: 50%;
   background: ${({ theme }) => theme.colors.green[500]};
-  box-shadow: 0 0 6px rgba(23, 247, 2, 0.4);
+  box-shadow: 0 0 6px rgba(143, 179, 106, 0.4);
 `
 
 export function ProfilePage() {

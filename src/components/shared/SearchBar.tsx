@@ -14,14 +14,14 @@ const Wrapper = styled.div<{ $focused: boolean }>`
   display: flex;
   align-items: center;
   width: 100%;
-  max-width: 420px;
-  background: ${({ theme }) => theme.glass.bg};
+  max-width: 460px;
+  background: ${({ theme }) => theme.colors.surface[900]};
   border: 1px solid ${({ $focused, theme }) => $focused ? theme.colors.green[500] : theme.colors.lineSoft};
-  border-radius: ${({ theme }) => theme.radii.pill};
+  border-radius: ${({ theme }) => theme.radii.lg};
   backdrop-filter: blur(${({ theme }) => theme.glass.blur});
   -webkit-backdrop-filter: blur(${({ theme }) => theme.glass.blur});
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
-  box-shadow: ${({ $focused }) => $focused ? `0 0 0 3px rgba(23, 247, 2, 0.08)` : 'none'};
+  box-shadow: ${({ $focused }) => $focused ? `0 0 0 3px rgba(143, 179, 106, 0.14)` : 'inset 0 1px 0 rgba(247, 243, 232, 0.04)'};
 `
 
 const IconWrap = styled.div`
@@ -56,15 +56,15 @@ const ClearBtn = styled.button`
   justify-content: center;
   width: 32px;
   height: 32px;
-  border-radius: 50%;
+  border-radius: ${({ theme }) => theme.radii.md};
   margin-right: 0.4rem;
-  background: rgba(243, 255, 241, 0.08);
+  background: rgba(247, 243, 232, 0.08);
   color: ${({ theme }) => theme.colors.text[380]};
   flex-shrink: 0;
   transition: all 0.15s ease;
 
   &:hover {
-    background: rgba(243, 255, 241, 0.14);
+    background: rgba(247, 243, 232, 0.14);
     color: ${({ theme }) => theme.colors.text[100]};
   }
 `
