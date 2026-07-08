@@ -82,6 +82,15 @@ async function openQueueDB(): Promise<IDBDatabase> {
     })
 }
 
+// Resolve only once the transaction is actually committed, so enqueue/dequeue are durable.
+function txDone(tx: IDBTransaction): Promise<void> {
+    return new Promise((resolve, reject) => {
+        tx.oncomplete = () => resolve()
+        tx.onerror = () => reject(tx.error)
+        tx.onabort = () => reject(tx.error)
+    })
+}
+
 export async function isReallyOnline(): Promise<boolean> {
     try {
         // Folosim un timeout scurt pentru a nu bloca UI-ul prea mult
@@ -102,14 +111,24 @@ export async function isReallyOnline(): Promise<boolean> {
 
 async function enqueueRequest(config: QueuedRequest) {
     const db = await openQueueDB()
-    const tx = db.transaction(QUEUE_STORE, 'readwrite')
-    tx.objectStore(QUEUE_STORE).add(config)
+    try {
+        const tx = db.transaction(QUEUE_STORE, 'readwrite')
+        tx.objectStore(QUEUE_STORE).add(config)
+        await txDone(tx)
+    } finally {
+        db.close()
+    }
 }
 
 async function dequeueRequest(id: string) {
     const db = await openQueueDB()
-    const tx = db.transaction(QUEUE_STORE, 'readwrite')
-    tx.objectStore(QUEUE_STORE).delete(id)
+    try {
+        const tx = db.transaction(QUEUE_STORE, 'readwrite')
+        tx.objectStore(QUEUE_STORE).delete(id)
+        await txDone(tx)
+    } finally {
+        db.close()
+    }
 }
 
 let isFlushing = false
@@ -135,6 +154,9 @@ export async function flushQueue() {
                     url: item.url,
                     method: item.method,
                     data: deserializeData(item.data),
+                    // Stable key so a replayed mutation can be de-duplicated server-side
+                    // (requires the backend to honor Idempotency-Key; harmless otherwise).
+                    headers: { 'Idempotency-Key': item.id },
                     _fromQueue: true,
                 })
                 // Ștergem din queue DOAR dacă cererea a ajuns la server și a fost procesată (succes sau eroare 4xx/5xx)
