@@ -635,6 +635,7 @@ function TripPageContent({ trip }: TripPageContentProps) {
       stop()
       connectionRef.current = null;
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trip.id, token, baseURL])
 
   useEffect(() => {
@@ -2534,12 +2535,21 @@ const MemberActions = styled.div`
 const ChatContainer = styled.div`
   display: flex;
   flex-direction: column;
-  height: calc(100vh - 500px);
-  min-height: 400px;
+  height: calc(100vh - 320px);
+  min-height: 560px;
+  max-height: 860px;
   background: ${({ theme }) => theme.glass.bg};
   border: 1px solid ${({ theme }) => theme.glass.border};
   border-radius: ${({ theme }) => theme.radii.xl};
+  box-shadow: ${({ theme }) => theme.shadows.md};
+  backdrop-filter: blur(${({ theme }) => theme.glass.blur});
+  -webkit-backdrop-filter: blur(${({ theme }) => theme.glass.blur});
   overflow: hidden;
+
+  @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
+    height: calc(100vh - 220px);
+    min-height: 420px;
+  }
 `
 
 const ChatThread = styled.div`
@@ -2549,6 +2559,16 @@ const ChatThread = styled.div`
   display: flex;
   flex-direction: column;
   gap: ${({ theme }) => theme.spacing.md};
+  scrollbar-width: thin;
+  scrollbar-color: ${({ theme }) => theme.colors.lineSoft} transparent;
+
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: ${({ theme }) => theme.colors.lineSoft};
+    border-radius: 999px;
+  }
 `
 
 const ChatEmpty = styled.div`
@@ -2565,15 +2585,21 @@ const ChatEmptySticker = styled.img`
 `
 
 const ChatBubble = styled.div<{ $isOwn: boolean; $isAi?: boolean }>`
-  max-width: 70%;
-  padding: 0.8rem 1rem;
-  border-radius: ${({ theme }) => theme.radii.lg};
+  max-width: 76%;
+  padding: 0.7rem 1rem;
+  line-height: 1.5;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  border-radius: 1.1rem;
+  border-bottom-right-radius: ${({ $isOwn, $isAi }) => ($isOwn && !$isAi ? '0.3rem' : '1.1rem')};
+  border-bottom-left-radius: ${({ $isOwn, $isAi }) => ($isOwn && !$isAi ? '1.1rem' : '0.3rem')};
   background: ${({ theme, $isOwn, $isAi }) =>
-    $isAi ? 'rgba(99, 102, 241, 0.10)' : $isOwn ? 'rgba(143, 179, 106, 0.1)' : theme.colors.surface[860]};
+    $isAi ? 'rgba(139, 92, 246, 0.12)' : $isOwn ? 'rgba(143, 179, 106, 0.14)' : theme.colors.surface[860]};
   border: 1px solid ${({ theme, $isOwn, $isAi }) =>
-    $isAi ? 'rgba(99, 102, 241, 0.35)' : $isOwn ? 'rgba(143, 179, 106, 0.2)' : theme.colors.lineSoft};
+    $isAi ? 'rgba(139, 92, 246, 0.32)' : $isOwn ? 'rgba(143, 179, 106, 0.28)' : theme.colors.lineSoft};
   align-self: ${({ $isOwn, $isAi }) => ($isAi ? 'flex-start' : $isOwn ? 'flex-end' : 'flex-start')};
   color: ${({ theme }) => theme.colors.text[100]};
+  box-shadow: ${({ theme }) => theme.shadows.sm};
 `
 
 const AiAvatar = styled.span`
@@ -2670,6 +2696,7 @@ const ChatTime = styled.span`
 const ChatComposer = styled.form`
   padding: ${({ theme }) => theme.spacing.md} ${({ theme }) => theme.spacing.lg};
   border-top: 1px solid ${({ theme }) => theme.colors.lineSoft};
+  background: ${({ theme }) => theme.colors.surface[820]};
 `
 
 const ChatComposerRow = styled.div`
@@ -2679,18 +2706,19 @@ const ChatComposerRow = styled.div`
 
 const ChatInput = styled.input`
   flex: 1;
-  padding: 0.65rem 1rem;
-  border-radius: ${({ theme }) => theme.radii.lg};
+  padding: 0.7rem 1.1rem;
+  border-radius: ${({ theme }) => theme.radii.pill};
   border: 1px solid ${({ theme }) => theme.colors.lineSoft};
   background: ${({ theme }) => theme.colors.bg[940]};
   color: ${({ theme }) => theme.colors.text[100]};
   font-size: ${({ theme }) => theme.typography.body};
   font-family: inherit;
   outline: none;
-  transition: border-color 0.2s ease;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 
   &:focus {
     border-color: ${({ theme }) => theme.colors.green[500]};
+    box-shadow: 0 0 0 3px rgba(143, 179, 106, 0.16);
   }
 
   &::placeholder {

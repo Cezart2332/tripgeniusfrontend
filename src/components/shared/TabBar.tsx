@@ -85,11 +85,18 @@ const Tab = styled.button<{ $active: boolean; $variant: 'default' | 'pill' }>`
 const PillIndicator = styled(motion.div)`
   position: absolute;
   inset: 0;
-  background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[400]}, ${({ theme }) => theme.colors.offroad.accent});
+  background: linear-gradient(135deg, ${({ theme }) => theme.colors.green[500]} 0%, ${({ theme }) => theme.colors.green[400]} 100%);
   border-radius: ${({ theme }) => theme.radii.lg};
-  box-shadow: 0 2px 12px rgba(143, 179, 106, 0.2);
+  box-shadow: 0 4px 14px rgba(102, 138, 75, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.18);
   z-index: 0;
   pointer-events: none;
+`
+
+const TabIcon = styled.span`
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
 `
 
 const UnderlineIndicator = styled(motion.div)`
@@ -199,7 +206,7 @@ export function TabBar({ tabs, activeTab, onChange, variant = 'default' }: TabBa
                   transition={pillIndicatorTransition}
                 />
               )}
-              {tab.icon}
+              {tab.icon && <TabIcon>{tab.icon}</TabIcon>}
               <span style={{ position: 'relative', zIndex: 1 }}>{tab.label}</span>
               {tab.badge !== undefined && tab.badge > 0 && (
                 <Badge>{tab.badge}</Badge>

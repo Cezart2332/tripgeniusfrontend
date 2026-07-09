@@ -251,6 +251,13 @@ export function OffroadTripPage() {
         return rest.some((m) => m.id === msg.id) ? rest : [...rest, { ...msg, isAi: true }]
       })
     })
+    // Re-pull the trip if the agent changed it, so the UI stays in sync.
+    connection.on('TripUpdated', () => {
+      void api
+        .get(`api/OffroadTrip/get-offroad-trip/${tripId}`)
+        .then((res) => setTrip(res.data))
+        .catch(() => {})
+    })
 
     registerChatModerationEvents(connection, setChatMessages, (payload) => {
       console.warn(payload.message ?? 'Message removed by moderation.')
@@ -1611,7 +1618,8 @@ const ChatPanel = styled.div`
   border: 1px solid ${({ theme }) => theme.glass.border};
   border-radius: ${({ theme }) => theme.radii.xl};
   backdrop-filter: blur(${({ theme }) => theme.glass.blur});
-  min-height: 400px;
+  box-shadow: ${({ theme }) => theme.shadows.md};
+  min-height: 560px;
   display: flex;
   flex-direction: column;
 `
@@ -1635,7 +1643,17 @@ const ChatMessages = styled.div`
   display: flex;
   flex-direction: column;
   gap: ${({ theme }) => theme.spacing.sm};
-  max-height: 420px;
+  max-height: min(64vh, 680px);
+  scrollbar-width: thin;
+  scrollbar-color: ${({ theme }) => theme.colors.lineSoft} transparent;
+
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: ${({ theme }) => theme.colors.lineSoft};
+    border-radius: 999px;
+  }
 `
 
 const ChatEmpty = styled.div`
@@ -1649,11 +1667,15 @@ const ChatEmpty = styled.div`
 `
 
 const ChatBubble = styled.div<{ $isOwner: boolean; $isAi?: boolean }>`
-  padding: ${({ theme }) => theme.spacing.sm} ${({ theme }) => theme.spacing.md};
+  padding: 0.7rem 1rem;
+  line-height: 1.5;
+  word-break: break-word;
+  overflow-wrap: anywhere;
   background: ${({ $isOwner, $isAi }) =>
-    $isAi ? 'rgba(99, 102, 241, 0.10)' : $isOwner ? 'rgba(201, 162, 39, 0.08)' : 'rgba(255,255,255,0.03)'};
-  border: 1px solid ${({ $isAi }) => ($isAi ? 'rgba(99, 102, 241, 0.35)' : 'transparent')};
-  border-radius: ${({ theme }) => theme.radii.lg};
+    $isAi ? 'rgba(139, 92, 246, 0.12)' : $isOwner ? 'rgba(201, 162, 39, 0.10)' : 'rgba(255,255,255,0.03)'};
+  border: 1px solid ${({ $isAi }) => ($isAi ? 'rgba(139, 92, 246, 0.32)' : 'rgba(255,255,255,0.06)')};
+  border-radius: 1.1rem;
+  box-shadow: ${({ theme }) => theme.shadows.sm};
 `
 
 const AiAvatar = styled.span`
