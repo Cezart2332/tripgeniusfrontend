@@ -118,6 +118,8 @@ export function OffroadTripPage() {
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([])
   const [newMessage, setNewMessage] = useState('')
   const connectionRef = useRef<signalR.HubConnection | null>(null)
+  const aiStreamIdRef = useRef<string | null>(null)
+  const [mentionQuery, setMentionQuery] = useState<string | null>(null)
   const [selectedRouteId, setSelectedRouteId] = useState<number | null>(null)
   const [activeTab, setActiveTab] = useState<TripTab>('overview')
   const [isExporting, setIsExporting] = useState(false)
@@ -227,6 +229,29 @@ export function OffroadTripPage() {
       setChatMessages((prev) => (prev.some((m) => m.id === msg.id) ? prev : [...prev, msg]))
     })
 
+    // ── AI agent streaming (triggered by "@ai" in chat) ──
+    connection.on('AiMessageStart', () => {
+      const id = `ai-stream-${Date.now()}`
+      aiStreamIdRef.current = id
+      setChatMessages((prev) => [...prev, {
+        id, content: '', sentAt: new Date().toISOString(),
+        imageUrl: '', username: 'TripGenius AI', profileUrl: '', isAi: true,
+      }])
+    })
+    connection.on('AiMessageChunk', (chunk: string) => {
+      const id = aiStreamIdRef.current
+      if (!id) return
+      setChatMessages((prev) => prev.map((m) => (m.id === id ? { ...m, content: m.content + chunk } : m)))
+    })
+    connection.on('AiMessageEnd', (msg: ChatMessage) => {
+      const streamId = aiStreamIdRef.current
+      aiStreamIdRef.current = null
+      setChatMessages((prev) => {
+        const rest = prev.filter((m) => m.id !== streamId)
+        return rest.some((m) => m.id === msg.id) ? rest : [...rest, { ...msg, isAi: true }]
+      })
+    })
+
     registerChatModerationEvents(connection, setChatMessages, (payload) => {
       console.warn(payload.message ?? 'Message removed by moderation.')
     })
@@ -270,11 +295,65 @@ export function OffroadTripPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [chatMessages])
 
+  const MENTION_TAIL = /(^|\s)@([a-zA-Z0-9_.-]*)$/
+
+  const extractMentionedUserIds = (text: string): number[] => {
+    const ids: number[] = []
+    const re = /@([a-zA-Z0-9_.-]+)/g
+    let match: RegExpExecArray | null
+    while ((match = re.exec(text)) !== null) {
+      const name = match[1].toLowerCase()
+      const member = members.find((m) => m.username.toLowerCase() === name)
+      if (member) {
+        const id = Number(member.id)
+        if (!Number.isNaN(id) && !ids.includes(id)) ids.push(id)
+      }
+    }
+    return ids
+  }
+
+  const handleMessageChange = (value: string) => {
+    setNewMessage(value)
+    const m = MENTION_TAIL.exec(value)
+    setMentionQuery(m ? m[2].toLowerCase() : null)
+  }
+
+  const mentionOptions = (() => {
+    if (mentionQuery === null) return []
+    const options = [
+      { id: 'ai', username: 'ai', avatarUrl: '', isAi: true },
+      ...members
+        .filter((m) => m.username && m.username !== currentUser?.username)
+        .map((m) => ({ id: m.id, username: m.username, avatarUrl: m.avatarUrl, isAi: false })),
+    ]
+    return options.filter((o) => o.username.toLowerCase().startsWith(mentionQuery)).slice(0, 6)
+  })()
+
+  const applyMention = (username: string) => {
+    setNewMessage((prev) => prev.replace(MENTION_TAIL, (_full, pre) => `${pre}@${username} `))
+    setMentionQuery(null)
+  }
+
+  const renderMessageContent = (text: string) => {
+    const parts = text.split(/(@[a-zA-Z0-9_.-]+)/g)
+    return parts.map((part, i) => {
+      if (part.startsWith('@')) {
+        const name = part.slice(1).toLowerCase()
+        if (name === 'ai' || members.some((m) => m.username.toLowerCase() === name)) {
+          return <Mention key={i}>{part}</Mention>
+        }
+      }
+      return <span key={i}>{part}</span>
+    })
+  }
+
   const sendMessage = async () => {
     if (!newMessage.trim() || !connectionRef.current) return
     try {
-      await connectionRef.current.invoke('SendMessage', Number(tripId), newMessage.trim())
+      const mentionedUserIds = extractMentionedUserIds(newMessage)
+      await connectionRef.current.invoke('SendMessage', Number(tripId), newMessage.trim(), mentionedUserIds)
       setNewMessage('')
+      setMentionQuery(null)
     } catch (err) {
       console.error(getErrorMessage(err))
     }
@@ -805,27 +884,45 @@ export function OffroadTripPage() {
                       </ChatEmpty>
                     ) : (
                       chatMessages.map((m) => (
-                        <ChatBubble key={m.id} $isOwner={m.username === trip.members.find(me => me.role === 'owner')?.username}>
+                        <ChatBubble key={m.id} $isOwner={m.username === trip.members.find(me => me.role === 'owner')?.username} $isAi={!!m.isAi}>
                           <ChatBubbleHeader>
-                            {m.profileUrl && <ChatAvatar src={m.profileUrl} alt="" />}
+                            {m.isAi ? <AiAvatar>AI</AiAvatar> : (m.profileUrl && <ChatAvatar src={m.profileUrl} alt="" />)}
                             <strong>{m.username}</strong>
+                            {m.isAi && <AiTag>agent</AiTag>}
                             <ChatTime>
                               {new Date(m.sentAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                             </ChatTime>
                           </ChatBubbleHeader>
-                          <p>{m.content}</p>
+                          <p>{m.content ? renderMessageContent(m.content) : (m.isAi ? '…' : '')}</p>
                         </ChatBubble>
                       ))
                     )}
                     <div ref={messagesEndRef} />
                   </ChatMessages>
                   <ChatCompose>
-                    <ChatInput
-                      value={newMessage}
-                      onChange={(e) => setNewMessage(e.target.value)}
-                      placeholder="Message the crew..."
-                      onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
-                    />
+                    <ChatComposeField>
+                      <ChatInput
+                        value={newMessage}
+                        onChange={(e) => handleMessageChange(e.target.value)}
+                        placeholder="Message the crew… @ to mention, @ai to ask the agent"
+                        onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
+                      />
+                      {mentionOptions.length > 0 && (
+                        <MentionMenu>
+                          {mentionOptions.map((option) => (
+                            <MentionItem
+                              key={option.id}
+                              type="button"
+                              onMouseDown={(e) => { e.preventDefault(); applyMention(option.username) }}
+                            >
+                              {option.isAi ? <AiAvatar>AI</AiAvatar> : null}
+                              <span>@{option.username}</span>
+                              {option.isAi && <AiTag>agent</AiTag>}
+                            </MentionItem>
+                          ))}
+                        </MentionMenu>
+                      )}
+                    </ChatComposeField>
                     <PrimaryBtnSm type="button" onClick={sendMessage}>Send</PrimaryBtnSm>
                   </ChatCompose>
                 </>
@@ -1551,10 +1648,75 @@ const ChatEmpty = styled.div`
   gap: ${({ theme }) => theme.spacing.sm};
 `
 
-const ChatBubble = styled.div<{ $isOwner: boolean }>`
+const ChatBubble = styled.div<{ $isOwner: boolean; $isAi?: boolean }>`
   padding: ${({ theme }) => theme.spacing.sm} ${({ theme }) => theme.spacing.md};
-  background: ${({ $isOwner }) => $isOwner ? 'rgba(201, 162, 39, 0.08)' : 'rgba(255,255,255,0.03)'};
+  background: ${({ $isOwner, $isAi }) =>
+    $isAi ? 'rgba(99, 102, 241, 0.10)' : $isOwner ? 'rgba(201, 162, 39, 0.08)' : 'rgba(255,255,255,0.03)'};
+  border: 1px solid ${({ $isAi }) => ($isAi ? 'rgba(99, 102, 241, 0.35)' : 'transparent')};
   border-radius: ${({ theme }) => theme.radii.lg};
+`
+
+const AiAvatar = styled.span`
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  flex-shrink: 0;
+`
+
+const AiTag = styled.span`
+  font-size: 0.6rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #8b5cf6;
+  border: 1px solid rgba(139, 92, 246, 0.4);
+  border-radius: 999px;
+  padding: 0.05rem 0.4rem;
+`
+
+const Mention = styled.span`
+  color: #8b5cf6;
+  font-weight: 600;
+`
+
+const ChatComposeField = styled.div`
+  position: relative;
+  flex: 1;
+  display: flex;
+`
+
+const MentionMenu = styled.div`
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  background: ${({ theme }) => theme.colors.surface[860] ?? '#1a1a1a'};
+  border: 1px solid ${({ theme }) => theme.colors.lineSoft};
+  border-radius: ${({ theme }) => theme.radii.md};
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+  z-index: 20;
+`
+
+const MentionItem = styled.button`
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: ${({ theme }) => theme.colors.text[100]};
+  font-size: 0.85rem;
+  &:hover { background: rgba(139, 92, 246, 0.12); }
 `
 
 const ChatBubbleHeader = styled.div`
