@@ -155,6 +155,7 @@ export interface ChatMessage {
   imageUrl: string
   username: string
   profileUrl: string
+  isAi?: boolean
 }
 
 export interface TripHistory {

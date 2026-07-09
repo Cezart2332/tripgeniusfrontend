@@ -479,6 +479,7 @@ function TripPageContent({ trip }: TripPageContentProps) {
   const [searchParams, setSearchParams] = useSearchParams()
   const [tripDetails, setTripDetails] = useState<Trip>(trip)
   const connectionRef = useRef<signalR.HubConnection | null>(null);
+  const aiStreamIdRef = useRef<string | null>(null);
   const [activeTab, setActiveTab] = useState<TripWorkspaceTab>(() => {
     const requestedTab = searchParams.get('view')
     return requestedTab && ownerTabs.some((tab) => tab.key === requestedTab)
@@ -520,6 +521,21 @@ function TripPageContent({ trip }: TripPageContentProps) {
   }, [trip.id]);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([])
   const [newMessage, setNewMessage] = useState('')
+  const [mentionQuery, setMentionQuery] = useState<string | null>(null)
+
+  // Re-pull the itinerary after the AI agent changes it (fired by the "TripUpdated" event).
+  const refreshTimelines = async () => {
+    try {
+      const res = await api.get(`api/trip/get-trip/${trip.id}`)
+      const payload = res.data as Trip | { trip: Trip } | null
+      const next = payload && typeof payload === 'object' && 'trip' in payload ? payload.trip : payload
+      if (next?.timelines) {
+        setTimelines([...next.timelines].sort((a, b) => a.startDay - b.startDay))
+      }
+    } catch (err) {
+      console.error('Failed to refresh itinerary after AI update:', err)
+    }
+  }
 
   useEffect(() => {
     const fetchMessages = async () => {
@@ -550,6 +566,33 @@ function TripPageContent({ trip }: TripPageContentProps) {
         if (prev.some(m => m.id === msg.id)) return prev;
         return [...prev, msg];
       })
+    })
+
+    // ── AI agent streaming (triggered by "@ai" in chat) ──
+    connection.on("AiMessageStart", () => {
+      const id = `ai-stream-${Date.now()}`
+      aiStreamIdRef.current = id
+      setChatMessages((prev) => [...prev, {
+        id, content: '', sentAt: new Date().toISOString(),
+        imageUrl: '', username: 'TripGenius AI', profileUrl: '', isAi: true,
+      }])
+    })
+    connection.on("AiMessageChunk", (chunk: string) => {
+      const id = aiStreamIdRef.current
+      if (!id) return
+      setChatMessages((prev) => prev.map(m => m.id === id ? { ...m, content: m.content + chunk } : m))
+    })
+    connection.on("AiMessageEnd", (msg: ChatMessage) => {
+      const streamId = aiStreamIdRef.current
+      aiStreamIdRef.current = null
+      setChatMessages((prev) => {
+        const withoutPlaceholder = prev.filter(m => m.id !== streamId)
+        if (withoutPlaceholder.some(m => m.id === msg.id)) return withoutPlaceholder
+        return [...withoutPlaceholder, { ...msg, isAi: true }]
+      })
+    })
+    connection.on("TripUpdated", () => {
+      void refreshTimelines()
     })
 
     registerChatModerationEvents(connection, setChatMessages, (payload) => {
@@ -1081,13 +1124,67 @@ function TripPageContent({ trip }: TripPageContentProps) {
 
   }
 
+  const MENTION_TAIL = /(^|\s)@([a-zA-Z0-9_.-]*)$/
+
+  // Resolve "@username" tokens in the text to member userIds (the AI agent is handled server-side).
+  const extractMentionedUserIds = (text: string): number[] => {
+    const ids: number[] = []
+    const re = /@([a-zA-Z0-9_.-]+)/g
+    let match: RegExpExecArray | null
+    while ((match = re.exec(text)) !== null) {
+      const name = match[1].toLowerCase()
+      const member = members.find((m) => m.username.toLowerCase() === name)
+      if (member) {
+        const id = Number(member.id)
+        if (!Number.isNaN(id) && !ids.includes(id)) ids.push(id)
+      }
+    }
+    return ids
+  }
+
+  const handleMessageChange = (value: string) => {
+    setNewMessage(value)
+    const m = MENTION_TAIL.exec(value)
+    setMentionQuery(m ? m[2].toLowerCase() : null)
+  }
+
+  const mentionOptions = (() => {
+    if (mentionQuery === null) return []
+    const options = [
+      { id: 'ai', username: 'ai', avatarUrl: '', isAi: true },
+      ...members
+        .filter((m) => m.username && m.username !== authenticatedUser?.username)
+        .map((m) => ({ id: m.id, username: m.username, avatarUrl: m.avatarUrl, isAi: false })),
+    ]
+    return options.filter((o) => o.username.toLowerCase().startsWith(mentionQuery)).slice(0, 6)
+  })()
+
+  const applyMention = (username: string) => {
+    setNewMessage((prev) => prev.replace(MENTION_TAIL, (_full, pre) => `${pre}@${username} `))
+    setMentionQuery(null)
+  }
+
+  // Highlight "@ai" and "@member" tokens inside a message body.
+  const renderMessageContent = (text: string) => {
+    const parts = text.split(/(@[a-zA-Z0-9_.-]+)/g)
+    return parts.map((part, i) => {
+      if (part.startsWith('@')) {
+        const name = part.slice(1).toLowerCase()
+        const isMention = name === 'ai' || members.some((m) => m.username.toLowerCase() === name)
+        if (isMention) return <Mention key={i}>{part}</Mention>
+      }
+      return <span key={i}>{part}</span>
+    })
+  }
+
   const sendMessage = async (e: FormEvent) => {
-    console.log(newMessage)
     e.preventDefault()
     if (!connectionRef.current || !newMessage.trim()) return
-    await connectionRef.current.invoke("SendMessage", trip.id, newMessage)
+    const mentionedUserIds = extractMentionedUserIds(newMessage)
+    await connectionRef.current.invoke("SendMessage", trip.id, newMessage, mentionedUserIds)
 
     setNewMessage('')
+    setMentionQuery(null)
   }
 
   const [isExportingCosts, setIsExportingCosts] = useState(false)
@@ -1426,15 +1523,17 @@ function TripPageContent({ trip }: TripPageContentProps) {
             </ChatEmpty>
           ) : (
             chatMessages.map(msg => (
-              <ChatBubble key={msg.id} $isOwn={msg.username === authenticatedUser?.username}>
+              <ChatBubble key={msg.id} $isOwn={msg.username === authenticatedUser?.username} $isAi={!!msg.isAi}>
                 <ChatBubbleHeader>
-                  <ChatAvatar
-                    src={getAvatarUrl(msg.username, msg.profileUrl)}
-                    alt=""
-                  />
+                  {msg.isAi ? (
+                    <AiAvatar>AI</AiAvatar>
+                  ) : (
+                    <ChatAvatar src={getAvatarUrl(msg.username, msg.profileUrl)} alt="" />
+                  )}
                   <span>{msg.username}</span>
+                  {msg.isAi && <AiTag>agent</AiTag>}
                 </ChatBubbleHeader>
-                <p>{msg.content}</p>
+                <p>{msg.content ? renderMessageContent(msg.content) : (msg.isAi ? <TypingDots>…</TypingDots> : '')}</p>
                 <ChatTime>
                   {new Date(msg.sentAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </ChatTime>
@@ -1444,7 +1543,30 @@ function TripPageContent({ trip }: TripPageContentProps) {
         </ChatThread>
         <ChatComposer onSubmit={sendMessage}>
           <ChatComposerRow>
-            <ChatInput placeholder="Broadcast a signal to the team..." value={newMessage} onChange={e => setNewMessage(e.target.value)} />
+            <ChatComposerField>
+              <ChatInput
+                placeholder="Message the team… use @ to mention or @ai to ask the agent"
+                value={newMessage}
+                onChange={e => handleMessageChange(e.target.value)}
+              />
+              {mentionOptions.length > 0 && (
+                <MentionMenu>
+                  {mentionOptions.map(option => (
+                    <MentionItem
+                      key={option.id}
+                      type="button"
+                      onMouseDown={(e) => { e.preventDefault(); applyMention(option.username) }}
+                    >
+                      {option.isAi
+                        ? <AiAvatar>AI</AiAvatar>
+                        : <ChatAvatar src={getAvatarUrl(option.username, option.avatarUrl)} alt="" />}
+                      <span>@{option.username}</span>
+                      {option.isAi && <AiTag>agent</AiTag>}
+                    </MentionItem>
+                  ))}
+                </MentionMenu>
+              )}
+            </ChatComposerField>
             <PrimaryButton type="submit">Send</PrimaryButton>
           </ChatComposerRow>
         </ChatComposer>
@@ -2442,14 +2564,84 @@ const ChatEmptySticker = styled.img`
   opacity: 0.4;
 `
 
-const ChatBubble = styled.div<{ $isOwn: boolean }>`
+const ChatBubble = styled.div<{ $isOwn: boolean; $isAi?: boolean }>`
   max-width: 70%;
   padding: 0.8rem 1rem;
   border-radius: ${({ theme }) => theme.radii.lg};
-  background: ${({ theme, $isOwn }) => $isOwn ? 'rgba(143, 179, 106, 0.1)' : theme.colors.surface[860]};
-  border: 1px solid ${({ theme, $isOwn }) => $isOwn ? 'rgba(143, 179, 106, 0.2)' : theme.colors.lineSoft};
-  align-self: ${({ $isOwn }) => $isOwn ? 'flex-end' : 'flex-start'};
+  background: ${({ theme, $isOwn, $isAi }) =>
+    $isAi ? 'rgba(99, 102, 241, 0.10)' : $isOwn ? 'rgba(143, 179, 106, 0.1)' : theme.colors.surface[860]};
+  border: 1px solid ${({ theme, $isOwn, $isAi }) =>
+    $isAi ? 'rgba(99, 102, 241, 0.35)' : $isOwn ? 'rgba(143, 179, 106, 0.2)' : theme.colors.lineSoft};
+  align-self: ${({ $isOwn, $isAi }) => ($isAi ? 'flex-start' : $isOwn ? 'flex-end' : 'flex-start')};
   color: ${({ theme }) => theme.colors.text[100]};
+`
+
+const AiAvatar = styled.span`
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  flex-shrink: 0;
+`
+
+const AiTag = styled.span`
+  font-size: 0.62rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #8b5cf6;
+  border: 1px solid rgba(139, 92, 246, 0.4);
+  border-radius: 999px;
+  padding: 0.05rem 0.4rem;
+`
+
+const TypingDots = styled.span`
+  opacity: 0.6;
+  letter-spacing: 0.15em;
+`
+
+const Mention = styled.span`
+  color: #8b5cf6;
+  font-weight: 600;
+`
+
+const ChatComposerField = styled.div`
+  position: relative;
+  flex: 1;
+  display: flex;
+`
+
+const MentionMenu = styled.div`
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  background: ${({ theme }) => theme.colors.surface[860]};
+  border: 1px solid ${({ theme }) => theme.colors.lineSoft};
+  border-radius: ${({ theme }) => theme.radii.md};
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  overflow: hidden;
+  z-index: 20;
+`
+
+const MentionItem = styled.button`
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: ${({ theme }) => theme.colors.text[100]};
+  font-size: 0.85rem;
+  &:hover { background: rgba(139, 92, 246, 0.12); }
 `
 
 const ChatBubbleHeader = styled.header`
