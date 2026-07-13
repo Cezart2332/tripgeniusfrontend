@@ -42,6 +42,7 @@ import {
 } from '../utils/dateDisplay'
 import { useDebouncedCallback } from 'use-debounce'
 import { getAvatarUrl } from '../utils/userUtils'
+import { loadPendingChat, addPendingChat, removePendingChat } from '../utils/pendingChat'
 import { registerChatModerationEvents } from '../hooks/useChatModerationEvents'
 import { TabBar } from '../components/shared/TabBar'
 
@@ -556,10 +557,53 @@ function TripPageContent({ trip }: TripPageContentProps) {
       }
     }
 
+    // Afișează mesajele scrise offline (persistate) ca bule „în așteptare".
+    const pendingItems = loadPendingChat(trip.id)
+    if (pendingItems.length > 0) {
+      setChatMessages((prev) => {
+        const existing = new Set(prev.map((m) => m.id))
+        const bubbles: ChatMessage[] = pendingItems
+          .filter((i) => !existing.has(i.clientId))
+          .map((i) => ({
+            id: i.clientId,
+            content: i.content,
+            sentAt: i.createdAt,
+            imageUrl: '',
+            username: authenticatedUser?.username ?? '',
+            profileUrl: authenticatedUser?.profileUrl ?? '',
+            isAi: false,
+            pending: true,
+          }))
+        return [...prev, ...bubbles]
+      })
+    }
+
     const connection = new signalR.HubConnectionBuilder()
       .withUrl(`${baseURL}/hubs/trip-chat?access_token=${token}`)
       .withAutomaticReconnect()
       .build()
+
+    // Golește coada offline: retrimite prin SignalR, serverul pune timestamp-ul real
+    // (ora reconectării) și, dacă e „@ai”, agentul răspunde.
+    const flushPending = async () => {
+      const conn = connectionRef.current
+      if (!conn || conn.state !== signalR.HubConnectionState.Connected) return
+      for (const item of loadPendingChat(trip.id)) {
+        try {
+          const real: ChatMessage = await conn.invoke(
+            'SendMessage', trip.id, item.content, item.mentionedUserIds,
+          )
+          removePendingChat(trip.id, item.clientId)
+          setChatMessages((prev) => {
+            const without = prev.filter((m) => m.id !== item.clientId)
+            if (without.some((m) => m.id === real.id)) return without
+            return [...without, { ...real, isAi: false }]
+          })
+        } catch {
+          break // încă offline — reîncercăm la următoarea reconectare
+        }
+      }
+    }
 
     connection.on("ReceiveMessage", (msg: ChatMessage) => {
       setChatMessages((prev) => {
@@ -603,12 +647,24 @@ function TripPageContent({ trip }: TripPageContentProps) {
     })
 
     connectionRef.current = connection
+
+    // La reconectare, SignalR pierde apartenența la grup — reintrăm și golim coada offline.
+    connection.onreconnected(async () => {
+      try {
+        await connection.invoke("JoinTrip", trip.id)
+        await flushPending()
+      } catch (err) {
+        console.error("Rejoin/flush after reconnect failed:", err)
+      }
+    })
+
     let isStopped = false;
     const start = async () => {
       try {
         await connection.start()
         if (!isStopped) {
           await connection.invoke("JoinTrip", trip.id)
+          await flushPending()
         }
       }
       catch (err) {
@@ -901,6 +957,9 @@ function TripPageContent({ trip }: TripPageContentProps) {
           status: ownerTripDraft.status,
           maxParticipants: Number(ownerTripDraft.maxParticipants),
           tags: ownerTripDraft.tags,
+          // Arată poza local imediat (data-URL din preview), chiar dacă upload-ul
+          // e încă în coadă — se înlocuiește cu URL-ul real la sincronizare.
+          imageUrl: ownerTripDraft.imageFile ? ownerTripDraft.imagePreviewUrl : tripDetails.imageUrl,
         }
         setTripDetails(optimisticTrip)
         updateCachedResponse(`api/trip/get-trip/${tripDetails.id}`, optimisticTrip)
@@ -1180,12 +1239,44 @@ function TripPageContent({ trip }: TripPageContentProps) {
 
   const sendMessage = async (e: FormEvent) => {
     e.preventDefault()
-    if (!connectionRef.current || !newMessage.trim()) return
-    const mentionedUserIds = extractMentionedUserIds(newMessage)
-    await connectionRef.current.invoke("SendMessage", trip.id, newMessage, mentionedUserIds)
+    const text = newMessage.trim()
+    if (!text) return
 
+    const mentionedUserIds = extractMentionedUserIds(newMessage)
+    const clientId = `pending-${crypto.randomUUID()}`
+
+    // Bula optimistă — apare imediat, chiar și offline.
+    setChatMessages((prev) => [...prev, {
+      id: clientId,
+      content: text,
+      sentAt: new Date().toISOString(),
+      imageUrl: '',
+      username: authenticatedUser?.username ?? '',
+      profileUrl: authenticatedUser?.profileUrl ?? '',
+      isAi: false,
+      pending: true,
+    }])
     setNewMessage('')
     setMentionQuery(null)
+
+    const conn = connectionRef.current
+    if (conn && conn.state === signalR.HubConnectionState.Connected) {
+      try {
+        const real: ChatMessage = await conn.invoke("SendMessage", trip.id, text, mentionedUserIds)
+        // Înlocuim bula optimistă cu mesajul real (timestamp de la server).
+        setChatMessages((prev) => {
+          const without = prev.filter((m) => m.id !== clientId)
+          if (without.some((m) => m.id === real.id)) return without
+          return [...without, { ...real, isAi: false }]
+        })
+        return
+      } catch {
+        // A picat trimiterea — cade în coada offline de mai jos.
+      }
+    }
+
+    // Offline / neconectat → persistăm; se trimite automat la reconectare.
+    addPendingChat(trip.id, { clientId, content: text, mentionedUserIds, createdAt: new Date().toISOString() })
   }
 
   const [isExportingCosts, setIsExportingCosts] = useState(false)
@@ -1524,7 +1615,12 @@ function TripPageContent({ trip }: TripPageContentProps) {
             </ChatEmpty>
           ) : (
             chatMessages.map(msg => (
-              <ChatBubble key={msg.id} $isOwn={msg.username === authenticatedUser?.username} $isAi={!!msg.isAi}>
+              <ChatBubble
+                key={msg.id}
+                $isOwn={msg.username === authenticatedUser?.username}
+                $isAi={!!msg.isAi}
+                style={msg.pending ? { opacity: 0.7 } : undefined}
+              >
                 <ChatBubbleHeader>
                   {msg.isAi ? (
                     <AiAvatar>AI</AiAvatar>
@@ -1536,7 +1632,9 @@ function TripPageContent({ trip }: TripPageContentProps) {
                 </ChatBubbleHeader>
                 <p>{msg.content ? renderMessageContent(msg.content) : (msg.isAi ? <TypingDots>…</TypingDots> : '')}</p>
                 <ChatTime>
-                  {new Date(msg.sentAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  {msg.pending
+                    ? '⏳ se trimite când revii online'
+                    : new Date(msg.sentAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </ChatTime>
               </ChatBubble>
             ))
