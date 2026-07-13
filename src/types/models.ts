@@ -156,6 +156,8 @@ export interface ChatMessage {
   username: string
   profileUrl: string
   isAi?: boolean
+  // Doar pe client: mesaj scris offline, încă netrimis (se sincronizează la reconectare).
+  pending?: boolean
 }
 
 export interface TripHistory {

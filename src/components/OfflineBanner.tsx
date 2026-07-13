@@ -61,6 +61,12 @@ const Wrap = styled.div`
   justify-content: center;
   padding: 0 0.75rem;
   pointer-events: none;
+
+  /* Pe desktop există topbar-ul fix (min-height 64px) cu navigația în centru —
+     coborâm banner-ul sub el ca să nu-l acopere. */
+  @media (min-width: ${({ theme }) => theme.breakpoints.mobile}) {
+    top: calc(64px + 0.6rem);
+  }
 `
 
 const pulse = keyframes`

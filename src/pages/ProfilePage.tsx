@@ -1299,6 +1299,9 @@ export function ProfilePage() {
   const [offroadTrips, setOffroadTrips] = useState<OffroadTrip[]>([])
   const [isFetchingOffroadTrips, setIsFetchingOffroadTrips] = useState(false)
   const objectUrlRef = useRef<string | null>(null)
+  // Data-URL al avatarului nou — folosit pentru update-ul optimist offline
+  // (persistă și după reload, spre deosebire de un blob URL).
+  const avatarPreviewDataRef = useRef<string | null>(null)
   const tabListRef = useRef<HTMLElement | null>(null)
 
   const updateUserNotificationsAsRead = (notificationIds: number[]) => {
@@ -1537,6 +1540,11 @@ export function ProfilePage() {
     const nextObjectUrl = URL.createObjectURL(selectedFile)
     objectUrlRef.current = nextObjectUrl
 
+    // Citim și un data-URL pentru update-ul optimist offline (persistă după reload).
+    const reader = new FileReader()
+    reader.onload = () => { avatarPreviewDataRef.current = reader.result as string }
+    reader.readAsDataURL(selectedFile)
+
     setAvatarUrl(nextObjectUrl)
     setAvatarFileName(selectedFile.name)
     setAvatarFile(selectedFile)
@@ -1597,7 +1605,12 @@ export function ProfilePage() {
         ...user,
         description: description.trim(),
         tags: tripTypes,
-        groupSize: typeof maxGroupSize === 'number' ? maxGroupSize : user.groupSize
+        groupSize: typeof maxGroupSize === 'number' ? maxGroupSize : user.groupSize,
+        // Arată avatarul nou imediat peste tot (header etc.), chiar dacă upload-ul
+        // e încă în coadă offline — se înlocuiește cu URL-ul real la sincronizare.
+        profileUrl: avatarFile && avatarPreviewDataRef.current
+          ? avatarPreviewDataRef.current
+          : user.profileUrl,
       }
       dispatch(setUser({ user: optimisticUser }))
 
