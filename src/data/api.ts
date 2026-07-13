@@ -15,16 +15,32 @@ const api = axios.create({
     withCredentials: true
 })
 
+interface SerializedFile {
+    __file: true
+    blob: Blob
+    name: string
+    type: string
+}
+
+function isSerializedFile(value: unknown): value is SerializedFile {
+    return typeof value === 'object' && value !== null && '__file' in value
+}
+
 function serializeData(data: unknown): unknown {
     if (data instanceof FormData) {
-        const fields: Record<string, string> = {}
+        const fields: Record<string, string | SerializedFile> = {}
         data.forEach((value, key) => {
-            if (value instanceof File) return // ← skip fișiere
-            fields[key] = value
+            if (value instanceof File) {
+                // Păstrăm fișierul ca Blob: IndexedDB îl poate stoca prin structured clone,
+                // așa că upload-ul de poze funcționează și offline (se retrimite la sincronizare).
+                fields[key] = { __file: true, blob: value, name: value.name, type: value.type }
+            } else {
+                fields[key] = value
+            }
         })
         return { __formData: true, fields }
     }
-    
+
     // Dacă Axios a serializat deja datele în string, încercăm să le punem înapoi în obiect
     // pentru ca la re-trimitere Axios să poată seta corect Content-Type: application/json
     if (typeof data === 'string') {
@@ -34,12 +50,12 @@ function serializeData(data: unknown): unknown {
             return data
         }
     }
-    
+
     return data
 }
 interface SerializedFormData {
     __formData: true
-    fields: Record<string, string>
+    fields: Record<string, string | SerializedFile>
 }
 
 function isSerializedFormData(data: unknown): data is SerializedFormData {
@@ -50,7 +66,11 @@ function deserializeData(data: unknown): unknown {
     if (isSerializedFormData(data)) {
         const fd = new FormData()
         Object.entries(data.fields).forEach(([key, value]) => {
-            fd.append(key, value)
+            if (isSerializedFile(value)) {
+                fd.append(key, new File([value.blob], value.name, { type: value.type }))
+            } else {
+                fd.append(key, value)
+            }
         })
         return fd
     }

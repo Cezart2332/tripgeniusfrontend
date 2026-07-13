@@ -24,6 +24,7 @@ import { OffroadRouteEditorPage } from './pages/OffroadRouteEditorPage'
 import { AiOffroadPlannerPage } from './pages/AiOffroadPlannerPage'
 import { OffroadNavigationPage } from './pages/OffroadNavigationPage'
 import { isReallyOnline, flushQueue } from './data/api'
+import { OfflineBanner } from './components/OfflineBanner'
 
 function App() {
 
@@ -34,6 +35,8 @@ function App() {
     })
   }, [])
   return (
+    <>
+    <OfflineBanner />
     <Routes>
       <Route path="/" element={<LandingPage />} />
       <Route path="/login" element={<LoginPage />} />
@@ -68,6 +71,7 @@ function App() {
 
       <Route path="*" element={<Navigate replace to="/" />} />
     </Routes>
+    </>
   )
 }
 
