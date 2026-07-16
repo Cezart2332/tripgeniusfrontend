@@ -16,7 +16,7 @@ const Overlay = styled(motion.div)`
   position: fixed;
   inset: 0;
   z-index: 1000;
-  background: rgba(5, 7, 4, 0.62);
+  background: rgba(23, 34, 26, 0.45);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
 `
@@ -30,7 +30,7 @@ const Sheet = styled(motion.div)<{ $height: string }>`
   max-height: ${({ $height }) => $height};
   height: ${({ $height }) => $height};
   background:
-    linear-gradient(145deg, rgba(247, 243, 232, 0.045), rgba(247, 243, 232, 0.015)),
+    linear-gradient(145deg, rgba(28, 43, 32, 0.045), rgba(28, 43, 32, 0.015)),
     ${({ theme }) => theme.colors.surface[900]};
   border: 1px solid ${({ theme }) => theme.glass.border};
   border-bottom: none;
@@ -71,12 +71,12 @@ const CloseButton = styled.button`
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(247, 243, 232, 0.06);
+  background: rgba(28, 43, 32, 0.06);
   color: ${({ theme }) => theme.colors.text[380]};
   transition: all 0.2s ease;
 
   &:hover {
-    background: rgba(247, 243, 232, 0.12);
+    background: rgba(28, 43, 32, 0.12);
     color: ${({ theme }) => theme.colors.text[100]};
   }
 `

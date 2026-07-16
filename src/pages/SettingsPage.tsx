@@ -48,7 +48,7 @@ const revealTransition = {
 }
 
 const Page = styled.section`
-  width: min(1200px, 100% - 2rem);
+  width: min(800px, 100% - 2rem);
   margin: 0 auto;
   padding-top: ${({ theme }) => theme.spacing.lg};
   padding-bottom: ${({ theme }) => theme.spacing['3xl']};
@@ -106,13 +106,13 @@ const UnauthedLink = styled(Link)`
   line-height: 1;
   padding: 0.65rem 1.5rem;
   background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[580]}, ${({ theme }) => theme.colors.green[500]});
-  color: #10120f;
+  color: #ffffff;
   box-shadow: ${({ theme }) => theme.shadows.glowGreen};
 
   &:hover {
     background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[500]}, ${({ theme }) => theme.colors.green[300]});
     transform: translateY(-1px);
-    box-shadow: 0 0 40px rgba(143, 179, 106, 0.3), 0 0 80px rgba(143, 179, 106, 0.1);
+    box-shadow: 0 0 40px rgba(46, 141, 84, 0.3), 0 0 80px rgba(46, 141, 84, 0.1);
   }
 `
 
@@ -153,7 +153,7 @@ const Eyebrow = styled.p`
 const BackButton = styled.button`
   width: 40px;
   height: 40px;
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(28, 43, 32, 0.05);
   border: none;
   border-radius: ${({ theme }) => theme.radii.lg};
   color: ${({ theme }) => theme.colors.text[220]};
@@ -164,7 +164,7 @@ const BackButton = styled.button`
   transition: background 0.2s ease, color 0.2s ease;
 
   &:hover {
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(28, 43, 32, 0.1);
     color: ${({ theme }) => theme.colors.text[100]};
   }
 `
@@ -236,7 +236,7 @@ const MenuCard = styled.button<{ $danger?: boolean }>`
   padding: 1.25rem 1.5rem;
   text-align: left;
   width: 100%;
-  background: ${({ $danger }) => ($danger ? 'rgba(219, 74, 91, 0.1)' : 'rgba(9, 14, 10, 0.4)')};
+  background: ${({ $danger }) => ($danger ? 'rgba(219, 74, 91, 0.1)' : 'rgba(255, 255, 255, 0.4)')};
   border: 1px solid ${({ $danger, theme }) => ($danger ? 'rgba(219, 74, 91, 0.2)' : theme.glass.border)};
   border-radius: ${({ theme }) => theme.radii.xl};
   cursor: pointer;
@@ -245,7 +245,7 @@ const MenuCard = styled.button<{ $danger?: boolean }>`
   transition: background 0.2s ease, border-color 0.2s ease;
 
   &:hover {
-    background: ${({ $danger }) => ($danger ? 'rgba(219, 74, 91, 0.15)' : 'rgba(9, 14, 10, 0.55)')};
+    background: ${({ $danger }) => ($danger ? 'rgba(219, 74, 91, 0.15)' : 'rgba(255, 255, 255, 0.55)')};
   }
 `
 
@@ -306,7 +306,7 @@ const IconCircle = styled.div<{ $danger?: boolean }>`
   width: 44px;
   height: 44px;
   border-radius: ${({ theme }) => theme.radii.lg};
-  background: ${({ $danger }) => ($danger ? 'rgba(219, 74, 91, 0.15)' : 'rgba(143, 179, 106, 0.12)')};
+  background: ${({ $danger }) => ($danger ? 'rgba(219, 74, 91, 0.15)' : 'rgba(46, 141, 84, 0.12)')};
   color: ${({ $danger, theme }) => ($danger ? theme.colors.danger[500] : theme.colors.green[580])};
   display: flex;
   align-items: center;
@@ -362,7 +362,7 @@ const Input = styled.input`
   &:focus {
     outline: none;
     border-color: ${({ theme }) => theme.colors.green[500]};
-    box-shadow: 0 0 0 3px rgba(143, 179, 106, 0.1);
+    box-shadow: 0 0 0 3px rgba(46, 141, 84, 0.1);
   }
 
   &:disabled {
@@ -387,7 +387,7 @@ const TextArea = styled.textarea`
   &:focus {
     outline: none;
     border-color: ${({ theme }) => theme.colors.green[500]};
-    box-shadow: 0 0 0 3px rgba(143, 179, 106, 0.1);
+    box-shadow: 0 0 0 3px rgba(46, 141, 84, 0.1);
   }
 
   &:disabled {
@@ -411,7 +411,7 @@ const PrimaryBtn = styled.button`
   line-height: 1;
   padding: 0.65rem 1.5rem;
   background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[580]}, ${({ theme }) => theme.colors.green[500]});
-  color: #10120f;
+  color: #ffffff;
   box-shadow: ${({ theme }) => theme.shadows.glowGreen};
   border: none;
   cursor: pointer;
@@ -420,7 +420,7 @@ const PrimaryBtn = styled.button`
   &:hover {
     background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[500]}, ${({ theme }) => theme.colors.green[300]});
     transform: translateY(-1px);
-    box-shadow: 0 0 40px rgba(143, 179, 106, 0.3), 0 0 80px rgba(143, 179, 106, 0.1);
+    box-shadow: 0 0 40px rgba(46, 141, 84, 0.3), 0 0 80px rgba(46, 141, 84, 0.1);
   }
 
   &:active {

@@ -202,7 +202,7 @@ function isMapTileRequest(url: URL): boolean {
 }
 
 function parseMapTileZoom(url: URL): number | null {
-    const carto = url.pathname.match(/\/dark_all\/(\d+)\//)
+    const carto = url.pathname.match(/\/light_all\/(\d+)\//)
     if (carto) return parseInt(carto[1], 10)
     const topo = url.pathname.match(/^\/(\d+)\/\d+\/\d+\.png$/)
     if (topo) return parseInt(topo[1], 10)

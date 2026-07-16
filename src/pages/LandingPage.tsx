@@ -59,7 +59,7 @@ const Hero = styled(motion.header)`
     inset: 10% -8% auto 44%;
     height: 70%;
     pointer-events: none;
-    background: radial-gradient(circle, rgba(143, 179, 106, 0.18), transparent 68%);
+    background: radial-gradient(circle, rgba(46, 141, 84, 0.18), transparent 68%);
     opacity: 0.8;
   }
 
@@ -169,7 +169,7 @@ const GhostLink = styled(Link)`
 
   &:hover {
     border-color: ${({ theme }) => theme.colors.line};
-    background: rgba(247, 243, 232, 0.06);
+    background: rgba(28, 43, 32, 0.06);
     color: ${({ theme }) => theme.colors.text[100]};
   }
 `
@@ -181,8 +181,8 @@ const HeroIllustration = styled.div`
   place-items: center;
   min-height: 24rem;
   background:
-    radial-gradient(circle at 50% 42%, rgba(192, 163, 91, 0.24), transparent 12rem),
-    radial-gradient(circle at 60% 70%, rgba(143, 179, 106, 0.14), transparent 14rem);
+    radial-gradient(circle at 50% 42%, rgba(168, 120, 31, 0.24), transparent 12rem),
+    radial-gradient(circle at 60% 70%, rgba(46, 141, 84, 0.14), transparent 14rem);
 
   @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
     min-height: 14rem;
@@ -194,7 +194,7 @@ const HeroSticker = styled.img`
   max-width: 360px;
   height: auto;
   opacity: 0.85;
-  filter: drop-shadow(0 18px 42px rgba(5, 7, 4, 0.42));
+  filter: drop-shadow(0 18px 42px rgba(31, 45, 36, 0.18));
 
   @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
     max-width: 200px;
@@ -270,7 +270,7 @@ const FeatureIcon = styled.span`
   width: 48px;
   height: 48px;
   border-radius: ${({ theme }) => theme.radii.md};
-  background: rgba(192, 163, 91, 0.12);
+  background: rgba(168, 120, 31, 0.12);
   color: ${({ theme }) => theme.colors.offroad.accent};
   font-size: 1.3rem;
   margin-bottom: 0.25rem;
@@ -355,7 +355,7 @@ const CTAWrap = styled(motion.section)`
   padding: 3rem 0 0;
   background:
     linear-gradient(90deg, ${({ theme }) => theme.colors.lineSoft}, transparent) top left / 100% 1px no-repeat,
-    radial-gradient(circle at 80% 0%, rgba(143, 179, 106, 0.12), transparent 18rem);
+    radial-gradient(circle at 80% 0%, rgba(46, 141, 84, 0.12), transparent 18rem);
 
   @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
     flex-direction: column;
@@ -399,7 +399,7 @@ const MiniCard = styled.div`
   gap: 0.5rem;
   padding: 0.5rem 0.85rem;
   border-radius: ${({ theme }) => theme.radii.md};
-  background: rgba(247, 243, 232, 0.055);
+  background: rgba(28, 43, 32, 0.055);
   border: 1px solid ${({ theme }) => theme.glass.border};
   color: ${({ theme }) => theme.colors.text[220]};
   font-size: ${({ theme }) => theme.typography.bodySmall};

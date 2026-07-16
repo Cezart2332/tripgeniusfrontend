@@ -34,7 +34,7 @@ const Scrim = styled(motion.div)`
   position: fixed;
   inset: 0;
   z-index: 1100;
-  background: rgba(0, 0, 0, 0.65);
+  background: rgba(23, 34, 26, 0.45);
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
   display: flex;
@@ -89,7 +89,7 @@ const OffroadBadge = styled.span`
   border-radius: ${({ theme }) => theme.radii.lg};
   background: ${({ theme }) => theme.colors.offroad.accentSoft};
   color: ${({ theme }) => theme.colors.offroad.accent};
-  border: 1px solid rgba(201, 162, 39, 0.3);
+  border: 1px solid rgba(168, 120, 31, 0.3);
   margin-bottom: 0.5rem;
 `
 
@@ -121,7 +121,7 @@ const CloseButton = styled.button`
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(247, 243, 232, 0.06);
+  background: rgba(28, 43, 32, 0.06);
   color: ${({ theme }) => theme.colors.text[380]};
   border: none;
   cursor: pointer;
@@ -129,14 +129,14 @@ const CloseButton = styled.button`
   transition: all 0.2s ease;
 
   &:hover {
-    background: rgba(247, 243, 232, 0.12);
+    background: rgba(28, 43, 32, 0.12);
     color: ${({ theme }) => theme.colors.text[100]};
   }
 `
 
 const JoinBanner = styled.div`
   padding: ${({ theme }) => theme.spacing.md} ${({ theme }) => theme.spacing.lg};
-  background: rgba(201, 162, 39, 0.06);
+  background: rgba(168, 120, 31, 0.06);
   border-bottom: 1px solid ${({ theme }) => theme.colors.lineSoft};
   display: flex;
   align-items: center;
@@ -287,7 +287,7 @@ const RouteSource = styled.span<{ $drawn: boolean }>`
   text-transform: uppercase;
   padding: 0.15rem 0.5rem;
   border-radius: ${({ theme }) => theme.radii.lg};
-  background: rgba(169, 200, 163, 0.1);
+  background: rgba(46, 141, 84, 0.1);
   color: ${({ theme }) => theme.colors.text[380]};
 
   ${({ $drawn, theme }) => $drawn && `
@@ -331,7 +331,7 @@ const GhostBtn = styled.button<{ $danger?: boolean }>`
   font-weight: 500;
   border: none;
   border-radius: ${({ theme }) => theme.radii.sm};
-  background: rgba(247, 243, 232, 0.06);
+  background: rgba(28, 43, 32, 0.06);
   color: ${({ $danger, theme }) => $danger ? theme.colors.danger[500] : theme.colors.text[380]};
   cursor: pointer;
   transition: all 0.15s ease;
@@ -342,7 +342,7 @@ const GhostBtn = styled.button<{ $danger?: boolean }>`
   max-width: 100%;
 
   &:hover {
-    background: rgba(247, 243, 232, 0.12);
+    background: rgba(28, 43, 32, 0.12);
     color: ${({ $danger, theme }) => $danger ? theme.colors.danger[400] : theme.colors.text[100]};
   }
 
@@ -370,7 +370,7 @@ const GhostLink = styled(Link)<{ $danger?: boolean }>`
   font-weight: 500;
   border: none;
   border-radius: ${({ theme }) => theme.radii.sm};
-  background: rgba(247, 243, 232, 0.06);
+  background: rgba(28, 43, 32, 0.06);
   color: ${({ $danger, theme }) => $danger ? theme.colors.danger[500] : theme.colors.text[380]};
   cursor: pointer;
   transition: all 0.15s ease;
@@ -378,7 +378,7 @@ const GhostLink = styled(Link)<{ $danger?: boolean }>`
   white-space: nowrap;
 
   &:hover {
-    background: rgba(247, 243, 232, 0.12);
+    background: rgba(28, 43, 32, 0.12);
     color: ${({ $danger, theme }) => $danger ? theme.colors.danger[400] : theme.colors.text[100]};
   }
 `
@@ -426,7 +426,7 @@ const InviteInputGroup = styled.div`
 const StyledInput = styled.input`
   flex: 1;
   padding: 0.55rem 0.75rem;
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(28, 43, 32, 0.05);
   border: 1px solid ${({ theme }) => theme.colors.lineSoft};
   border-radius: ${({ theme }) => theme.radii.md};
   color: ${({ theme }) => theme.colors.text[100]};
@@ -451,7 +451,7 @@ const StyledInput = styled.input`
 const StyledSelect = styled.select`
   padding: 0.3rem 0.5rem;
   font-size: ${({ theme }) => theme.typography.caption};
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(28, 43, 32, 0.05);
   border: 1px solid ${({ theme }) => theme.colors.lineSoft};
   border-radius: ${({ theme }) => theme.radii.sm};
   color: ${({ theme }) => theme.colors.text[100]};
@@ -576,8 +576,8 @@ const ChatEmpty = styled.div`
 const ChatBubble = styled.div<{ $self: boolean }>`
   padding: 0.6rem 0.8rem;
   border-radius: ${({ theme }) => theme.radii.md};
-  background: ${({ $self, theme }) => $self ? 'rgba(143, 179, 106, 0.08)' : theme.glass.bg};
-  border: 1px solid ${({ $self, theme }) => $self ? 'rgba(143, 179, 106, 0.15)' : theme.glass.border};
+  background: ${({ $self, theme }) => $self ? 'rgba(46, 141, 84, 0.08)' : theme.glass.bg};
+  border: 1px solid ${({ $self, theme }) => $self ? 'rgba(46, 141, 84, 0.15)' : theme.glass.border};
   margin-left: ${({ $self }) => $self ? 'auto' : '0'};
   margin-right: ${({ $self }) => $self ? '0' : 'auto'};
   max-width: 85%;

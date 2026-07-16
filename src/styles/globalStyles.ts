@@ -17,6 +17,7 @@ const GlobalStyles = createGlobalStyle`
     touch-action: pan-x pan-y;
     -webkit-text-size-adjust: 100%;
     height: 100%;
+    overscroll-behavior-y: none;
   }
 
   body {
@@ -25,8 +26,8 @@ const GlobalStyles = createGlobalStyle`
     font-family: ${({ theme }) => theme.typography.fontFamily};
     color: ${({ theme }) => theme.colors.text[100]};
     background:
-      radial-gradient(circle at 18% 0%, rgba(143, 179, 106, 0.12), transparent 28rem),
-      radial-gradient(circle at 92% 18%, rgba(192, 163, 91, 0.10), transparent 26rem),
+      radial-gradient(circle at 18% 0%, rgba(46, 141, 84, 0.10), transparent 28rem),
+      radial-gradient(circle at 92% 18%, rgba(168, 120, 31, 0.07), transparent 26rem),
       linear-gradient(180deg, ${({ theme }) => theme.colors.bg[960]}, ${({ theme }) => theme.colors.bg[980]} 38rem);
     background-attachment: fixed;
     -webkit-font-smoothing: antialiased;
@@ -37,6 +38,7 @@ const GlobalStyles = createGlobalStyle`
     padding-right: env(safe-area-inset-right);
     padding-bottom: env(safe-area-inset-bottom);
     position: relative;
+    overscroll-behavior-y: none;
   }
 
   body::before {
@@ -46,11 +48,11 @@ const GlobalStyles = createGlobalStyle`
     pointer-events: none;
     z-index: 0;
     background-image:
-      linear-gradient(rgba(247, 243, 232, 0.025) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(247, 243, 232, 0.018) 1px, transparent 1px);
+      linear-gradient(rgba(28, 43, 32, 0.030) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(28, 43, 32, 0.022) 1px, transparent 1px);
     background-size: 44px 44px;
     mask-image: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent 78%);
-    opacity: 0.55;
+    opacity: 0.5;
   }
 
   #root {
@@ -78,6 +80,11 @@ const GlobalStyles = createGlobalStyle`
     font-family: inherit;
     border: none;
     outline: none;
+  }
+
+  /* Native-app touch behaviour: no double-tap zoom on controls. */
+  a, button, input, select, textarea, label, [role="button"], [tabindex] {
+    touch-action: manipulation;
   }
 
   button:focus-visible,
@@ -133,6 +140,10 @@ const GlobalStyles = createGlobalStyle`
   img {
     max-width: 100%;
     display: block;
+    -webkit-user-drag: none;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
   }
 
   ::-webkit-scrollbar {
@@ -145,12 +156,12 @@ const GlobalStyles = createGlobalStyle`
   }
 
   ::-webkit-scrollbar-thumb {
-    background: ${({ theme }) => theme.colors.green[700]};
+    background: rgba(46, 141, 84, 0.35);
     border-radius: 3px;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background: ${({ theme }) => theme.colors.green[580]};
+    background: rgba(46, 141, 84, 0.55);
   }
 
   .sr-only {
@@ -194,8 +205,8 @@ const GlobalStyles = createGlobalStyle`
     display: flex;
     align-items: center;
     justify-content: center;
-    border: 2px solid rgba(247, 243, 232, 0.95);
-    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+    border: 2px solid rgba(255, 255, 255, 0.95);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.28);
   }
 
   .marker-icon-inner {
@@ -218,6 +229,16 @@ const GlobalStyles = createGlobalStyle`
     ::-webkit-scrollbar {
       width: 3px;
       height: 3px;
+    }
+
+    /* Tighter, app-like type scale on phones. */
+    h1 { font-size: 1.9rem; }
+    h2 { font-size: 1.35rem; }
+    h3 { font-size: 1.05rem; }
+
+    /* 16px inputs stop iOS Safari from zooming in on focus. */
+    input, select, textarea {
+      font-size: 16px !important;
     }
   }
 `

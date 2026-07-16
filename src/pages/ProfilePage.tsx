@@ -277,13 +277,13 @@ const UnauthedLink = styled(Link)`
   line-height: 1;
   padding: 0.65rem 1.5rem;
   background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[580]}, ${({ theme }) => theme.colors.green[500]});
-  color: #10120f;
+  color: #ffffff;
   box-shadow: ${({ theme }) => theme.shadows.glowGreen};
 
   &:hover {
     background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[500]}, ${({ theme }) => theme.colors.green[300]});
     transform: translateY(-1px);
-    box-shadow: 0 0 40px rgba(143, 179, 106, 0.3), 0 0 80px rgba(143, 179, 106, 0.1);
+    box-shadow: 0 0 40px rgba(46, 141, 84, 0.3), 0 0 80px rgba(46, 141, 84, 0.1);
   }
 `
 
@@ -424,7 +424,7 @@ const Input = styled.input`
   &:focus {
     outline: none;
     border-color: ${({ theme }) => theme.colors.green[500]};
-    box-shadow: 0 0 0 3px rgba(143, 179, 106, 0.1);
+    box-shadow: 0 0 0 3px rgba(46, 141, 84, 0.1);
   }
 
   &:disabled {
@@ -449,7 +449,7 @@ const TextArea = styled.textarea`
   &:focus {
     outline: none;
     border-color: ${({ theme }) => theme.colors.green[500]};
-    box-shadow: 0 0 0 3px rgba(143, 179, 106, 0.1);
+    box-shadow: 0 0 0 3px rgba(46, 141, 84, 0.1);
   }
 
   &:disabled {
@@ -473,7 +473,7 @@ const PrimaryBtn = styled.button`
   line-height: 1;
   padding: 0.65rem 1.5rem;
   background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[580]}, ${({ theme }) => theme.colors.green[500]});
-  color: #10120f;
+  color: #ffffff;
   box-shadow: ${({ theme }) => theme.shadows.glowGreen};
   border: none;
   cursor: pointer;
@@ -482,7 +482,7 @@ const PrimaryBtn = styled.button`
   &:hover {
     background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[500]}, ${({ theme }) => theme.colors.green[300]});
     transform: translateY(-1px);
-    box-shadow: 0 0 40px rgba(143, 179, 106, 0.3), 0 0 80px rgba(143, 179, 106, 0.1);
+    box-shadow: 0 0 40px rgba(46, 141, 84, 0.3), 0 0 80px rgba(46, 141, 84, 0.1);
   }
 
   &:active {
@@ -512,7 +512,7 @@ const SmallPrimaryBtn = styled.button`
   padding: 0.4rem 0.9rem;
   font-size: ${({ theme }) => theme.typography.bodySmall};
   background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[580]}, ${({ theme }) => theme.colors.green[500]});
-  color: #10120f;
+  color: #ffffff;
   border: none;
   cursor: pointer;
 
@@ -543,11 +543,11 @@ const GhostBtn = styled.button`
   font-size: ${({ theme }) => theme.typography.bodySmall};
   background: transparent;
   color: ${({ theme }) => theme.colors.green[580]};
-  border: 1px solid rgba(154, 198, 148, 0.2);
+  border: 1px solid rgba(46, 141, 84, 0.2);
   cursor: pointer;
 
   &:hover {
-    background: rgba(143, 179, 106, 0.08);
+    background: rgba(46, 141, 84, 0.08);
     border-color: ${({ theme }) => theme.colors.line};
     color: ${({ theme }) => theme.colors.green[500]};
   }
@@ -575,10 +575,10 @@ const GhostLink = styled(Link)`
   font-size: ${({ theme }) => theme.typography.bodySmall};
   background: transparent;
   color: ${({ theme }) => theme.colors.green[580]};
-  border: 1px solid rgba(154, 198, 148, 0.2);
+  border: 1px solid rgba(46, 141, 84, 0.2);
 
   &:hover {
-    background: rgba(143, 179, 106, 0.08);
+    background: rgba(46, 141, 84, 0.08);
     border-color: ${({ theme }) => theme.colors.line};
     color: ${({ theme }) => theme.colors.green[500]};
   }
@@ -601,7 +601,7 @@ const DiscoverLink = styled(Link)`
   padding: 0.4rem 0.9rem;
   font-size: ${({ theme }) => theme.typography.bodySmall};
   background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[580]}, ${({ theme }) => theme.colors.green[500]});
-  color: #10120f;
+  color: #ffffff;
   border: none;
   cursor: pointer;
 
@@ -736,7 +736,7 @@ const Chip = styled.button<{ $selected: boolean }>`
   cursor: pointer;
   transition: all 0.15s ease;
   border: 1px solid ${({ $selected, theme }) => ($selected ? theme.colors.green[580] : theme.colors.lineSoft)};
-  background: ${({ $selected }) => ($selected ? 'rgba(143, 179, 106, 0.15)' : 'transparent')};
+  background: ${({ $selected }) => ($selected ? 'rgba(46, 141, 84, 0.15)' : 'transparent')};
   color: ${({ $selected, theme }) => ($selected ? theme.colors.green[500] : theme.colors.text[380])};
 
   &:hover {
@@ -787,7 +787,7 @@ const InviteIcon = styled.div`
   width: 40px;
   height: 40px;
   border-radius: ${({ theme }) => theme.radii.lg};
-  background: rgba(143, 179, 106, 0.12);
+  background: rgba(46, 141, 84, 0.12);
   color: ${({ theme }) => theme.colors.green[580]};
   display: flex;
   align-items: center;
@@ -909,7 +909,7 @@ const HistoryRow = styled(Link)<{ $active?: boolean; $past?: boolean }>`
   align-items: center;
   gap: ${({ theme }) => theme.spacing.md};
   padding: ${({ theme }) => theme.spacing.md} ${({ theme }) => theme.spacing.lg};
-  background: ${({ $active }) => ($active ? 'rgba(143, 179, 106, 0.06)' : 'transparent')};
+  background: ${({ $active }) => ($active ? 'rgba(46, 141, 84, 0.06)' : 'transparent')};
   border: 1px solid ${({ $active, theme }) => ($active ? theme.colors.line : 'transparent')};
   border-radius: ${({ theme }) => theme.radii.lg};
   text-decoration: none;
@@ -969,7 +969,7 @@ const HistoryBadgeActive = styled.span`
   font-size: ${({ theme }) => theme.typography.caption};
   font-weight: 600;
   color: ${({ theme }) => theme.colors.green[500]};
-  background: rgba(143, 179, 106, 0.12);
+  background: rgba(46, 141, 84, 0.12);
   padding: 0.1rem 0.5rem;
   border-radius: ${({ theme }) => theme.radii.lg};
 `
@@ -985,8 +985,8 @@ const HistoryBadgeStatus = styled.span<{ $upcoming?: boolean; $past?: boolean }>
     theme.colors.green[580]};
   background: ${({ $upcoming, $past, theme }) =>
     $upcoming ? theme.colors.offroad.accentSoft :
-    $past ? 'rgba(122, 158, 116, 0.1)' :
-    'rgba(143, 179, 106, 0.1)'};
+    $past ? 'rgba(46, 141, 84, 0.1)' :
+    'rgba(46, 141, 84, 0.1)'};
 `
 
 const HistoryMetaRow = styled.div`
@@ -1013,9 +1013,9 @@ const HistorySkeletonRow = styled.div`
   height: 64px;
   background: linear-gradient(
     90deg,
-    rgba(143, 179, 106, 0.06) 25%,
-    rgba(143, 179, 106, 0.12) 50%,
-    rgba(143, 179, 106, 0.06) 75%
+    rgba(46, 141, 84, 0.06) 25%,
+    rgba(46, 141, 84, 0.12) 50%,
+    rgba(46, 141, 84, 0.06) 75%
   );
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
@@ -1064,7 +1064,7 @@ const MatchBadge = styled.div`
   font-weight: 700;
   border-radius: ${({ theme }) => theme.radii.lg};
   background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[580]}, ${({ theme }) => theme.colors.green[500]});
-  color: #10120f;
+  color: #ffffff;
   z-index: 1;
 `
 
@@ -1173,7 +1173,7 @@ const MatchViewBtn = styled.button`
   padding: 0.4rem 0.9rem;
   font-size: ${({ theme }) => theme.typography.bodySmall};
   background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[580]}, ${({ theme }) => theme.colors.green[500]});
-  color: #10120f;
+  color: #ffffff;
   border: none;
   cursor: pointer;
   margin-top: 1rem;
@@ -1196,7 +1196,7 @@ const NotificationRow = styled.div<{ $unread: boolean }>`
   align-items: center;
   gap: ${({ theme }) => theme.spacing.md};
   padding: ${({ theme }) => theme.spacing.md} ${({ theme }) => theme.spacing.lg};
-  background: ${({ $unread, theme }) => ($unread ? 'rgba(143, 179, 106, 0.04)' : theme.colors.bg[940])};
+  background: ${({ $unread, theme }) => ($unread ? 'rgba(46, 141, 84, 0.04)' : theme.colors.bg[940])};
   border-radius: ${({ theme }) => theme.radii.lg};
   border: 1px solid ${({ $unread, theme }) => ($unread ? theme.colors.line : theme.colors.lineSoft)};
   cursor: pointer;
@@ -1216,7 +1216,7 @@ const NotificationIcon = styled.div`
   width: 40px;
   height: 40px;
   border-radius: ${({ theme }) => theme.radii.lg};
-  background: rgba(143, 179, 106, 0.12);
+  background: rgba(46, 141, 84, 0.12);
   color: ${({ theme }) => theme.colors.green[580]};
   display: flex;
   align-items: center;
@@ -1250,7 +1250,7 @@ const NotificationDot = styled.span`
   height: 8px;
   border-radius: 50%;
   background: ${({ theme }) => theme.colors.green[500]};
-  box-shadow: 0 0 6px rgba(143, 179, 106, 0.4);
+  box-shadow: 0 0 6px rgba(46, 141, 84, 0.4);
 `
 
 export function ProfilePage() {

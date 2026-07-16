@@ -40,12 +40,12 @@ const OverlayColumn = styled.div`
 `
 
 const PoiBadge = styled.div`
-  background: rgba(17, 34, 26, 0.85);
+  background: rgba(255, 255, 255, 0.85);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   padding: 0.5rem 1rem;
   border-radius: 12px;
-  border: 1px solid rgba(143, 179, 106, 0.3);
+  border: 1px solid rgba(46, 141, 84, 0.3);
   display: flex;
   align-items: center;
   gap: 0.75rem;
@@ -70,7 +70,7 @@ const ZoomHint = styled.div`
 `
 
 const LoadingBanner = styled.div`
-  background: rgba(17, 34, 26, 0.85);
+  background: rgba(255, 255, 255, 0.85);
   color: ${({ theme }) => theme.colors.green[500]};
   padding: 0.4rem 0.8rem;
   border-radius: 8px;
@@ -120,16 +120,16 @@ const NavMenu = styled.div`
   bottom: 100%;
   left: 50%;
   transform: translateX(-50%);
-  background: rgba(17, 34, 26, 0.95);
+  background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(143, 179, 106, 0.4);
+  border: 1px solid rgba(46, 141, 84, 0.4);
   border-radius: 20px;
   padding: 0.75rem;
   display: grid;
   gap: 0.5rem;
   width: 200px;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 20px 40px rgba(28, 43, 32, 0.16);
   margin-bottom: 1rem;
 `
 
@@ -138,7 +138,7 @@ const NavMenuItem = styled.button`
   justify-content: flex-start;
   gap: 1rem;
   border: none;
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(28, 43, 32, 0.05);
   padding: 0.6rem 0.8rem;
   border-radius: ${({ theme }) => theme.radii.md};
   color: ${({ theme }) => theme.colors.text[100]};
@@ -150,12 +150,12 @@ const NavMenuItem = styled.button`
   transition: background 0.15s ease;
 
   &:hover {
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(28, 43, 32, 0.1);
   }
 `
 
 const NavMenuDivider = styled.div`
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-top: 1px solid rgba(28, 43, 32, 0.1);
   margin-top: 0.25rem;
   padding-top: 0.25rem;
 `
@@ -305,7 +305,7 @@ export function TripRouteMap({ timeline, selectedDay, showOverlay = true }: Trip
     staticMarkersRef.current.forEach(m => m.remove())
     staticMarkersRef.current = []
 
-    const startEl = createMarkerElement('#f3fff1', '', 'start');
+    const startEl = createMarkerElement('#2e8d54', '', 'start');
     const startMarker = new maplibregl.Marker({ element: startEl })
       .setLngLat([selectedStop.fromCoords[1], selectedStop.fromCoords[0]])
       .setPopup(new maplibregl.Popup({ offset: 25 }).setHTML('<div style="color: #2c332b; padding: 5px;"><strong>Start Point</strong></div>'))
@@ -390,7 +390,7 @@ export function TripRouteMap({ timeline, selectedDay, showOverlay = true }: Trip
         <OverlayColumn>
           <motion.div>
             <PoiBadge>
-              <FiMapPin style={{ color: '#8fb36a' }} />
+              <FiMapPin style={{ color: '#2e8d54' }} />
               <PoiLabel>Points of Interest</PoiLabel>
             </PoiBadge>
           </motion.div>
@@ -432,7 +432,7 @@ export function TripRouteMap({ timeline, selectedDay, showOverlay = true }: Trip
                       <SiWaze style={{ color: '#33CCFF' }} /> Waze
                     </NavMenuItem>
                     <NavMenuItem onClick={() => openExternalMap('apple')}>
-                      <SiApple style={{ color: '#FFF' }} /> Apple Maps
+                      <SiApple style={{ color: '#1c2b21' }} /> Apple Maps
                     </NavMenuItem>
                     <NavMenuDivider>
                       <NavMenuCancel onClick={() => setIsNavOpen(false)}>

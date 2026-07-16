@@ -5,7 +5,7 @@ export const glassMorphism = (strong = false) => css`
   border: 1px solid ${({ theme }) => theme.glass.border};
   backdrop-filter: blur(${({ theme }) => theme.glass.blur});
   -webkit-backdrop-filter: blur(${({ theme }) => theme.glass.blur});
-  box-shadow: inset 0 1px 0 rgba(247, 243, 232, 0.05);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65);
 `
 
 export const textGradient = (theme: DefaultTheme, from?: string, to?: string) => css`
@@ -67,13 +67,13 @@ export const buttonGhost = css`
   border: 1px solid ${({ theme }) => theme.glass.border};
 
   &:hover {
-    background: rgba(247, 243, 232, 0.06);
+    background: rgba(28, 43, 32, 0.05);
     border-color: ${({ theme }) => theme.colors.line};
     color: ${({ theme }) => theme.colors.text[100]};
   }
 
   &:active {
-    background: rgba(247, 243, 232, 0.09);
+    background: rgba(28, 43, 32, 0.08);
   }
 
   &:disabled {
@@ -128,7 +128,7 @@ export const inputField = css`
   &:focus {
     outline: none;
     border-color: ${({ theme }) => theme.colors.green[500]};
-    box-shadow: 0 0 0 3px rgba(143, 179, 106, 0.14);
+    box-shadow: 0 0 0 3px rgba(46, 141, 84, 0.16);
   }
 
   &:disabled {
@@ -153,9 +153,9 @@ export const cardSurface = css`
 export const skeletonShimmer = css`
   background: linear-gradient(
     90deg,
-    rgba(247, 243, 232, 0.045) 25%,
-    rgba(247, 243, 232, 0.10) 50%,
-    rgba(247, 243, 232, 0.045) 75%
+    rgba(28, 43, 32, 0.05) 25%,
+    rgba(28, 43, 32, 0.10) 50%,
+    rgba(28, 43, 32, 0.05) 75%
   );
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
@@ -175,7 +175,7 @@ export const glowingBorder = (color?: string) => css`
     inset: -1px;
     border-radius: inherit;
     padding: 1px;
-    background: linear-gradient(140deg, ${color ?? 'rgba(143, 179, 106, 0.72)'}, transparent 62%);
+    background: linear-gradient(140deg, ${color ?? 'rgba(46, 141, 84, 0.55)'}, transparent 62%);
     -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
     mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
     -webkit-mask-composite: xor;

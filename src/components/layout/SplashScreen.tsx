@@ -26,7 +26,7 @@ const LoaderTrack = styled.div`
   width: 120px;
   height: 3px;
   border-radius: 2px;
-  background: rgba(143, 179, 106, 0.15);
+  background: rgba(46, 141, 84, 0.15);
   overflow: hidden;
 `
 

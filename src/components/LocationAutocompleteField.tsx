@@ -43,7 +43,7 @@ const FieldLabel = styled.label`
 const InputShell = styled.div`
   display: flex;
   align-items: center;
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(28, 43, 32, 0.03);
   border: 1px solid ${({ theme }) => theme.colors.lineSoft};
   border-radius: 12px;
   padding: 0 1rem;
@@ -51,7 +51,7 @@ const InputShell = styled.div`
 
   &:focus-within {
     border-color: ${({ theme }) => theme.colors.green[580]};
-    box-shadow: 0 0 0 3px rgba(143, 179, 106, 0.06);
+    box-shadow: 0 0 0 3px rgba(46, 141, 84, 0.06);
   }
 `
 
@@ -90,7 +90,7 @@ const LocateButton = styled.button`
   transition: all 0.15s ease;
 
   &:hover {
-    background: rgba(143, 179, 106, 0.08);
+    background: rgba(46, 141, 84, 0.08);
   }
 `
 
@@ -101,11 +101,11 @@ const Dropdown = styled.div`
   right: 0;
   z-index: 10;
   background: ${({ theme }) => theme.colors.surface[900]};
-  border: 1px solid rgba(154, 198, 148, 0.1);
+  border: 1px solid rgba(46, 141, 84, 0.1);
   border-radius: 12px;
   margin-top: 0.5rem;
   overflow: hidden;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 10px 25px rgba(28, 43, 32, 0.16);
 `
 
 const LoadingHint = styled.p`
@@ -125,11 +125,11 @@ const OptionButton = styled.button`
   transition: background 0.1s ease;
 
   &:hover {
-    background: rgba(143, 179, 106, 0.06);
+    background: rgba(46, 141, 84, 0.06);
   }
 
   &:not(:last-child) {
-    border-bottom: 1px solid rgba(154, 198, 148, 0.05);
+    border-bottom: 1px solid rgba(46, 141, 84, 0.05);
   }
 `
 

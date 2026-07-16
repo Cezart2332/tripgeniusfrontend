@@ -28,8 +28,9 @@ const Shell = styled.div`
   flex: 1;
 
   @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
-    padding: 0.75rem 0 5rem;
-    width: min(1200px, 100% - 1rem);
+    /* Clears the slim mobile top app bar and the bottom tab bar. */
+    padding: 4.25rem 0 5.5rem;
+    width: min(1200px, 100% - 1.5rem);
   }
 `
 
@@ -108,7 +109,7 @@ export function AppLayout() {
 
   useEffect(() => {
     if (isAppInitializing) {
-      const timer = setTimeout(() => setIsAppInitializing(false), 5000)
+      const timer = setTimeout(() => setIsAppInitializing(false), 2500)
       return () => clearTimeout(timer)
     }
   }, [isAppInitializing])
@@ -193,6 +194,7 @@ export function AppLayout() {
         onInstall={handleInstallClick}
         onSyncUser={syncUserFromProfileFetch}
         onReadAllNotifications={markAllAsRead}
+        mobileVisible={!aiStandalone}
       />
     </>
   )

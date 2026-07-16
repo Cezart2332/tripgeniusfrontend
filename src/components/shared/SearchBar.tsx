@@ -21,7 +21,7 @@ const Wrapper = styled.div<{ $focused: boolean }>`
   backdrop-filter: blur(${({ theme }) => theme.glass.blur});
   -webkit-backdrop-filter: blur(${({ theme }) => theme.glass.blur});
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
-  box-shadow: ${({ $focused }) => $focused ? `0 0 0 3px rgba(143, 179, 106, 0.14)` : 'inset 0 1px 0 rgba(247, 243, 232, 0.04)'};
+  box-shadow: ${({ $focused }) => $focused ? `0 0 0 3px rgba(46, 141, 84, 0.14)` : 'inset 0 1px 0 rgba(28, 43, 32, 0.04)'};
 `
 
 const IconWrap = styled.div`
@@ -58,13 +58,13 @@ const ClearBtn = styled.button`
   height: 32px;
   border-radius: ${({ theme }) => theme.radii.md};
   margin-right: 0.4rem;
-  background: rgba(247, 243, 232, 0.08);
+  background: rgba(28, 43, 32, 0.08);
   color: ${({ theme }) => theme.colors.text[380]};
   flex-shrink: 0;
   transition: all 0.15s ease;
 
   &:hover {
-    background: rgba(247, 243, 232, 0.14);
+    background: rgba(28, 43, 32, 0.14);
     color: ${({ theme }) => theme.colors.text[100]};
   }
 `
@@ -105,7 +105,7 @@ export function SearchBar({ value, onChange, placeholder = 'Search...', onClear 
         placeholder={placeholder}
       />
       {value && (
-        <ClearBtn onClick={handleClear} aria-label="Clear search">
+        <ClearBtn onClick={handleClear} aria-label="Clear search" title="Clear search">
           <FiX size={14} />
         </ClearBtn>
       )}

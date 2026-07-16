@@ -459,7 +459,7 @@ const BackLink = styled(Link)`
   align-self: flex-start;
 
   &:hover {
-    background: rgba(143, 179, 106, 0.08);
+    background: rgba(46, 141, 84, 0.08);
     border-color: ${({ theme }) => theme.colors.line};
     color: ${({ theme }) => theme.colors.text[100]};
   }
@@ -530,7 +530,7 @@ const Input = styled.input`
   &:focus {
     outline: none;
     border-color: ${({ theme }) => theme.colors.green[500]};
-    box-shadow: 0 0 0 3px rgba(143, 179, 106, 0.1);
+    box-shadow: 0 0 0 3px rgba(46, 141, 84, 0.1);
   }
 `
 
@@ -610,7 +610,7 @@ const GhostBtnSm = styled.button`
   border: 1px solid ${({ theme }) => theme.colors.lineSoft};
 
   &:hover {
-    background: rgba(143, 179, 106, 0.08);
+    background: rgba(46, 141, 84, 0.08);
     border-color: ${({ theme }) => theme.colors.line};
     color: ${({ theme }) => theme.colors.text[100]};
   }
@@ -632,7 +632,7 @@ const PrimaryBtnSm = styled.button`
   padding: 0.4rem 0.9rem;
   font-size: ${({ theme }) => theme.typography.bodySmall};
   background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[580]}, ${({ theme }) => theme.colors.green[500]});
-  color: #10120f;
+  color: #ffffff;
   box-shadow: ${({ theme }) => theme.shadows.glowGreen};
   border: none;
   cursor: pointer;

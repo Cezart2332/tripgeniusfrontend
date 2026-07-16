@@ -1,6 +1,6 @@
 import type maplibregl from 'maplibre-gl'
 
-export const TILE_BASE = 'https://basemaps.cartocdn.com/dark_all'
+export const TILE_BASE = 'https://basemaps.cartocdn.com/light_all'
 export const REGIONAL_CACHE_NAME = 'map-tiles-cache'
 export const GLOBAL_CACHE_NAME = 'map-tiles-global'
 
@@ -235,7 +235,7 @@ export async function isWorldMapCached(): Promise<boolean> {
       return false
     }
     const keys = await cache.keys()
-    const globalTiles = keys.filter((r) => r.url.includes('/dark_all/'))
+    const globalTiles = keys.filter((r) => r.url.includes('/light_all/'))
     const complete = globalTiles.length >= WORLD_TILE_COUNT_Z0_TO_5 * 0.95
     if (complete) markWorldMapCached()
     return complete
@@ -286,6 +286,6 @@ export async function prefetchViewport(
 
 /** Parse zoom from CARTO tile URL for service worker routing. */
 export function parseTileZoom(url: string): number | null {
-  const match = url.match(/\/dark_all\/(\d+)\//)
+  const match = url.match(/\/light_all\/(\d+)\//)
   return match ? parseInt(match[1], 10) : null
 }

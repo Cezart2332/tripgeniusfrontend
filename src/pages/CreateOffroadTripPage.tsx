@@ -18,6 +18,7 @@ import { tripTypeOptions } from '../data/tripTypeOptions'
 import type { User } from '../types/models'
 import { ToastContainer } from '../components/shared/Toast'
 import { useToast } from '../components/shared/useToast'
+import { FieldHint } from '../components/shared/FieldHint'
 import { getErrorMessage, isQueuedRequestError } from '../utils/errorMessage'
 import { DiscoveryModeTabs } from '../components/layout/DiscoveryModeTabs'
 import { ModalSurface } from '../components/ModalSurface'
@@ -280,6 +281,7 @@ export function CreateOffroadTripPage() {
                     placeholder="Terrain, difficulty, vehicle requirements, what to expect..."
                   />
                 </FieldLabel>
+                <FieldHint>Mention terrain difficulty and required vehicle setup so drivers know if the route suits them.</FieldHint>
               </BuilderSection>
 
               <BuilderGrid>
@@ -311,6 +313,7 @@ export function CreateOffroadTripPage() {
                     Price (RON)
                     <Input type="number" min={0} value={price} onChange={(e) => setPrice(Number(e.target.value))} />
                   </FieldLabel>
+                  <FieldHint icon={false}>Set 0 for a free community ride.</FieldHint>
                 </BuilderSection>
               </BuilderGrid>
 
@@ -550,7 +553,7 @@ export function CreateOffroadTripPage() {
 // --- Styled Components ---
 
 const OffroadPageSection = styled.section`
-  width: min(1200px, 100% - 2rem);
+  width: min(890px, 100% - 2rem);
   margin: 0 auto;
   padding-top: ${({ theme }) => theme.spacing.lg};
   padding-bottom: ${({ theme }) => theme.spacing['3xl']};
@@ -580,7 +583,7 @@ const PrimaryLink = styled(Link)`
   line-height: 1;
   padding: 0.65rem 1.5rem;
   background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[580]}, ${({ theme }) => theme.colors.green[500]});
-  color: #10120f;
+  color: #ffffff;
   box-shadow: ${({ theme }) => theme.shadows.glowGreen};
 
   &:hover {
@@ -608,7 +611,7 @@ const BackLink = styled(Link)`
   border: 1px solid ${({ theme }) => theme.colors.lineSoft};
 
   &:hover {
-    background: rgba(143, 179, 106, 0.08);
+    background: rgba(46, 141, 84, 0.08);
     border-color: ${({ theme }) => theme.colors.line};
     color: ${({ theme }) => theme.colors.text[100]};
   }
@@ -723,7 +726,7 @@ const Input = styled.input`
   &:focus {
     outline: none;
     border-color: ${({ theme }) => theme.colors.green[500]};
-    box-shadow: 0 0 0 3px rgba(143, 179, 106, 0.1);
+    box-shadow: 0 0 0 3px rgba(46, 141, 84, 0.1);
   }
 `
 
@@ -749,7 +752,7 @@ const Textarea = styled.textarea`
   &:focus {
     outline: none;
     border-color: ${({ theme }) => theme.colors.green[500]};
-    box-shadow: 0 0 0 3px rgba(143, 179, 106, 0.1);
+    box-shadow: 0 0 0 3px rgba(46, 141, 84, 0.1);
   }
 `
 
@@ -781,7 +784,7 @@ const Eyebrow = styled.p`
 `
 
 const OffroadUploadDropzone = styled.label`
-  background: rgba(255,255,255,0.02);
+  background: rgba(28, 43, 32,0.02);
   border: 2px dashed ${({ theme }) => theme.colors.offroad.line};
   height: 200px;
   border-radius: ${({ theme }) => theme.radii.md};
@@ -833,7 +836,7 @@ const OffroadTagChip = styled.label<{ $selected: boolean }>`
   font-size: ${({ theme }) => theme.typography.bodySmall};
   font-weight: 600;
   border: 1px solid ${({ $selected, theme }) => $selected ? theme.colors.offroad.accent : theme.colors.lineSoft};
-  background: ${({ $selected }) => $selected ? 'rgba(201, 162, 39, 0.15)' : 'transparent'};
+  background: ${({ $selected }) => $selected ? 'rgba(168, 120, 31, 0.15)' : 'transparent'};
   color: ${({ $selected, theme }) => $selected ? theme.colors.offroad.accent : theme.colors.text[220]};
   cursor: pointer;
 
@@ -865,7 +868,7 @@ const GhostBtnSm = styled.button`
   border: 1px solid ${({ theme }) => theme.colors.lineSoft};
 
   &:hover {
-    background: rgba(143, 179, 106, 0.08);
+    background: rgba(46, 141, 84, 0.08);
     border-color: ${({ theme }) => theme.colors.line};
     color: ${({ theme }) => theme.colors.text[100]};
   }
@@ -897,7 +900,7 @@ const PrimaryBtn = styled.button`
   line-height: 1;
   padding: 0.65rem 1.5rem;
   background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[580]}, ${({ theme }) => theme.colors.green[500]});
-  color: #10120f;
+  color: #ffffff;
   box-shadow: ${({ theme }) => theme.shadows.glowGreen};
   border: none;
   cursor: pointer;
@@ -1017,7 +1020,7 @@ const OffroadTagChipStatic = styled.span`
   font-weight: 600;
   border: 1px solid ${({ theme }) => theme.colors.offroad.line};
   color: ${({ theme }) => theme.colors.offroad.accent};
-  background: rgba(201, 162, 39, 0.08);
+  background: rgba(168, 120, 31, 0.08);
 `
 
 const OffroadRouteSummaryList = styled.div`
@@ -1031,7 +1034,7 @@ const OffroadRouteSummaryItem = styled.div`
   display: flex;
   gap: ${({ theme }) => theme.spacing.md};
   padding: ${({ theme }) => theme.spacing.md};
-  background: rgba(255,255,255,0.02);
+  background: rgba(28, 43, 32,0.02);
   border: 1px solid ${({ theme }) => theme.colors.lineSoft};
   border-radius: ${({ theme }) => theme.radii.md};
 `
@@ -1044,7 +1047,7 @@ const OffroadRouteSummaryNum = styled.span`
   height: 28px;
   border-radius: 50%;
   background: ${({ theme }) => theme.colors.offroad.accent};
-  color: #1a1408;
+  color: #ffffff;
   font-weight: 700;
   font-size: 0.75rem;
   flex-shrink: 0;
@@ -1098,7 +1101,7 @@ const RouteNumber = styled.span`
   height: 28px;
   border-radius: 50%;
   background: ${({ theme }) => theme.colors.offroad.accent};
-  color: #1a1408;
+  color: #ffffff;
   font-weight: 700;
   font-size: 0.75rem;
   flex-shrink: 0;
@@ -1178,7 +1181,7 @@ const CalendarDay = styled.button<{ $selected: boolean }>`
   border-radius: 10px;
   border: none;
   background: ${({ $selected, theme }) => $selected ? theme.colors.offroad.accent : theme.colors.surface[860]};
-  color: ${({ $selected, theme }) => $selected ? '#1a1408' : theme.colors.text[100]};
+  color: ${({ $selected, theme }) => $selected ? '#ffffff' : theme.colors.text[100]};
   cursor: pointer;
   font-size: ${({ theme }) => theme.typography.bodySmall};
   line-height: 1;

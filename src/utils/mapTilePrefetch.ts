@@ -7,7 +7,7 @@ const TOPO_TILE_URL = (z: number, x: number, y: number) =>
   `https://tile.opentopomap.org/${z}/${x}/${y}.png`
 
 const CARTO_TILE_URL = (z: number, x: number, y: number) =>
-  `https://basemaps.cartocdn.com/dark_all/${z}/${x}/${y}.png`
+  `https://basemaps.cartocdn.com/light_all/${z}/${x}/${y}.png`
 
 const CACHE_GLOBAL = 'map-tiles-global'
 const CACHE_REGIONAL = 'map-tiles-cache'

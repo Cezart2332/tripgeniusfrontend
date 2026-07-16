@@ -20,6 +20,7 @@ import type { TripStatus, User } from '../types/models'
 import api from '../data/api'
 import { ToastContainer } from '../components/shared/Toast'
 import { useToast } from '../components/shared/useToast'
+import { FieldHint } from '../components/shared/FieldHint'
 import { getErrorMessage, isQueuedRequestError } from '../utils/errorMessage'
 import { ModalSurface } from '../components/ModalSurface'
 import { LocationAutocompleteField } from '../components/LocationAutocompleteField'
@@ -348,10 +349,12 @@ export function CreateTripPage() {
                 <FormGroup style={{ marginTop: '2rem' }}>
                   <FieldLabel>Trip Title</FieldLabel>
                   <Input placeholder="Ex: Arctic Adventure" value={formState.title} onChange={e => setFormState(p => ({ ...p, title: e.target.value }))} />
+                  <FieldHint icon={false}>A short, catchy name — it's the first thing people see in Discovery.</FieldHint>
                 </FormGroup>
                 <FormGroup style={{ marginTop: '1.5rem' }}>
                   <FieldLabel>Description</FieldLabel>
                   <Textarea rows={4} placeholder="Describe the mission goals..." value={formState.description} onChange={e => setFormState(p => ({ ...p, description: e.target.value }))} />
+                  <FieldHint icon={false}>Mention the vibe, pace and highlights so the right explorers join.</FieldHint>
                 </FormGroup>
               </BuilderSection>
 
@@ -379,10 +382,12 @@ export function CreateTripPage() {
                   <FormGroup style={{ marginTop: '1.5rem' }}>
                     <FieldLabel>Budget per Person (EUR)</FieldLabel>
                     <Input type="number" value={formState.budgetPerPerson || ''} onChange={e => setFormState(p => ({ ...p, budgetPerPerson: Number(e.target.value) }))} />
+                    <FieldHint icon={false}>Estimated total cost per traveller, including transport and stays.</FieldHint>
                   </FormGroup>
                   <FormGroup style={{ marginTop: '1rem' }}>
                     <FieldLabel>Max Explorers</FieldLabel>
                     <Input type="number" value={formState.maxMembers || ''} onChange={e => setFormState(p => ({ ...p, maxMembers: Number(e.target.value) }))} />
+                    <FieldHint icon={false}>How many people can join, including you.</FieldHint>
                   </FormGroup>
                 </BuilderSection>
               </BuilderGrid>
@@ -742,7 +747,7 @@ export function CreateTripPage() {
 // --- Styled Components ---
 
 const PageSection = styled.section`
-  width: min(1200px, 100% - 2rem);
+  width: min(890px, 100% - 2rem);
   margin: 0 auto;
   padding-top: ${({ theme }) => theme.spacing.lg};
   padding-bottom: ${({ theme }) => theme.spacing['3xl']};
@@ -785,13 +790,13 @@ const LinkBtn = styled(Link)`
   line-height: 1;
   padding: 0.65rem 1.5rem;
   background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[580]}, ${({ theme }) => theme.colors.green[500]});
-  color: #10120f;
+  color: #ffffff;
   box-shadow: ${({ theme }) => theme.shadows.glowGreen};
 
   &:hover {
     background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[500]}, ${({ theme }) => theme.colors.green[300]});
     transform: translateY(-1px);
-    box-shadow: 0 0 40px rgba(143, 179, 106, 0.3), 0 0 80px rgba(143, 179, 106, 0.1);
+    box-shadow: 0 0 40px rgba(46, 141, 84, 0.3), 0 0 80px rgba(46, 141, 84, 0.1);
   }
 `
 
@@ -903,7 +908,7 @@ const Input = styled.input<{ $pl?: string }>`
   &:focus {
     outline: none;
     border-color: ${({ theme }) => theme.colors.green[500]};
-    box-shadow: 0 0 0 3px rgba(143, 179, 106, 0.1);
+    box-shadow: 0 0 0 3px rgba(46, 141, 84, 0.1);
   }
   &:disabled { opacity: 0.5; cursor: not-allowed; }
 `
@@ -926,7 +931,7 @@ const Textarea = styled.textarea`
   &:focus {
     outline: none;
     border-color: ${({ theme }) => theme.colors.green[500]};
-    box-shadow: 0 0 0 3px rgba(143, 179, 106, 0.1);
+    box-shadow: 0 0 0 3px rgba(46, 141, 84, 0.1);
   }
 `
 
@@ -986,7 +991,7 @@ const Chip = styled.button<{ $selected: boolean }>`
   font-size: ${({ theme }) => theme.typography.bodySmall};
   font-weight: 600;
   border: 1px solid ${({ $selected, theme }) => $selected ? theme.colors.green[580] : theme.colors.lineSoft};
-  background: ${({ $selected }) => $selected ? 'rgba(143, 179, 106, 0.2)' : 'transparent'};
+  background: ${({ $selected }) => $selected ? 'rgba(46, 141, 84, 0.2)' : 'transparent'};
   color: ${({ $selected, theme }) => $selected ? theme.colors.green[500] : theme.colors.text[220]};
   transition: all 0.15s ease;
 
@@ -1005,7 +1010,7 @@ const StaticChip = styled.span`
   font-weight: 600;
   border: 1px solid ${({ theme }) => theme.colors.lineSoft};
   color: ${({ theme }) => theme.colors.text[220]};
-  background: rgba(143, 179, 106, 0.08);
+  background: rgba(46, 141, 84, 0.08);
 `
 
 const InputWrapper = styled.div`
@@ -1023,8 +1028,8 @@ const TagIconWrapper = styled.div`
 `
 
 const UploadDropzone = styled.label`
-  background: rgba(255,255,255,0.02);
-  border: 2px dashed rgba(154,198,148,0.1);
+  background: rgba(28, 43, 32,0.02);
+  border: 2px dashed rgba(46, 141, 84,0.1);
   height: 240px;
   border-radius: 24px;
   display: flex;
@@ -1080,7 +1085,7 @@ const DayMarker = styled.div`
   background: ${({ theme }) => theme.colors.green[580]};
   margin-top: 1.5rem;
   flex-shrink: 0;
-  box-shadow: 0 0 12px rgba(143, 179, 106, 0.3);
+  box-shadow: 0 0 12px rgba(46, 141, 84, 0.3);
 `
 
 const StopHeader = styled.div`
@@ -1118,7 +1123,7 @@ const ActivitiesGrid = styled.div`
 
 const ActivityCard = styled.div`
   padding: 1rem;
-  background: rgba(255,255,255,0.02);
+  background: rgba(28, 43, 32,0.02);
   border-radius: 12px;
   border: 1px solid ${({ theme }) => theme.colors.lineSoft};
 `
@@ -1165,7 +1170,7 @@ const GhostBtn = styled.button`
   border: 1px solid ${({ theme }) => theme.colors.lineSoft};
 
   &:hover {
-    background: rgba(143, 179, 106, 0.08);
+    background: rgba(46, 141, 84, 0.08);
     border-color: ${({ theme }) => theme.colors.line};
     color: ${({ theme }) => theme.colors.text[100]};
   }
@@ -1322,7 +1327,7 @@ const PrimaryBtnLg = styled.button<{ $minWidth: string }>`
   font-size: 1.05rem;
   min-width: ${({ $minWidth }) => $minWidth};
   background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[580]}, ${({ theme }) => theme.colors.green[500]});
-  color: #10120f;
+  color: #ffffff;
   box-shadow: ${({ theme }) => theme.shadows.glowGreen};
   border: none;
   cursor: pointer;
@@ -1331,7 +1336,7 @@ const PrimaryBtnLg = styled.button<{ $minWidth: string }>`
   &:hover {
     background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[500]}, ${({ theme }) => theme.colors.green[300]});
     transform: translateY(-1px);
-    box-shadow: 0 0 40px rgba(143, 179, 106, 0.3), 0 0 80px rgba(143, 179, 106, 0.1);
+    box-shadow: 0 0 40px rgba(46, 141, 84, 0.3), 0 0 80px rgba(46, 141, 84, 0.1);
   }
   &:active { transform: translateY(0); }
   &:disabled { opacity: 0.5; transform: none; box-shadow: none; cursor: not-allowed; }
@@ -1386,7 +1391,7 @@ const CalendarDay = styled.button<{ $selected: boolean }>`
   line-height: 1;
 
   &:hover {
-    background: ${({ $selected, theme }) => $selected ? theme.colors.green[580] : 'rgba(143, 179, 106, 0.25)'};
+    background: ${({ $selected, theme }) => $selected ? theme.colors.green[580] : 'rgba(46, 141, 84, 0.25)'};
   }
 
   @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {

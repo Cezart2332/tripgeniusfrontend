@@ -50,16 +50,20 @@ const NavItem = styled(NavLink)`
   justify-content: center;
   flex: 1;
   flex-direction: column;
-  gap: 0.18rem;
-  padding: 0.35rem 0.25rem;
-  min-height: 44px;
-  max-width: 72px;
+  gap: 0.2rem;
+  padding: 0.4rem 0.25rem;
+  min-height: 48px;
+  max-width: 84px;
   border-radius: ${({ theme }) => theme.radii.lg};
   color: ${({ theme }) => theme.colors.text[380]};
-  font-size: 0.6rem;
-  font-weight: 500;
+  font-size: 0.68rem;
+  font-weight: 600;
   text-decoration: none;
-  transition: color 0.2s ease;
+  transition: color 0.2s ease, transform 0.1s ease;
+
+  &:active {
+    transform: scale(0.94);
+  }
 
   &.active {
     color: ${({ theme }) => theme.colors.bg[980]};
@@ -71,7 +75,7 @@ const NavItem = styled(NavLink)`
 `
 
 const IconWrap = styled.span`
-  font-size: 1.2rem;
+  font-size: 1.3rem;
   display: flex;
   align-items: center;
   justify-content: center;

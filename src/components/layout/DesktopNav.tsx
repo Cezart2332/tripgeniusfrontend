@@ -55,7 +55,7 @@ const Link = styled(NavLink)`
 
   &:hover:not(.is-active) {
     color: ${({ theme }) => theme.colors.text[220]};
-    background: rgba(247, 243, 232, 0.07);
+    background: rgba(28, 43, 32, 0.07);
   }
 
   svg {

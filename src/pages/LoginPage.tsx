@@ -8,6 +8,7 @@ import { AxiosError } from 'axios'
 import api from '../data/api'
 import { setCredentials, setToken } from '../data/authSlice'
 import { ToastContainer } from '../components/shared/Toast'
+import { FieldHint } from '../components/shared/FieldHint'
 import { useToast } from '../components/shared/useToast'
 import waitForBackendButtonUnlock from '../utils/interactionDelay'
 import { subscribeForNotifications } from '../utils/notifications'
@@ -68,8 +69,8 @@ const Illustration = styled.aside`
   justify-content: center;
   align-items: center;
   background:
-    radial-gradient(circle at 50% 42%, rgba(192, 163, 91, 0.22), transparent 12rem),
-    radial-gradient(circle at 56% 68%, rgba(143, 179, 106, 0.13), transparent 15rem);
+    radial-gradient(circle at 50% 42%, rgba(168, 120, 31, 0.22), transparent 12rem),
+    radial-gradient(circle at 56% 68%, rgba(46, 141, 84, 0.13), transparent 15rem);
 
   @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
     display: none;
@@ -80,7 +81,7 @@ const Sticker = styled.img`
   width: 240px;
   height: auto;
   opacity: 0.8;
-  filter: drop-shadow(0 18px 42px rgba(5, 7, 4, 0.42));
+  filter: drop-shadow(0 18px 42px rgba(31, 45, 36, 0.18));
 `
 
 const Header = styled.header`
@@ -103,7 +104,7 @@ const TabBar = styled.nav`
   padding: 0.25rem;
   border-radius: ${({ theme }) => theme.radii.lg};
   border: 1px solid ${({ theme }) => theme.colors.lineSoft};
-  background: rgba(9, 14, 10, 0.75);
+  background: rgba(255, 255, 255, 0.75);
   margin-bottom: 1.5rem;
 `
 
@@ -120,7 +121,7 @@ const TabLink = styled(Link)<{ $active: boolean }>`
 
   &:hover:not([style]) {
     color: ${({ theme }) => theme.colors.text[220]};
-    background: rgba(143, 179, 106, 0.08);
+    background: rgba(46, 141, 84, 0.08);
   }
 `
 
@@ -144,7 +145,7 @@ const GoogleBtn = styled.button`
   padding: 0.65rem 1rem;
   border-radius: ${({ theme }) => theme.radii.lg};
   border: 1px solid ${({ theme }) => theme.colors.lineSoft};
-  background: rgba(247, 243, 232, 0.04);
+  background: rgba(28, 43, 32, 0.04);
   color: ${({ theme }) => theme.colors.text[100]};
   font-size: ${({ theme }) => theme.typography.bodySmall};
   font-weight: 600;
@@ -152,7 +153,7 @@ const GoogleBtn = styled.button`
   transition: all 0.15s ease;
 
   &:hover:not(:disabled) {
-    background: rgba(247, 243, 232, 0.08);
+    background: rgba(28, 43, 32, 0.08);
     border-color: ${({ theme }) => theme.colors.line};
   }
 
@@ -249,7 +250,7 @@ const Spinner = styled.span`
   width: 16px;
   height: 16px;
   border: 2px solid rgba(0, 0, 0, 0.2);
-  border-top-color: #10120f;
+  border-top-color: #ffffff;
   border-radius: 50%;
   animation: spin 0.6s linear infinite;
   @keyframes spin { to { transform: rotate(360deg); } }
@@ -361,7 +362,8 @@ export function LoginPage() {
             )}
             <Divider><span>or continue with email</span></Divider>
             <FieldLabel htmlFor="login-email">Email</FieldLabel>
-            <Input id="login-email" type="email" placeholder="you@example.com" value={email} onChange={e => setEmail(e.target.value)} disabled={isLoading} required />
+            <Input id="login-email" type="email" placeholder="you@example.com" value={email} onChange={e => setEmail(e.target.value)} disabled={isLoading} required aria-describedby="login-email-hint" />
+            <FieldHint id="login-email-hint" icon={false}>Use the email address you registered with.</FieldHint>
             <FieldLabel htmlFor="login-password">Password</FieldLabel>
             <Input id="login-password" type="password" placeholder="********" value={password} onChange={e => setPassword(e.target.value)} disabled={isLoading} required />
             <div style={{ textAlign: 'right' }}>

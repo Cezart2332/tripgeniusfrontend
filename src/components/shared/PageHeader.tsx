@@ -24,11 +24,12 @@ const Wrapper = styled.div`
   padding: ${({ theme }) => theme.spacing.xl} 0;
   border-bottom: 1px solid ${({ theme }) => theme.colors.lineSoft};
   background:
-    radial-gradient(circle at 82% 0%, rgba(143, 179, 106, 0.10), transparent 20rem);
+    radial-gradient(ellipse at 82% 0%, rgba(46, 141, 84, 0.06), transparent 65%);
 
   @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
     grid-template-columns: 1fr;
     gap: ${({ theme }) => theme.spacing.md};
+    padding: ${({ theme }) => theme.spacing.md} 0 ${({ theme }) => theme.spacing.md};
   }
 `
 
@@ -86,6 +87,14 @@ const ActionsRow = styled.div`
   align-items: center;
   flex-wrap: wrap;
   flex-shrink: 0;
+
+  @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
+    width: 100%;
+
+    > * {
+      flex: 1;
+    }
+  }
 `
 
 export function PageHeader({ title, description, stats, actions }: PageHeaderProps) {

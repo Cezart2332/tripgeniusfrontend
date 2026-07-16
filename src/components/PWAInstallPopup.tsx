@@ -13,7 +13,7 @@ const Overlay = styled.div`
   position: fixed;
   inset: 0;
   z-index: 2000;
-  background: rgba(5, 7, 4, 0.68);
+  background: rgba(23, 34, 26, 0.45);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   display: flex;
@@ -25,7 +25,7 @@ const Overlay = styled.div`
 const Card = styled(motion.div)`
   position: relative;
   background:
-    linear-gradient(145deg, rgba(247, 243, 232, 0.055), rgba(247, 243, 232, 0.02)),
+    linear-gradient(145deg, rgba(28, 43, 32, 0.055), rgba(28, 43, 32, 0.02)),
     ${({ theme }) => theme.colors.surface[900]};
   border: 1px solid ${({ theme }) => theme.glass.border};
   backdrop-filter: blur(20px);
@@ -60,14 +60,14 @@ const CloseBtn = styled.button`
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(247, 243, 232, 0.06);
+  background: rgba(28, 43, 32, 0.06);
   color: ${({ theme }) => theme.colors.text[380]};
   border: none;
   cursor: pointer;
   transition: all 0.2s ease;
 
   &:hover {
-    background: rgba(247, 243, 232, 0.12);
+    background: rgba(28, 43, 32, 0.12);
     color: ${({ theme }) => theme.colors.text[100]};
   }
 `
@@ -164,13 +164,13 @@ const LaterBtn = styled.button`
   font-weight: 500;
   border: none;
   border-radius: ${({ theme }) => theme.radii.lg};
-  background: rgba(247, 243, 232, 0.06);
+  background: rgba(28, 43, 32, 0.06);
   color: ${({ theme }) => theme.colors.text[380]};
   cursor: pointer;
   transition: all 0.15s ease;
 
   &:hover {
-    background: rgba(247, 243, 232, 0.12);
+    background: rgba(28, 43, 32, 0.12);
     color: ${({ theme }) => theme.colors.text[100]};
   }
 `
