@@ -85,7 +85,7 @@ const Bar = styled.div<{ $compact?: boolean }>`
   gap: ${({ theme }) => theme.spacing.sm};
   margin-top: ${({ theme }) => theme.spacing.sm};
   padding: ${({ theme }) => theme.spacing.md};
-  background: rgba(201, 162, 39, 0.08);
+  background: rgba(168, 120, 31, 0.08);
   border: 1px solid ${({ theme }) => theme.colors.offroad.line};
   border-radius: ${({ theme }) => theme.radii.lg};
 
@@ -118,8 +118,8 @@ const StartBtn = styled.button`
   cursor: pointer;
   white-space: nowrap;
   background: linear-gradient(140deg, ${({ theme }) => theme.colors.offroad.accent}, #a8841f);
-  color: #1a1408;
-  box-shadow: 0 4px 20px rgba(201, 162, 39, 0.35);
+  color: #ffffff;
+  box-shadow: 0 4px 20px rgba(168, 120, 31, 0.35);
   transition: transform 0.15s ease, opacity 0.15s ease;
 
   &:hover:not(:disabled) {

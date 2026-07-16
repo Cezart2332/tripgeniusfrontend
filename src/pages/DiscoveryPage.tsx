@@ -107,10 +107,12 @@ const HeaderRow = styled(motion.header)`
   padding: ${({ theme }) => theme.spacing.xl} 0;
   border-bottom: 1px solid ${({ theme }) => theme.colors.lineSoft};
   background:
-    radial-gradient(circle at 80% 0%, rgba(143, 179, 106, 0.12), transparent 22rem);
+    radial-gradient(ellipse at 80% 0%, rgba(46, 141, 84, 0.07), transparent 65%);
 
   @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
     grid-template-columns: 1fr;
+    gap: ${({ theme }) => theme.spacing.md};
+    padding: ${({ theme }) => theme.spacing.md} 0;
   }
 `
 
@@ -137,7 +139,13 @@ const HeaderActions = styled.div`
 
   @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
     width: 100%;
-    flex-wrap: wrap;
+    gap: ${({ theme }) => theme.spacing.sm};
+
+    > * {
+      flex: 1;
+      padding-left: 0.5rem;
+      padding-right: 0.5rem;
+    }
   }
 `
 
@@ -157,16 +165,16 @@ const GhostButton = styled(Link)`
   padding: 0.55rem 1.2rem;
   background: transparent;
   color: ${({ theme }) => theme.colors.green[580]};
-  border: 1px solid rgba(154, 198, 148, 0.2);
+  border: 1px solid rgba(46, 141, 84, 0.2);
 
   &:hover {
-    background: rgba(143, 179, 106, 0.08);
+    background: rgba(46, 141, 84, 0.08);
     border-color: ${({ theme }) => theme.colors.line};
     color: ${({ theme }) => theme.colors.green[500]};
   }
 
   &:active {
-    background: rgba(143, 179, 106, 0.12);
+    background: rgba(46, 141, 84, 0.12);
   }
 `
 
@@ -185,13 +193,13 @@ const PrimaryButton = styled(Link)`
   line-height: 1;
   padding: 0.65rem 1.5rem;
   background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[580]}, ${({ theme }) => theme.colors.green[500]});
-  color: #10120f;
+  color: #ffffff;
   box-shadow: ${({ theme }) => theme.shadows.glowGreen};
 
   &:hover {
     background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[500]}, ${({ theme }) => theme.colors.green[300]});
     transform: translateY(-1px);
-    box-shadow: 0 0 40px rgba(143, 179, 106, 0.3), 0 0 80px rgba(143, 179, 106, 0.1);
+    box-shadow: 0 0 40px rgba(46, 141, 84, 0.3), 0 0 80px rgba(46, 141, 84, 0.1);
   }
 
   &:active {
@@ -204,12 +212,13 @@ const Toolbar = styled.div`
   align-items: center;
   gap: ${({ theme }) => theme.spacing.md};
   flex-wrap: wrap;
-  padding: 0 0 ${({ theme }) => theme.spacing.md};
-  border-bottom: 1px solid ${({ theme }) => theme.colors.lineSoft};
 
   @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
-    flex-direction: column;
-    align-items: stretch;
+    /* Search takes the full first row; filter button and the personalization
+       toggle share the second row, like a native list header. */
+    > :first-child {
+      flex: 1 1 100%;
+    }
   }
 `
 
@@ -229,19 +238,19 @@ const FilterToggleBtn = styled.button`
   line-height: 1;
   padding: 0.4rem 0.9rem;
   font-size: ${({ theme }) => theme.typography.bodySmall};
-  background: rgba(247, 243, 232, 0.035);
+  background: rgba(28, 43, 32, 0.035);
   color: ${({ theme }) => theme.colors.text[220]};
   border: 1px solid ${({ theme }) => theme.colors.lineSoft};
   cursor: pointer;
 
   &:hover {
-    background: rgba(247, 243, 232, 0.07);
+    background: rgba(28, 43, 32, 0.07);
     border-color: ${({ theme }) => theme.colors.line};
     color: ${({ theme }) => theme.colors.text[100]};
   }
 
   &:active {
-    background: rgba(247, 243, 232, 0.10);
+    background: rgba(28, 43, 32, 0.10);
   }
 `
 
@@ -275,10 +284,12 @@ const PrefToggle = styled.label`
 
 const FiltersPanel = styled(motion.div)`
   display: flex;
-  gap: ${({ theme }) => theme.spacing.lg};
+  gap: ${({ theme }) => theme.spacing.xl};
   flex-wrap: wrap;
-  padding: 0 0 ${({ theme }) => theme.spacing.lg};
-  border-bottom: 1px solid ${({ theme }) => theme.colors.lineSoft};
+  padding: ${({ theme }) => theme.spacing.md} ${({ theme }) => theme.spacing.lg};
+  background: ${({ theme }) => theme.colors.surface[820]};
+  border: 1px solid ${({ theme }) => theme.glass.border};
+  border-radius: ${({ theme }) => theme.radii.lg};
 
   @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
     flex-direction: column;
@@ -288,9 +299,14 @@ const FiltersPanel = styled(motion.div)`
 const FilterItem = styled.div`
   flex: 1;
   min-width: 200px;
+  max-width: 380px;
   display: flex;
   flex-direction: column;
   gap: ${({ theme }) => theme.spacing.sm};
+
+  @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
+    max-width: none;
+  }
 `
 
 const FieldLabel = styled.label`
@@ -316,7 +332,7 @@ const SelectInput = styled.select`
   &:focus {
     outline: none;
     border-color: ${({ theme }) => theme.colors.green[500]};
-    box-shadow: 0 0 0 3px rgba(143, 179, 106, 0.1);
+    box-shadow: 0 0 0 3px rgba(46, 141, 84, 0.1);
   }
 
   &:disabled {
@@ -341,8 +357,8 @@ const RangeInput = styled.input`
 const InfoBanner = styled.p`
   padding: ${({ theme }) => theme.spacing.sm} ${({ theme }) => theme.spacing.md};
   border-radius: ${({ theme }) => theme.radii.md};
-  background: rgba(143, 179, 106, 0.06);
-  border: 1px solid rgba(143, 179, 106, 0.15);
+  background: rgba(46, 141, 84, 0.06);
+  border: 1px solid rgba(46, 141, 84, 0.15);
   color: ${({ theme }) => theme.colors.green[400]};
   font-size: ${({ theme }) => theme.typography.bodySmall};
 `
@@ -365,25 +381,35 @@ const ResultsCount = styled.h2`
 `
 
 const TripList = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: ${({ theme }) => theme.spacing.md};
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+  gap: ${({ theme }) => theme.spacing.lg};
+
+  @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
+    grid-template-columns: 1fr;
+    gap: ${({ theme }) => theme.spacing.md};
+  }
+
+  /* Full-width row for the empty state. */
+  > :only-child {
+    grid-column: 1 / -1;
+  }
 `
 
 const TripCard = styled(motion.article)`
-  display: grid;
-  grid-template-columns: 220px minmax(0, 1fr) auto;
-  gap: ${({ theme }) => theme.spacing.lg};
-  padding: ${({ theme }) => theme.spacing.lg};
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.spacing.md};
+  padding: ${({ theme }) => theme.spacing.md};
   background:
-    linear-gradient(145deg, rgba(247, 243, 232, 0.045), rgba(247, 243, 232, 0.015)),
+    linear-gradient(145deg, rgba(28, 43, 32, 0.045), rgba(28, 43, 32, 0.015)),
     ${({ theme }) => theme.colors.surface[900]};
   border: 1px solid ${({ theme }) => theme.glass.border};
   border-radius: ${({ theme }) => theme.radii.xl};
   backdrop-filter: blur(${({ theme }) => theme.glass.blur});
   -webkit-backdrop-filter: blur(${({ theme }) => theme.glass.blur});
   transition: all ${({ theme }) => theme.animation.duration.normal}s ${({ theme }) => theme.animation.easeOut.join(',')};
-  align-items: flex-start;
 
   &:hover {
     border-color: ${({ theme }) => theme.colors.line};
@@ -391,21 +417,20 @@ const TripCard = styled(motion.article)`
     transform: translateY(-2px);
   }
 
-  @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
-    grid-template-columns: 1fr;
+  &:active {
+    transform: scale(0.99);
   }
 `
 
 const Thumb = styled.img`
   width: 100%;
-  height: 150px;
+  height: 170px;
   border-radius: ${({ theme }) => theme.radii.lg};
   object-fit: cover;
   flex-shrink: 0;
 
   @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
-    width: 100%;
-    height: 180px;
+    height: 150px;
   }
 `
 
@@ -469,7 +494,7 @@ const Chip = styled.span`
   border-radius: ${({ theme }) => theme.radii.lg};
   font-size: ${({ theme }) => theme.typography.caption};
   font-weight: 500;
-  background: rgba(143, 179, 106, 0.12);
+  background: rgba(46, 141, 84, 0.12);
   color: ${({ theme }) => theme.colors.green[300]};
 `
 
@@ -492,11 +517,21 @@ const ViewButton = styled(Link)`
   color: ${({ theme }) => theme.colors.bg[980]};
   box-shadow: ${({ theme }) => theme.shadows.glowGreen};
   flex-shrink: 0;
+  margin-top: auto;
+  align-self: flex-end;
 
   &:hover {
     background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[300]}, ${({ theme }) => theme.colors.offroad.accent});
-    transform: translateY(-1px);
     box-shadow: ${({ theme }) => theme.shadows.glowGold};
+  }
+
+  /* Stretched link: the whole card is one big tap target. Keep transforms off
+     this button — they would re-anchor the ::after to the button itself. */
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: ${({ theme }) => theme.radii.xl};
   }
 `
 
@@ -834,7 +869,7 @@ export function DiscoveryPage() {
                   </TagsRow>
                 </TripInfo>
                 <ViewButton to={`/app/trip/${trip.id}`}>
-                  View
+                  View trip
                 </ViewButton>
               </TripCard>
             ))}

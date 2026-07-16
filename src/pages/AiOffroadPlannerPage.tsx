@@ -61,7 +61,7 @@ const BackButton = styled.button`
   transition: all 0.2s;
 
   &:hover {
-    background: rgba(201, 162, 39, 0.08);
+    background: rgba(168, 120, 31, 0.08);
     border-color: ${({ theme }) => theme.colors.offroad.line};
     color: ${({ theme }) => theme.colors.text[100]};
   }
@@ -85,7 +85,7 @@ const HeaderIcon = styled.div`
   padding: 0.8rem;
   border-radius: 16px;
   background: ${({ theme }) => theme.colors.offroad.accent};
-  color: #1a1408;
+  color: #ffffff;
 `
 
 const HeaderTitle = styled.h1`
@@ -175,7 +175,7 @@ const Chip = styled.button<{ $selected?: boolean }>`
   padding: 0.35rem 0.85rem;
   border-radius: ${({ theme }) => theme.radii.lg};
   border: 1px solid ${({ $selected, theme }) => ($selected ? theme.colors.offroad.accent : theme.colors.lineSoft)};
-  background: ${({ $selected }) => ($selected ? 'rgba(201, 162, 39, 0.15)' : 'transparent')};
+  background: ${({ $selected }) => ($selected ? 'rgba(168, 120, 31, 0.15)' : 'transparent')};
   color: ${({ $selected, theme }) => ($selected ? theme.colors.offroad.accent : theme.colors.text[380])};
   font-size: ${({ theme }) => theme.typography.bodySmall};
   font-weight: ${({ $selected }) => ($selected ? 600 : 400)};
@@ -184,7 +184,7 @@ const Chip = styled.button<{ $selected?: boolean }>`
 
   &:hover {
     border-color: ${({ theme }) => theme.colors.offroad.accent};
-    background: rgba(201, 162, 39, 0.08);
+    background: rgba(168, 120, 31, 0.08);
   }
 `
 
@@ -209,13 +209,13 @@ const SubmitButton = styled.button`
   border: none;
   cursor: pointer;
   background: linear-gradient(140deg, ${({ theme }) => theme.colors.offroad.accent} 0%, #8b7316 100%);
-  color: #1a1408;
-  box-shadow: 0 10px 30px rgba(201, 162, 39, 0.15);
+  color: #ffffff;
+  box-shadow: 0 10px 30px rgba(168, 120, 31, 0.15);
   margin-top: 1rem;
   transition: all 0.3s;
 
   &:hover:not(:disabled) {
-    box-shadow: 0 10px 40px rgba(201, 162, 39, 0.25), 0 0 60px ${({ theme }) => theme.colors.offroad.accentGlow};
+    box-shadow: 0 10px 40px rgba(168, 120, 31, 0.25), 0 0 60px ${({ theme }) => theme.colors.offroad.accentGlow};
     transform: translateY(-1px);
   }
 

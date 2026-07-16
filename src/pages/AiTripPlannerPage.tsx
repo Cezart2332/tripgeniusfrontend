@@ -58,7 +58,7 @@ const BackButton = styled.button`
   transition: all 0.2s;
 
   &:hover {
-    background: rgba(143, 179, 106, 0.08);
+    background: rgba(46, 141, 84, 0.08);
     border-color: ${({ theme }) => theme.colors.line};
     color: ${({ theme }) => theme.colors.text[100]};
   }
@@ -172,7 +172,7 @@ const Chip = styled.button<{ $selected?: boolean }>`
   padding: 0.35rem 0.85rem;
   border-radius: ${({ theme }) => theme.radii.lg};
   border: 1px solid ${({ $selected, theme }) => ($selected ? theme.colors.green[580] : theme.colors.lineSoft)};
-  background: ${({ $selected }) => ($selected ? 'rgba(143, 179, 106, 0.15)' : 'transparent')};
+  background: ${({ $selected }) => ($selected ? 'rgba(46, 141, 84, 0.15)' : 'transparent')};
   color: ${({ $selected, theme }) => ($selected ? theme.colors.green[300] : theme.colors.text[380])};
   font-size: ${({ theme }) => theme.typography.bodySmall};
   font-weight: ${({ $selected }) => ($selected ? 600 : 400)};
@@ -181,7 +181,7 @@ const Chip = styled.button<{ $selected?: boolean }>`
 
   &:hover {
     border-color: ${({ theme }) => theme.colors.green[580]};
-    background: rgba(143, 179, 106, 0.08);
+    background: rgba(46, 141, 84, 0.08);
   }
 `
 
@@ -199,13 +199,13 @@ const SubmitButton = styled.button`
   cursor: pointer;
   background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[580]} 0%, ${({ theme }) => theme.colors.green[700]} 100%);
   color: white;
-  box-shadow: 0 10px 30px rgba(154, 198, 148, 0.2);
+  box-shadow: 0 10px 30px rgba(46, 141, 84, 0.2);
   margin-top: 1rem;
   transition: all 0.3s;
 
   &:hover:not(:disabled) {
     background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[500]} 0%, ${({ theme }) => theme.colors.green[580]} 100%);
-    box-shadow: 0 10px 40px rgba(154, 198, 148, 0.35);
+    box-shadow: 0 10px 40px rgba(46, 141, 84, 0.35);
     transform: translateY(-1px);
   }
 

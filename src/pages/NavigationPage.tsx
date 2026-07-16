@@ -140,7 +140,7 @@ export function NavigationPage() {
         id: 'nav-route',
         type: 'line',
         source: 'nav-route',
-        paint: { 'line-color': '#8fb36a', 'line-width': 10, 'line-opacity': 0.85 }
+        paint: { 'line-color': '#2e8d54', 'line-width': 10, 'line-opacity': 0.85 }
       })
     })
 
@@ -560,7 +560,7 @@ const CachedRouteBtn = styled.button`
   cursor: pointer;
 
   &:hover {
-    background: rgba(143, 179, 106, 0.08);
+    background: rgba(46, 141, 84, 0.08);
   }
 `
 

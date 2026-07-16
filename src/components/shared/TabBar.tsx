@@ -87,7 +87,7 @@ const PillIndicator = styled(motion.div)`
   inset: 0;
   background: linear-gradient(135deg, ${({ theme }) => theme.colors.green[500]} 0%, ${({ theme }) => theme.colors.green[400]} 100%);
   border-radius: ${({ theme }) => theme.radii.lg};
-  box-shadow: 0 4px 14px rgba(102, 138, 75, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  box-shadow: 0 4px 14px rgba(46, 141, 84, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.25);
   z-index: 0;
   pointer-events: none;
 `

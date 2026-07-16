@@ -6,9 +6,9 @@ export const SkeletonBlock = styled.div<{ $width?: string; $height?: string; $ra
   border-radius: ${({ $radius, theme }) => $radius ?? theme.radii.sm};
   background: linear-gradient(
     90deg,
-    rgba(247, 243, 232, 0.04) 25%,
-    rgba(247, 243, 232, 0.11) 50%,
-    rgba(247, 243, 232, 0.04) 75%
+    rgba(28, 43, 32, 0.04) 25%,
+    rgba(28, 43, 32, 0.11) 50%,
+    rgba(28, 43, 32, 0.04) 75%
   );
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;

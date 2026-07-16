@@ -23,14 +23,14 @@ const Trigger = styled.button<{ $open: boolean }>`
   width: 40px;
   height: 40px;
   border-radius: ${({ theme }) => theme.radii.md};
-  background: ${({ $open }) => $open ? 'rgba(247, 243, 232, 0.1)' : 'transparent'};
+  background: ${({ $open }) => $open ? 'rgba(28, 43, 32, 0.1)' : 'transparent'};
   color: ${({ theme }) => theme.colors.text[380]};
   transition: all 0.15s ease;
   position: relative;
 
   &:hover {
     color: ${({ theme }) => theme.colors.text[100]};
-    background: rgba(247, 243, 232, 0.06);
+    background: rgba(28, 43, 32, 0.06);
   }
 `
 
@@ -54,7 +54,7 @@ const Badge = styled.span`
 const Spinner = styled.span`
   width: 16px;
   height: 16px;
-  border: 2px solid rgba(247, 243, 232, 0.2);
+  border: 2px solid rgba(28, 43, 32, 0.2);
   border-top-color: ${({ theme }) => theme.colors.green[500]};
   border-radius: 50%;
   animation: spin 0.6s linear infinite;
@@ -80,7 +80,7 @@ const Dropdown = styled(motion.div)`
   z-index: 100;
 
   @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
-    right: -40px;
+    right: -8px;
     width: calc(100vw - 2rem);
     max-width: 340px;
   }
@@ -128,7 +128,7 @@ const Item = styled.div`
   transition: background 0.15s ease;
 
   &:hover {
-    background: rgba(247, 243, 232, 0.05);
+    background: rgba(28, 43, 32, 0.05);
   }
 `
 
@@ -206,7 +206,7 @@ export function NotificationDropdown({ user, isSyncingUser, onReadAll, onSync }:
     <Shell ref={ref}>
       <Trigger
         $open={open}
-        aria-label="Notifications"
+        aria-label="Notifications" title="Notifications"
         aria-haspopup="menu"
         aria-expanded={open}
         disabled={isSyncingUser}

@@ -58,7 +58,7 @@ const Sticker = styled.img`
   width: 240px;
   height: auto;
   opacity: 0.8;
-  filter: drop-shadow(0 8px 24px rgba(143, 179, 106, 0.1));
+  filter: drop-shadow(0 8px 24px rgba(46, 141, 84, 0.1));
 `
 
 const Header = styled.header`
@@ -120,7 +120,7 @@ const PrimaryBtn = styled(Link)`
   padding: 0.7rem 1.5rem;
   border-radius: ${({ theme }) => theme.radii.lg};
   background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[580]}, ${({ theme }) => theme.colors.green[500]});
-  color: #10120f;
+  color: #ffffff;
   font-weight: 700;
   font-size: ${({ theme }) => theme.typography.body};
   min-height: 44px;
@@ -131,7 +131,7 @@ const PrimaryBtn = styled(Link)`
   transition: box-shadow 0.15s ease;
 
   &:hover {
-    box-shadow: 0 0 30px rgba(143, 179, 106, 0.2);
+    box-shadow: 0 0 30px rgba(46, 141, 84, 0.2);
   }
 `
 

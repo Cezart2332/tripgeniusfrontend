@@ -217,7 +217,7 @@ export function OffroadNavigationPage() {
             'match',
             ['get', 'kind'],
             'start',
-            '#8fb36a',
+            '#2e8d54',
             'finish',
             '#dc2626',
             offroadMapTrackColors.line,
@@ -401,7 +401,7 @@ const LoadingScreen = styled.div`
 const BackLink = styled.button`
   border: none;
   background: ${({ theme }) => theme.colors.offroad.accent};
-  color: #1a1408;
+  color: #ffffff;
   font-weight: 700;
   padding: 0.65rem 1.25rem;
   border-radius: ${({ theme }) => theme.radii.lg};
@@ -412,7 +412,7 @@ const Screen = styled.div`
   position: fixed;
   inset: 0;
   z-index: 1000;
-  background: #0d0f0d;
+  background: #e7eee4;
 `
 
 const NavBackButton = styled.button`
@@ -422,7 +422,7 @@ const NavBackButton = styled.button`
   z-index: 1010;
   background: ${({ theme }) => theme.colors.offroad.accent};
   border: none;
-  color: #1a1408;
+  color: #ffffff;
   width: 50px;
   height: 50px;
   border-radius: 50%;
@@ -510,7 +510,7 @@ const NavStatsRow = styled.div`
 `
 
 const NavStatPill = styled.div`
-  background: rgba(201, 162, 39, 0.15);
+  background: rgba(168, 120, 31, 0.15);
   color: ${({ theme }) => theme.colors.offroad.accent};
   padding: 0.4rem 0.8rem;
   border-radius: 20px;
@@ -530,7 +530,7 @@ const CheckpointPill = styled.div<{ $kind: 'start' | 'finish' }>`
   text-transform: uppercase;
   background: ${({ $kind }) => ($kind === 'start' ? '#145214' : '#7f1d1d')};
   color: #f8faf8;
-  border: 2px solid #0d0f0d;
+  border: 2px solid #ffffff;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.45);
 
   &::before {
@@ -538,7 +538,7 @@ const CheckpointPill = styled.div<{ $kind: 'start' | 'finish' }>`
     width: 10px;
     height: 10px;
     border-radius: 50%;
-    background: ${({ $kind }) => ($kind === 'start' ? '#8fb36a' : '#ef4444')};
+    background: ${({ $kind }) => ($kind === 'start' ? '#2e8d54' : '#ef4444')};
     border: 2px solid #f8faf8;
     flex-shrink: 0;
   }
@@ -548,7 +548,7 @@ const ArrivalScreen = styled.div`
   position: absolute;
   inset: 0;
   z-index: 1020;
-  background: rgba(13, 15, 13, 0.92);
+  background: rgba(255, 255, 255, 0.92);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -571,7 +571,7 @@ const ArrivalSub = styled.p`
 const ArrivalCloseBtn = styled.button`
   border: none;
   background: ${({ theme }) => theme.colors.offroad.accent};
-  color: #1a1408;
+  color: #ffffff;
   font-weight: 700;
   padding: 0.85rem 2rem;
   border-radius: ${({ theme }) => theme.radii.lg};

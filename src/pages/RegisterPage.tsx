@@ -6,6 +6,7 @@ import { AxiosError } from 'axios'
 import { tripTypeOptions } from '../data/tripTypeOptions'
 import api from '../data/api'
 import { ToastContainer } from '../components/shared/Toast'
+import { FieldHint } from '../components/shared/FieldHint'
 import { useToast } from '../components/shared/useToast'
 import waitForBackendButtonUnlock from '../utils/interactionDelay'
 
@@ -81,8 +82,8 @@ const Illustration = styled.aside`
   justify-content: center;
   align-items: center;
   background:
-    radial-gradient(circle at 50% 42%, rgba(192, 163, 91, 0.22), transparent 12rem),
-    radial-gradient(circle at 56% 68%, rgba(143, 179, 106, 0.13), transparent 15rem);
+    radial-gradient(circle at 50% 42%, rgba(168, 120, 31, 0.22), transparent 12rem),
+    radial-gradient(circle at 56% 68%, rgba(46, 141, 84, 0.13), transparent 15rem);
 
   @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
     display: none;
@@ -93,7 +94,7 @@ const Sticker = styled.img`
   width: 240px;
   height: auto;
   opacity: 0.8;
-  filter: drop-shadow(0 18px 42px rgba(5, 7, 4, 0.42));
+  filter: drop-shadow(0 18px 42px rgba(31, 45, 36, 0.18));
 `
 
 const Header = styled.header`
@@ -116,7 +117,7 @@ const TabBar = styled.nav`
   padding: 0.25rem;
   border-radius: ${({ theme }) => theme.radii.lg};
   border: 1px solid ${({ theme }) => theme.colors.lineSoft};
-  background: rgba(9, 14, 10, 0.75);
+  background: rgba(255, 255, 255, 0.75);
   margin-bottom: 1.5rem;
 `
 
@@ -133,7 +134,7 @@ const TabLink = styled(Link)<{ $active: boolean }>`
 
   &:hover:not([style]) {
     color: ${({ theme }) => theme.colors.text[220]};
-    background: rgba(143, 179, 106, 0.08);
+    background: rgba(46, 141, 84, 0.08);
   }
 `
 
@@ -209,11 +210,11 @@ const Chip = styled.button<{ $selected: boolean }>`
 
   &:hover:not(:disabled) {
     border-color: ${({ $selected, theme }) => $selected ? 'transparent' : theme.colors.line};
-    color: ${({ $selected, theme }) => $selected ? '#10120f' : theme.colors.text[220]};
+    color: ${({ $selected, theme }) => $selected ? '#ffffff' : theme.colors.text[220]};
     background: ${({ $selected, theme }) =>
       $selected
         ? `linear-gradient(140deg, ${theme.colors.green[400]}, ${theme.colors.offroad.accent})`
-        : 'rgba(143, 179, 106, 0.08)'};
+        : 'rgba(46, 141, 84, 0.08)'};
   }
 
   &:disabled {
@@ -252,7 +253,7 @@ const Spinner = styled.span`
   width: 16px;
   height: 16px;
   border: 2px solid rgba(0, 0, 0, 0.2);
-  border-top-color: #10120f;
+  border-top-color: #ffffff;
   border-radius: 50%;
   animation: spin 0.6s linear infinite;
   @keyframes spin { to { transform: rotate(360deg); } }
@@ -367,6 +368,7 @@ export function RegisterPage() {
               disabled={isLoading}
               required
             />
+            <FieldHint icon={false}>This is the name other travellers will see on your trips.</FieldHint>
 
             <FieldLabel htmlFor="register-email">Email</FieldLabel>
             <Input
@@ -383,6 +385,7 @@ export function RegisterPage() {
               disabled={isLoading}
               required
             />
+            <FieldHint icon={false}>We'll send a verification link to this address.</FieldHint>
 
             <FieldLabel htmlFor="register-password">Password</FieldLabel>
             <Input
@@ -398,7 +401,10 @@ export function RegisterPage() {
               }
               disabled={isLoading}
               required
+              minLength={8}
+              aria-describedby="register-password-hint"
             />
+            <FieldHint id="register-password-hint">At least 8 characters. Mixing letters, numbers and symbols makes it stronger.</FieldHint>
 
             <PrefsSection>
               <SectionHeading>Travel preferences</SectionHeading>
@@ -444,6 +450,7 @@ export function RegisterPage() {
                   }))
                 }}
               />
+              <FieldHint icon={false}>Between 2 and 30 people — you can change this later in Settings.</FieldHint>
             </PrefsSection>
 
             <SubmitBtn

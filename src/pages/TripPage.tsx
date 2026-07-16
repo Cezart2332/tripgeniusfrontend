@@ -228,7 +228,7 @@ function TimelineStopCard({ stop, isSelected, onSelect, canManage, onEdit, onRem
                   <ActivitiesToggle
                     onClick={(e) => { e.stopPropagation(); setIsExpanded(!isExpanded); }}
                   >
-                    <FiActivity size={14} color="#8fb36a" />
+                    <FiActivity size={14} color="#2e8d54" />
                     {stop.activities.length} Activities
                     {isExpanded ? <FiChevronUp /> : <FiChevronDown />}
                   </ActivitiesToggle>
@@ -1396,7 +1396,7 @@ function TripPageContent({ trip }: TripPageContentProps) {
                   <SiWaze size={18} style={{ color: '#33CCFF' }} /> Waze
                 </ExternalMapButton>
                 <ExternalMapButton onClick={() => openExternalMap('apple')}>
-                  <SiApple size={18} style={{ color: '#FFFFFF' }} /> Apple Maps
+                  <SiApple size={18} style={{ color: '#1c2b21' }} /> Apple Maps
                 </ExternalMapButton>
               </ExternalMapRow>
             )}
@@ -1971,7 +1971,7 @@ const GhostButton = styled.button`
 
   &:hover:not(:disabled) {
     color: ${({ theme }) => theme.colors.text[220]};
-    background: rgba(247, 243, 232, 0.05);
+    background: rgba(28, 43, 32, 0.05);
   }
 
   &:disabled {
@@ -2035,7 +2035,7 @@ const TripHeroImg = styled.img`
 const TripHeroOverlay = styled.div`
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, rgba(13, 15, 13, 0.2) 0%, rgba(13, 15, 13, 0.85) 100%);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.85) 100%);
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
@@ -2397,7 +2397,7 @@ const ActivitiesToggle = styled.button`
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(28, 43, 32, 0.05);
   border: 1px solid ${({ theme }) => theme.colors.lineSoft};
   border-radius: 8px;
   padding: 0.4rem 0.8rem;
@@ -2407,7 +2407,7 @@ const ActivitiesToggle = styled.button`
   transition: all 0.2s ease;
 
   &:hover {
-    background: rgba(255, 255, 255, 0.08);
+    background: rgba(28, 43, 32, 0.08);
   }
 `
 
@@ -2495,7 +2495,7 @@ const ExportStrip = styled.div`
   flex-wrap: wrap;
   gap: 0.75rem;
   padding: 1rem 1.25rem;
-  background: linear-gradient(140deg, rgba(17, 34, 26, 0.7), rgba(9, 18, 13, 0.6));
+  background: linear-gradient(140deg, rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0.6));
   border: 1px solid ${({ theme }) => theme.colors.lineSoft};
   border-radius: ${({ theme }) => theme.radii.md};
   align-items: center;
@@ -2525,7 +2525,7 @@ const ExportButton = styled.button`
   transition: all 0.2s ease;
 
   &:hover:not(:disabled) {
-    background: rgba(247, 243, 232, 0.05);
+    background: rgba(28, 43, 32, 0.05);
     border-color: ${({ theme }) => theme.colors.line};
   }
 
@@ -2538,7 +2538,7 @@ const ExportButton = styled.button`
 const InlineSpinner = styled.span`
   width: 15px;
   height: 15px;
-  border: 2px solid rgba(247, 243, 232, 0.2);
+  border: 2px solid rgba(28, 43, 32, 0.2);
   border-top-color: ${({ theme }) => theme.colors.green[500]};
   border-radius: ${({ theme }) => theme.radii.full};
   animation: spin 0.6s linear infinite;
@@ -2692,9 +2692,9 @@ const ChatBubble = styled.div<{ $isOwn: boolean; $isAi?: boolean }>`
   border-bottom-right-radius: ${({ $isOwn, $isAi }) => ($isOwn && !$isAi ? '0.3rem' : '1.1rem')};
   border-bottom-left-radius: ${({ $isOwn, $isAi }) => ($isOwn && !$isAi ? '1.1rem' : '0.3rem')};
   background: ${({ theme, $isOwn, $isAi }) =>
-    $isAi ? 'rgba(139, 92, 246, 0.12)' : $isOwn ? 'rgba(143, 179, 106, 0.14)' : theme.colors.surface[860]};
+    $isAi ? 'rgba(109, 40, 217, 0.12)' : $isOwn ? 'rgba(46, 141, 84, 0.14)' : theme.colors.surface[860]};
   border: 1px solid ${({ theme, $isOwn, $isAi }) =>
-    $isAi ? 'rgba(139, 92, 246, 0.32)' : $isOwn ? 'rgba(143, 179, 106, 0.28)' : theme.colors.lineSoft};
+    $isAi ? 'rgba(109, 40, 217, 0.32)' : $isOwn ? 'rgba(46, 141, 84, 0.28)' : theme.colors.lineSoft};
   align-self: ${({ $isOwn, $isAi }) => ($isAi ? 'flex-start' : $isOwn ? 'flex-end' : 'flex-start')};
   color: ${({ theme }) => theme.colors.text[100]};
   box-shadow: ${({ theme }) => theme.shadows.sm};
@@ -2720,7 +2720,7 @@ const AiTag = styled.span`
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: #8b5cf6;
-  border: 1px solid rgba(139, 92, 246, 0.4);
+  border: 1px solid rgba(109, 40, 217, 0.4);
   border-radius: 999px;
   padding: 0.05rem 0.4rem;
 `
@@ -2765,7 +2765,7 @@ const MentionItem = styled.button`
   cursor: pointer;
   color: ${({ theme }) => theme.colors.text[100]};
   font-size: 0.85rem;
-  &:hover { background: rgba(139, 92, 246, 0.12); }
+  &:hover { background: rgba(109, 40, 217, 0.12); }
 `
 
 const ChatBubbleHeader = styled.header`
@@ -2816,7 +2816,7 @@ const ChatInput = styled.input`
 
   &:focus {
     border-color: ${({ theme }) => theme.colors.green[500]};
-    box-shadow: 0 0 0 3px rgba(143, 179, 106, 0.16);
+    box-shadow: 0 0 0 3px rgba(46, 141, 84, 0.16);
   }
 
   &::placeholder {
@@ -2951,7 +2951,7 @@ const AvatarPreview = styled.img`
 const AvatarUploadOverlay = styled.div`
   position: absolute;
   inset: 0;
-  background: rgba(13, 15, 13, 0.7);
+  background: rgba(255, 255, 255, 0.7);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -2994,12 +2994,12 @@ const InfoBanner = styled.span<{ $tone: 'success' | 'info' | 'error' }>`
     theme.colors.text[220]
   };
   background: ${({ $tone }) =>
-    $tone === 'success' ? 'rgba(143, 179, 106, 0.1)' :
+    $tone === 'success' ? 'rgba(46, 141, 84, 0.1)' :
     $tone === 'error' ? 'rgba(219, 74, 91, 0.1)' :
-    'rgba(247, 243, 232, 0.06)'
+    'rgba(28, 43, 32, 0.06)'
   };
   border: 1px solid ${({ theme, $tone }) =>
-    $tone === 'success' ? 'rgba(143, 179, 106, 0.2)' :
+    $tone === 'success' ? 'rgba(46, 141, 84, 0.2)' :
     $tone === 'error' ? 'rgba(219, 74, 91, 0.2)' :
     theme.colors.lineSoft
   };

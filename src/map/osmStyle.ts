@@ -1,12 +1,12 @@
 import type { StyleSpecification } from 'maplibre-gl'
 
-/** Shared CARTO dark raster style for classic trips and general maps. */
+/** Shared CARTO light (Positron) raster style for classic trips and general maps. */
 export const OSM_STYLE: StyleSpecification = {
   version: 8,
   sources: {
     osm: {
       type: 'raster',
-      tiles: ['https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'],
+      tiles: ['https://basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png'],
       tileSize: 256,
       attribution: '© OpenStreetMap contributors, © CARTO',
     },

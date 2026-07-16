@@ -9,9 +9,9 @@ interface ToastContainerProps {
 }
 
 const toneColors = {
-  success: '#8fb36a',
+  success: '#2e8d54',
   error: '#db4a5b',
-  info: '#c0a35b',
+  info: '#a8781f',
 } as const
 
 const Wrapper = styled.div`
@@ -96,7 +96,7 @@ export function ToastContainer({ toasts, removeToast }: ToastContainerProps) {
           >
             <Dot $tone={toast.tone} />
             <Message>{toast.message}</Message>
-            <CloseBtn onClick={() => removeToast(toast.id)} aria-label="Dismiss notification">
+            <CloseBtn onClick={() => removeToast(toast.id)} aria-label="Dismiss notification" title="Dismiss">
               x
             </CloseBtn>
           </ToastItem>

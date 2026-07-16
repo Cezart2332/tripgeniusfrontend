@@ -570,7 +570,7 @@ export function EditTimelinePage() {
 // --- Styled Components ---
 
 const PageSection = styled.section`
-  width: min(1200px, 100% - 2rem);
+  width: min(890px, 100% - 2rem);
   margin: 0 auto;
   padding-top: ${({ theme }) => theme.spacing.lg};
   padding-bottom: ${({ theme }) => theme.spacing['3xl']};
@@ -618,7 +618,7 @@ const PrimaryBtn = styled.button`
   line-height: 1;
   padding: 0.65rem 1.5rem;
   background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[580]}, ${({ theme }) => theme.colors.green[500]});
-  color: #10120f;
+  color: #ffffff;
   box-shadow: ${({ theme }) => theme.shadows.glowGreen};
   border: none;
   cursor: pointer;
@@ -633,7 +633,7 @@ const PrimaryBtn = styled.button`
 const PageHeader = styled(motion.header)`
   padding: ${({ theme }) => theme.spacing.xl} 0;
   border-bottom: 1px solid ${({ theme }) => theme.colors.lineSoft};
-  background: radial-gradient(circle at 85% 0%, rgba(143, 179, 106, 0.10), transparent 18rem);
+  background: radial-gradient(circle at 85% 0%, rgba(46, 141, 84, 0.10), transparent 18rem);
 
   h1 { color: ${({ theme }) => theme.colors.text[100]}; }
   p { color: ${({ theme }) => theme.colors.text[380]}; }
@@ -665,7 +665,7 @@ const BackBtn = styled.button`
   border: 1px solid ${({ theme }) => theme.colors.lineSoft};
 
   &:hover {
-    background: rgba(143, 179, 106, 0.08);
+    background: rgba(46, 141, 84, 0.08);
     border-color: ${({ theme }) => theme.colors.line};
     color: ${({ theme }) => theme.colors.text[100]};
   }
@@ -728,7 +728,7 @@ const Input = styled.input`
   &:focus {
     outline: none;
     border-color: ${({ theme }) => theme.colors.green[500]};
-    box-shadow: 0 0 0 3px rgba(143, 179, 106, 0.1);
+    box-shadow: 0 0 0 3px rgba(46, 141, 84, 0.1);
   }
   &:disabled { opacity: 0.5; }
 `
@@ -769,7 +769,7 @@ const SmallTextarea = styled.textarea`
   &:focus {
     outline: none;
     border-color: ${({ theme }) => theme.colors.green[500]};
-    box-shadow: 0 0 0 3px rgba(143, 179, 106, 0.1);
+    box-shadow: 0 0 0 3px rgba(46, 141, 84, 0.1);
   }
 `
 
@@ -791,7 +791,7 @@ const Textarea = styled.textarea`
   &:focus {
     outline: none;
     border-color: ${({ theme }) => theme.colors.green[500]};
-    box-shadow: 0 0 0 3px rgba(143, 179, 106, 0.1);
+    box-shadow: 0 0 0 3px rgba(46, 141, 84, 0.1);
   }
 `
 
@@ -839,7 +839,7 @@ const LocationOption = styled.button`
   color: ${({ theme }) => theme.colors.text[100]};
 
   &:last-child { border-bottom: none; }
-  &:hover { background: rgba(143, 179, 106, 0.08); }
+  &:hover { background: rgba(46, 141, 84, 0.08); }
 `
 
 const LocationOptionMain = styled.span`
@@ -886,7 +886,7 @@ const ActivitiesGrid = styled.div`
 
 const ActivityCard = styled.div`
   padding: 1rem;
-  background: rgba(255,255,255,0.02);
+  background: rgba(28, 43, 32,0.02);
   border-radius: 12px;
   border: 1px solid ${({ theme }) => theme.colors.lineSoft};
 `
@@ -933,7 +933,7 @@ const GhostBtnSm = styled.button`
   border: 1px solid ${({ theme }) => theme.colors.lineSoft};
 
   &:hover {
-    background: rgba(143, 179, 106, 0.08);
+    background: rgba(46, 141, 84, 0.08);
     border-color: ${({ theme }) => theme.colors.line};
     color: ${({ theme }) => theme.colors.text[100]};
   }
@@ -960,7 +960,7 @@ const Actions = styled.div`
 `
 
 const InfoBanner = styled.p`
-  background: rgba(143, 179, 106, 0.08);
+  background: rgba(46, 141, 84, 0.08);
   border: 1px solid ${({ theme }) => theme.colors.lineSoft};
   color: ${({ theme }) => theme.colors.text[380]};
   padding: 0.75rem 1rem;

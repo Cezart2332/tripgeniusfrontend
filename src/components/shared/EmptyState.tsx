@@ -22,7 +22,7 @@ const Wrapper = styled(motion.div)`
   border: 1px solid ${({ theme }) => theme.glass.border};
   border-radius: ${({ theme }) => theme.radii.xl};
   background:
-    linear-gradient(145deg, rgba(247, 243, 232, 0.05), rgba(247, 243, 232, 0.015)),
+    linear-gradient(145deg, rgba(28, 43, 32, 0.05), rgba(28, 43, 32, 0.015)),
     ${({ theme }) => theme.colors.surface[900]};
   box-shadow: ${({ theme }) => theme.shadows.md};
 `

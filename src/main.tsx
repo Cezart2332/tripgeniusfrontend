@@ -10,6 +10,20 @@ registerSW({
     setInterval(check, 60 * 60 * 1000)
   },
 })
+// iOS Safari ignores user-scalable=0 in the browser, so page pinch-zoom must be
+// blocked manually for the app to feel native. Pinch inside MapLibre maps stays
+// enabled — the map canvas handles its own touch gestures.
+for (const gestureEvent of ['gesturestart', 'gesturechange', 'gestureend']) {
+  document.addEventListener(
+    gestureEvent,
+    (e) => {
+      if ((e.target as Element | null)?.closest?.('.maplibregl-map')) return
+      e.preventDefault()
+    },
+    { passive: false },
+  )
+}
+
 import { GoogleOAuthProvider } from '@react-oauth/google'
 import { Provider } from 'react-redux'
 import { PersistGate } from 'redux-persist/integration/react'

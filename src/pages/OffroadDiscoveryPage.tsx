@@ -221,7 +221,7 @@ export function OffroadDiscoveryPage() {
                       ))}
                     </TripTags>
                   </TripInfo>
-                  <ViewLink to={`/app/offroad/${trip.id}`}>View</ViewLink>
+                  <ViewLink to={`/app/offroad/${trip.id}`}>View trip</ViewLink>
                 </TripRow>
               ))}
         </TripList>
@@ -287,7 +287,7 @@ const PrimaryLink = styled(Link)`
   &:hover {
     background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[500]}, ${({ theme }) => theme.colors.green[300]});
     transform: translateY(-1px);
-    box-shadow: 0 0 40px rgba(143, 179, 106, 0.3), 0 0 80px rgba(143, 179, 106, 0.1);
+    box-shadow: 0 0 40px rgba(46, 141, 84, 0.3), 0 0 80px rgba(46, 141, 84, 0.1);
   }
 `
 
@@ -310,7 +310,7 @@ const AiPlannerLink = styled(Link)`
   border: 1px solid ${({ theme }) => theme.colors.offroad.line};
 
   &:hover {
-    background: rgba(201, 162, 39, 0.08);
+    background: rgba(168, 120, 31, 0.08);
     border-color: ${({ theme }) => theme.colors.offroad.accent};
   }
 `
@@ -324,10 +324,12 @@ const DiscoveryHeader = styled(motion.header)`
   padding: ${({ theme }) => theme.spacing.xl} 0;
   border-bottom: 1px solid ${({ theme }) => theme.colors.lineSoft};
   background:
-    radial-gradient(circle at 82% 0%, rgba(192, 163, 91, 0.16), transparent 22rem);
+    radial-gradient(ellipse at 82% 0%, rgba(168, 120, 31, 0.07), transparent 65%);
 
   @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
     grid-template-columns: 1fr;
+    gap: ${({ theme }) => theme.spacing.md};
+    padding: ${({ theme }) => theme.spacing.md} 0;
   }
 `
 
@@ -386,7 +388,7 @@ const SearchInput = styled.input`
   &:focus {
     outline: none;
     border-color: ${({ theme }) => theme.colors.green[500]};
-    box-shadow: 0 0 0 3px rgba(143, 179, 106, 0.1);
+    box-shadow: 0 0 0 3px rgba(46, 141, 84, 0.1);
   }
 `
 
@@ -408,7 +410,7 @@ const FiltersBtn = styled.button`
   border: 1px solid ${({ theme }) => theme.colors.lineSoft};
 
   &:hover {
-    background: rgba(247, 243, 232, 0.07);
+    background: rgba(28, 43, 32, 0.07);
     border-color: ${({ theme }) => theme.colors.line};
     color: ${({ theme }) => theme.colors.text[100]};
   }
@@ -416,17 +418,24 @@ const FiltersBtn = styled.button`
 
 const FiltersPanel = styled(motion.div)`
   display: flex;
-  gap: ${({ theme }) => theme.spacing.md};
+  gap: ${({ theme }) => theme.spacing.xl};
   flex-wrap: wrap;
   align-items: flex-end;
   overflow: hidden;
-  padding: 0 0 ${({ theme }) => theme.spacing.lg};
-  border-bottom: 1px solid ${({ theme }) => theme.colors.lineSoft};
+  padding: ${({ theme }) => theme.spacing.md} ${({ theme }) => theme.spacing.lg};
+  background: ${({ theme }) => theme.colors.surface[820]};
+  border: 1px solid ${({ theme }) => theme.glass.border};
+  border-radius: ${({ theme }) => theme.radii.lg};
 `
 
 const FilterItem = styled.div`
   flex: 1;
   min-width: 180px;
+  max-width: 380px;
+
+  @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
+    max-width: none;
+  }
 `
 
 const PrefToggle = styled.label`
@@ -484,55 +493,69 @@ const ResultsMeta = styled.div`
 `
 
 const TripList = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: ${({ theme }) => theme.spacing.md};
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+  gap: ${({ theme }) => theme.spacing.lg};
+
+  @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
+    grid-template-columns: 1fr;
+    gap: ${({ theme }) => theme.spacing.md};
+  }
+
+  /* Full-width row for the empty state. */
+  > :only-child {
+    grid-column: 1 / -1;
+  }
 `
 
 const TripRow = styled(motion.article)`
-  display: grid;
-  grid-template-columns: 190px minmax(0, 1fr) auto;
+  position: relative;
+  display: flex;
+  flex-direction: column;
   gap: ${({ theme }) => theme.spacing.md};
-  padding: ${({ theme }) => theme.spacing.lg};
+  padding: ${({ theme }) => theme.spacing.md};
   background:
-    linear-gradient(145deg, rgba(247, 243, 232, 0.045), rgba(247, 243, 232, 0.015)),
+    linear-gradient(145deg, rgba(28, 43, 32, 0.045), rgba(28, 43, 32, 0.015)),
     ${({ theme }) => theme.colors.surface[900]};
   border: 1px solid ${({ theme }) => theme.glass.border};
   border-radius: ${({ theme }) => theme.radii.xl};
   backdrop-filter: blur(${({ theme }) => theme.glass.blur});
-  align-items: center;
+  transition: all ${({ theme }) => theme.animation.duration.normal}s ${({ theme }) => theme.animation.easeOut.join(',')};
 
-  @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
-    grid-template-columns: 1fr;
-    align-items: stretch;
+  &:hover {
+    border-color: ${({ theme }) => theme.colors.offroad.line};
+    box-shadow: ${({ theme }) => theme.shadows.lg};
+    transform: translateY(-2px);
+  }
+
+  &:active {
+    transform: scale(0.99);
   }
 `
 
 const TripThumb = styled.img`
   width: 100%;
-  height: 120px;
+  height: 170px;
   object-fit: cover;
   border-radius: ${({ theme }) => theme.radii.lg};
   flex-shrink: 0;
 
   @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
-    width: 100%;
-    height: 160px;
+    height: 150px;
   }
 `
 
 const TripThumbPlaceholder = styled.div`
   width: 100%;
-  height: 120px;
-  background: linear-gradient(140deg, rgba(201,162,39,0.25), rgba(44,51,43,0.9));
+  height: 170px;
+  background: linear-gradient(140deg, rgba(168, 120, 31,0.25), rgba(255, 255, 255,0.9));
   display: grid;
   place-items: center;
   border-radius: ${({ theme }) => theme.radii.lg};
   flex-shrink: 0;
 
   @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
-    width: 100%;
-    height: 160px;
+    height: 150px;
   }
 `
 
@@ -580,7 +603,7 @@ const RoutePill = styled.span`
   gap: 0.25rem;
   padding: 0.15rem 0.5rem;
   border-radius: ${({ theme }) => theme.radii.lg};
-  background: rgba(201, 162, 39, 0.12);
+  background: rgba(168, 120, 31, 0.12);
   color: ${({ theme }) => theme.colors.offroad.accent};
   font-weight: 600;
 `
@@ -606,7 +629,7 @@ const Tag = styled.span`
   font-weight: 600;
   border: 1px solid ${({ theme }) => theme.colors.lineSoft};
   color: ${({ theme }) => theme.colors.text[220]};
-  background: rgba(143, 179, 106, 0.10);
+  background: rgba(46, 141, 84, 0.10);
 `
 
 const ViewLink = styled(Link)`
@@ -628,9 +651,19 @@ const ViewLink = styled(Link)`
   color: ${({ theme }) => theme.colors.bg[980]};
   box-shadow: ${({ theme }) => theme.shadows.glowGreen};
   flex-shrink: 0;
+  margin-top: auto;
+  align-self: flex-end;
 
   &:hover {
     background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[500]}, ${({ theme }) => theme.colors.green[300]});
-    transform: translateY(-1px);
+  }
+
+  /* Stretched link: the whole card is one big tap target. Keep transforms off
+     this link — they would re-anchor the ::after to the link itself. */
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: ${({ theme }) => theme.radii.xl};
   }
 `

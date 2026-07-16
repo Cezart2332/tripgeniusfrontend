@@ -82,7 +82,7 @@ const Banner = styled(motion.div)`
   padding: 0.55rem 1rem;
   border-radius: ${({ theme }) => theme.radii.pill};
   background: rgba(40, 34, 16, 0.86);
-  border: 1px solid rgba(192, 163, 91, 0.55);
+  border: 1px solid rgba(168, 120, 31, 0.55);
   color: ${({ theme }) => theme.colors.text[100]};
   box-shadow: ${({ theme }) => theme.shadows.md};
   backdrop-filter: blur(12px);
@@ -95,7 +95,7 @@ const Dot = styled.span`
   height: 9px;
   border-radius: 50%;
   background: ${({ theme }) => theme.colors.offroad.accent};
-  box-shadow: 0 0 0 4px rgba(192, 163, 91, 0.18);
+  box-shadow: 0 0 0 4px rgba(168, 120, 31, 0.18);
   animation: ${pulse} 1.6s ease-in-out infinite;
 `
 

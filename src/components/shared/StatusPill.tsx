@@ -9,10 +9,10 @@ interface StatusPillProps {
 }
 
 const colorMap: Record<StatusColor, { bg: string; text: string; border: string }> = {
-  green: { bg: 'rgba(143, 179, 106, 0.1)', text: '#8fb36a', border: 'rgba(143, 179, 106, 0.25)' },
-  gold: { bg: 'rgba(201, 162, 39, 0.12)', text: '#c9a227', border: 'rgba(201, 162, 39, 0.3)' },
+  green: { bg: 'rgba(46, 141, 84, 0.1)', text: '#1e6b3d', border: 'rgba(46, 141, 84, 0.25)' },
+  gold: { bg: 'rgba(168, 120, 31, 0.12)', text: '#c9a227', border: 'rgba(168, 120, 31, 0.3)' },
   danger: { bg: 'rgba(219, 74, 91, 0.1)', text: '#db4a5b', border: 'rgba(219, 74, 91, 0.25)' },
-  muted: { bg: 'rgba(169, 200, 163, 0.08)', text: '#a9c8a3', border: 'rgba(169, 200, 163, 0.15)' },
+  muted: { bg: 'rgba(46, 141, 84, 0.08)', text: '#a9c8a3', border: 'rgba(46, 141, 84, 0.15)' },
 }
 
 const Pill = styled.span<{ $color: StatusColor; $size: 'sm' | 'md' }>`

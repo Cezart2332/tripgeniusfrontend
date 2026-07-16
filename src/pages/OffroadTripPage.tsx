@@ -1065,7 +1065,7 @@ const BackLink = styled(Link)`
   border: 1px solid ${({ theme }) => theme.colors.lineSoft};
 
   &:hover {
-    background: rgba(143, 179, 106, 0.08);
+    background: rgba(46, 141, 84, 0.08);
     border-color: ${({ theme }) => theme.colors.line};
     color: ${({ theme }) => theme.colors.text[100]};
   }
@@ -1086,7 +1086,7 @@ const PrimaryLink = styled(Link)`
   line-height: 1;
   padding: 0.65rem 1.5rem;
   background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[580]}, ${({ theme }) => theme.colors.green[500]});
-  color: #10120f;
+  color: #ffffff;
   box-shadow: ${({ theme }) => theme.shadows.glowGreen};
 
   &:hover {
@@ -1124,7 +1124,7 @@ const GhostBtnSm = styled.button`
   max-width: 100%;
 
   &:hover {
-    background: rgba(143, 179, 106, 0.08);
+    background: rgba(46, 141, 84, 0.08);
     border-color: ${({ theme }) => theme.colors.line};
     color: ${({ theme }) => theme.colors.text[100]};
   }
@@ -1151,7 +1151,7 @@ const GhostLinkSm = styled(Link)`
   border: 1px solid ${({ theme }) => theme.colors.lineSoft};
 
   &:hover {
-    background: rgba(143, 179, 106, 0.08);
+    background: rgba(46, 141, 84, 0.08);
     border-color: ${({ theme }) => theme.colors.line};
     color: ${({ theme }) => theme.colors.text[100]};
   }
@@ -1171,7 +1171,7 @@ const PrimaryBtn = styled.button`
   line-height: 1;
   padding: 0.65rem 1.5rem;
   background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[580]}, ${({ theme }) => theme.colors.green[500]});
-  color: #10120f;
+  color: #ffffff;
   box-shadow: ${({ theme }) => theme.shadows.glowGreen};
   border: none;
   cursor: pointer;
@@ -1206,7 +1206,7 @@ const TripHero = styled(motion.header)<{ $hasCover: boolean }>`
 
 const HeroOverlay = styled.div<{ $hasCover: boolean }>`
   padding: ${({ theme }) => theme.spacing['2xl']} ${({ theme }) => theme.spacing.lg};
-  background: ${({ $hasCover }) => $hasCover ? 'linear-gradient(to top, rgba(13,15,13,0.95) 0%, rgba(13,15,13,0.5) 100%)' : 'none'};
+  background: ${({ $hasCover }) => $hasCover ? 'linear-gradient(to top, rgba(255, 255, 255,0.95) 0%, rgba(255, 255, 255,0.5) 100%)' : 'none'};
   backdrop-filter: ${({ $hasCover }) => $hasCover ? 'blur(4px)' : 'none'};
   display: flex;
   flex-direction: column;
@@ -1357,7 +1357,7 @@ const CurrentRouteMap = styled.div`
 
 const RouteNote = styled.div`
   padding: ${({ theme }) => theme.spacing.md};
-  background: rgba(201, 162, 39, 0.08);
+  background: rgba(168, 120, 31, 0.08);
   border: 1px solid ${({ theme }) => theme.colors.offroad.line};
   border-radius: ${({ theme }) => theme.radii.md};
   color: ${({ theme }) => theme.colors.text[220]};
@@ -1445,7 +1445,7 @@ const RouteList = styled.div`
 
 const RouteCard = styled.article<{ $selected: boolean }>`
   padding: ${({ theme }) => theme.spacing.md};
-  background: ${({ $selected, theme }) => $selected ? 'rgba(201, 162, 39, 0.1)' : theme.glass.bg};
+  background: ${({ $selected, theme }) => $selected ? 'rgba(168, 120, 31, 0.1)' : theme.glass.bg};
   border: 1px solid ${({ $selected, theme }) => $selected ? theme.colors.offroad.accent : theme.glass.border};
   border-radius: ${({ theme }) => theme.radii.lg};
   cursor: pointer;
@@ -1478,7 +1478,7 @@ const RouteSource = styled.span<{ $isDrawn: boolean }>`
   border-radius: ${({ theme }) => theme.radii.lg};
   font-size: ${({ theme }) => theme.typography.caption};
   font-weight: 600;
-  background: ${({ $isDrawn }) => $isDrawn ? 'rgba(201, 162, 39, 0.15)' : 'rgba(143, 179, 106, 0.15)'};
+  background: ${({ $isDrawn }) => $isDrawn ? 'rgba(168, 120, 31, 0.15)' : 'rgba(46, 141, 84, 0.15)'};
   color: ${({ $isDrawn, theme }) => $isDrawn ? theme.colors.offroad.accent : theme.colors.green[580]};
 `
 
@@ -1672,8 +1672,8 @@ const ChatBubble = styled.div<{ $isOwner: boolean; $isAi?: boolean }>`
   word-break: break-word;
   overflow-wrap: anywhere;
   background: ${({ $isOwner, $isAi }) =>
-    $isAi ? 'rgba(139, 92, 246, 0.12)' : $isOwner ? 'rgba(201, 162, 39, 0.10)' : 'rgba(255,255,255,0.03)'};
-  border: 1px solid ${({ $isAi }) => ($isAi ? 'rgba(139, 92, 246, 0.32)' : 'rgba(255,255,255,0.06)')};
+    $isAi ? 'rgba(109, 40, 217, 0.12)' : $isOwner ? 'rgba(168, 120, 31, 0.10)' : 'rgba(28, 43, 32,0.03)'};
+  border: 1px solid ${({ $isAi }) => ($isAi ? 'rgba(109, 40, 217, 0.32)' : 'rgba(28, 43, 32,0.06)')};
   border-radius: 1.1rem;
   box-shadow: ${({ theme }) => theme.shadows.sm};
 `
@@ -1698,7 +1698,7 @@ const AiTag = styled.span`
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: #8b5cf6;
-  border: 1px solid rgba(139, 92, 246, 0.4);
+  border: 1px solid rgba(109, 40, 217, 0.4);
   border-radius: 999px;
   padding: 0.05rem 0.4rem;
 `
@@ -1719,7 +1719,7 @@ const MentionMenu = styled.div`
   bottom: calc(100% + 6px);
   left: 0;
   right: 0;
-  background: ${({ theme }) => theme.colors.surface[860] ?? '#1a1a1a'};
+  background: ${({ theme }) => theme.colors.surface[860] ?? '#ffffff'};
   border: 1px solid ${({ theme }) => theme.colors.lineSoft};
   border-radius: ${({ theme }) => theme.radii.md};
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
@@ -1738,7 +1738,7 @@ const MentionItem = styled.button`
   cursor: pointer;
   color: ${({ theme }) => theme.colors.text[100]};
   font-size: 0.85rem;
-  &:hover { background: rgba(139, 92, 246, 0.12); }
+  &:hover { background: rgba(109, 40, 217, 0.12); }
 `
 
 const ChatBubbleHeader = styled.div`
@@ -1853,7 +1853,7 @@ const InviteCandidateItem = styled.div`
 `
 
 const FeedbackMessage = styled.p<{ $tone: 'success' | 'error' }>`
-  background: ${({ $tone }) => $tone === 'success' ? 'rgba(143, 179, 106, 0.1)' : 'rgba(219, 74, 91, 0.1)'};
+  background: ${({ $tone }) => $tone === 'success' ? 'rgba(46, 141, 84, 0.1)' : 'rgba(219, 74, 91, 0.1)'};
   border: 1px solid ${({ $tone, theme }) => $tone === 'success' ? theme.colors.green[580] : theme.colors.danger[500]};
   color: ${({ $tone, theme }) => $tone === 'success' ? theme.colors.green[500] : theme.colors.danger[500]};
   padding: 0.5rem 0.75rem;

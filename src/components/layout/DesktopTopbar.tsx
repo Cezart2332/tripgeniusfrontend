@@ -1,5 +1,6 @@
 import { Link, NavLink } from 'react-router-dom'
-import styled from 'styled-components'
+import styled, { css } from 'styled-components'
+import { hideOnMobile } from '../../styles/mixins'
 import { FiLogIn, FiLogOut, FiUserPlus, FiDownload, FiSettings } from 'react-icons/fi'
 import { motion } from 'framer-motion'
 import type { User } from '../../types/models'
@@ -17,9 +18,11 @@ interface DesktopTopbarProps {
   onInstall: () => void
   onSyncUser: () => void
   onReadAllNotifications: () => void
+  /** Keep a slim top app bar (brand + notifications) on phones. */
+  mobileVisible?: boolean
 }
 
-const Bar = styled(motion.header)`
+const Bar = styled(motion.header)<{ $mobileVisible?: boolean }>`
   position: fixed;
   top: 0;
   left: 0;
@@ -31,7 +34,7 @@ const Bar = styled(motion.header)`
   gap: 1rem;
   width: 100%;
   padding: 0.7rem clamp(1rem, 4vw, 2rem);
-  background: linear-gradient(180deg, rgba(20, 24, 18, 0.94), rgba(20, 24, 18, 0.82));
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(255, 255, 255, 0.82));
   border-bottom: 1px solid ${({ theme }) => theme.glass.border};
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
@@ -39,13 +42,24 @@ const Bar = styled(motion.header)`
   min-height: 64px;
 
   @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
-    display: none;
+    ${({ $mobileVisible }) =>
+      $mobileVisible
+        ? css`
+            grid-template-columns: auto 1fr;
+            min-height: 56px;
+            padding: 0.4rem 0.75rem;
+            padding-top: calc(0.4rem + env(safe-area-inset-top));
+          `
+        : css`
+            display: none;
+          `}
   }
 `
 
 const NavSlot = styled.div`
   display: flex;
   justify-content: center;
+  ${hideOnMobile}
 `
 
 const Brand = styled(Link)`
@@ -58,7 +72,7 @@ const Brand = styled(Link)`
   transition: background 0.18s ease;
 
   &:hover {
-    background: rgba(247, 243, 232, 0.06);
+    background: rgba(28, 43, 32, 0.06);
   }
 `
 
@@ -76,6 +90,7 @@ const RightActions = styled.div`
 `
 
 const ActionBtn = styled.button`
+  ${hideOnMobile}
   display: flex;
   align-items: center;
   gap: 0.35rem;
@@ -91,7 +106,7 @@ const ActionBtn = styled.button`
   white-space: nowrap;
 
   &:hover {
-    background: rgba(247, 243, 232, 0.07);
+    background: rgba(28, 43, 32, 0.07);
     border-color: ${({ theme }) => theme.colors.line};
     color: ${({ theme }) => theme.colors.text[100]};
   }
@@ -122,6 +137,7 @@ const PrimaryBtn = styled(Link)`
 `
 
 const InstallAction = styled.button`
+  ${hideOnMobile}
   display: flex;
   align-items: center;
   gap: 0.35rem;
@@ -130,18 +146,19 @@ const InstallAction = styled.button`
   font-size: ${({ theme }) => theme.typography.bodySmall};
   font-weight: 600;
   color: ${({ theme }) => theme.colors.green[300]};
-  background: rgba(143, 179, 106, 0.08);
+  background: rgba(46, 141, 84, 0.08);
   border: 1px dashed ${({ theme }) => theme.colors.line};
   transition: all 0.15s ease;
   min-height: 36px;
   white-space: nowrap;
 
   &:hover {
-    background: rgba(143, 179, 106, 0.14);
+    background: rgba(46, 141, 84, 0.14);
   }
 `
 
 const IconLink = styled(NavLink)`
+  ${hideOnMobile}
   display: flex;
   align-items: center;
   justify-content: center;
@@ -154,11 +171,12 @@ const IconLink = styled(NavLink)`
 
   &.is-active, &:hover {
     color: ${({ theme }) => theme.colors.text[100]};
-    background: rgba(247, 243, 232, 0.08);
+    background: rgba(28, 43, 32, 0.08);
   }
 `
 
 const AvatarLink = styled(NavLink)`
+  ${hideOnMobile}
   display: flex;
   align-items: center;
   justify-content: center;
@@ -180,7 +198,7 @@ const AvatarImg = styled.img`
 const Spinner = styled.span`
   width: 14px;
   height: 14px;
-  border: 2px solid rgba(247, 243, 232, 0.2);
+  border: 2px solid rgba(28, 43, 32, 0.2);
   border-top-color: ${({ theme }) => theme.colors.green[500]};
   border-radius: 50%;
   animation: spin 0.6s linear infinite;
@@ -200,9 +218,11 @@ export function DesktopTopbar({
   onInstall,
   onSyncUser,
   onReadAllNotifications,
+  mobileVisible = false,
 }: DesktopTopbarProps) {
   return (
     <Bar
+      $mobileVisible={mobileVisible}
       animate={{ y: hideHeader ? -120 : 0, opacity: hideHeader ? 0 : 1 }}
       initial={false}
       transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
@@ -249,7 +269,7 @@ export function DesktopTopbar({
               )}
             </ActionBtn>
             {deferredPrompt && (
-              <InstallAction onClick={onInstall} aria-label="Install app" style={{ padding: '0.4rem 0.55rem' }}>
+              <InstallAction onClick={onInstall} aria-label="Install app" title="Install the app on this device" style={{ padding: '0.4rem 0.55rem' }}>
                 <FiDownload size={16} />
               </InstallAction>
             )}
@@ -259,7 +279,7 @@ export function DesktopTopbar({
                 alt="Profile"
               />
             </AvatarLink>
-            <IconLink to="/app/settings" aria-label="Settings">
+            <IconLink to="/app/settings" aria-label="Settings" title="Settings">
               <FiSettings size={18} />
             </IconLink>
           </>

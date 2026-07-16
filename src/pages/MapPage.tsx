@@ -386,7 +386,7 @@ const PrimaryLink = styled(Link)`
   line-height: 1;
   padding: 0.65rem 1.5rem;
   background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[580]}, ${({ theme }) => theme.colors.green[500]});
-  color: #10120f;
+  color: #ffffff;
   box-shadow: ${({ theme }) => theme.shadows.glowGreen};
 
   &:hover {
@@ -470,7 +470,7 @@ const SearchIconPrefix = styled.span`
 const AddressInput = styled.input`
   font-size: 0.9rem;
   padding-left: 2.4rem;
-  background: rgba(17, 34, 26, 0.85);
+  background: rgba(255, 255, 255, 0.85);
   backdrop-filter: blur(10px);
   border: 1px solid ${({ theme }) => theme.colors.lineSoft};
   height: 40px;
@@ -504,7 +504,7 @@ const ExploreChip = styled.span`
   border-radius: ${({ theme }) => theme.radii.lg};
   font-size: ${({ theme }) => theme.typography.bodySmall};
   font-weight: 600;
-  background: rgba(143, 179, 106, 0.2);
+  background: rgba(46, 141, 84, 0.2);
   border: 1px solid ${({ theme }) => theme.colors.green[500]};
   color: ${({ theme }) => theme.colors.green[500]};
   white-space: nowrap;
@@ -517,7 +517,7 @@ const LoadingChip = styled.span`
   padding: 0.4rem 0.9rem;
   border-radius: ${({ theme }) => theme.radii.lg};
   font-size: ${({ theme }) => theme.typography.bodySmall};
-  background: rgba(255,255,255,0.05);
+  background: rgba(28, 43, 32,0.05);
   color: ${({ theme }) => theme.colors.text[220]};
   white-space: nowrap;
 `
@@ -530,7 +530,7 @@ const DownloadChip = styled.button<{ $downloading: boolean }>`
   border-radius: ${({ theme }) => theme.radii.lg};
   font-size: ${({ theme }) => theme.typography.bodySmall};
   font-weight: 600;
-  background: ${({ $downloading }) => $downloading ? 'rgba(143, 179, 106, 0.4)' : 'rgba(143, 179, 106, 0.1)'};
+  background: ${({ $downloading }) => $downloading ? 'rgba(46, 141, 84, 0.4)' : 'rgba(46, 141, 84, 0.1)'};
   border: 1px solid ${({ theme }) => theme.colors.green[580]};
   color: ${({ theme }) => theme.colors.text[100]};
   white-space: nowrap;
@@ -547,7 +547,7 @@ const CachedChip = styled.span`
   border-radius: ${({ theme }) => theme.radii.lg};
   font-size: ${({ theme }) => theme.typography.bodySmall};
   font-weight: 600;
-  background: rgba(143, 179, 106, 0.15);
+  background: rgba(46, 141, 84, 0.15);
   border: 1px solid ${({ theme }) => theme.colors.green[580]};
   color: ${({ theme }) => theme.colors.green[500]};
   white-space: nowrap;
@@ -560,7 +560,7 @@ const SpinningLoader = styled(FiLoader)`
 const MapContainer = styled.div`
   position: absolute;
   inset: 0;
-  background: #0d0f0d;
+  background: #e7eee4;
 `
 
 const CenterUserBtn = styled.button`
