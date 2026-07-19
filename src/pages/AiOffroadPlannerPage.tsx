@@ -346,30 +346,6 @@ export function AiOffroadPlannerPage() {
 
           <BuilderGrid>
             <FormGroup>
-              <FieldLabel>Duration (Days)</FieldLabel>
-              <Input
-                type="number"
-                min={1}
-                max={14}
-                value={form.durationDays}
-                onChange={(e) => {
-                  const days = Number(e.target.value)
-                  setForm((p) => ({
-                    ...p,
-                    durationDays: days,
-                    endDate: p.startDate && days >= 1 ? addDays(p.startDate, days - 1) : p.endDate,
-                  }))
-                }}
-              />
-            </FormGroup>
-            <FormGroup>
-              <FieldLabel>Budget per Person (EUR)</FieldLabel>
-              <Input type="number" min={50} value={form.budget} onChange={(e) => setForm((p) => ({ ...p, budget: Number(e.target.value) }))} />
-            </FormGroup>
-          </BuilderGrid>
-
-          <BuilderGrid>
-            <FormGroup>
               <FieldLabel>Start Date</FieldLabel>
               <Input
                 type="date"
@@ -392,6 +368,7 @@ export function AiOffroadPlannerPage() {
               <Input
                 type="date"
                 min={form.startDate || tomorrow}
+                max={form.startDate ? addDays(form.startDate, 13) : undefined}
                 value={form.endDate}
                 required
                 onChange={(e) => {
@@ -402,23 +379,29 @@ export function AiOffroadPlannerPage() {
                   })
                 }}
               />
+              <FieldHint>{Math.max(1, form.durationDays)}-day trek.</FieldHint>
             </FormGroup>
           </BuilderGrid>
 
           <BuilderGrid>
-            <LocationAutocompleteField
-              id="offroad-planner-region"
-              label="Region / Area"
-              placeholder="Carpathian Mountains, Transylvania..."
-              value={form.region}
-              onValueChange={(v) => setForm((p) => ({ ...p, region: v }))}
-              onLocationSelect={(s) => setForm((p) => ({ ...p, region: s.placeName }))}
-            />
+            <FormGroup>
+              <FieldLabel>Budget per Person (EUR)</FieldLabel>
+              <Input type="number" min={50} value={form.budget} onChange={(e) => setForm((p) => ({ ...p, budget: Number(e.target.value) }))} />
+            </FormGroup>
             <FormGroup>
               <FieldLabel>Max Team Size</FieldLabel>
               <Input type="number" min={1} value={form.maxParticipants} onChange={(e) => setForm((p) => ({ ...p, maxParticipants: Number(e.target.value) }))} />
             </FormGroup>
           </BuilderGrid>
+
+          <LocationAutocompleteField
+            id="offroad-planner-region"
+            label="Region / Area"
+            placeholder="Carpathian Mountains, Transylvania..."
+            value={form.region}
+            onValueChange={(v) => setForm((p) => ({ ...p, region: v }))}
+            onLocationSelect={(s) => setForm((p) => ({ ...p, region: s.placeName }))}
+          />
 
           <FormGroup>
             <FieldLabel>Difficulty Level</FieldLabel>
