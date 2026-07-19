@@ -181,6 +181,8 @@ export interface AiTripPlannerRequest {
   budget: number
   startingPoint: string
   maxParticipants: number
+  startDate?: string
+  endDate?: string
 }
 
 export interface AiOffroadPlannerRequest {
@@ -191,4 +193,6 @@ export interface AiOffroadPlannerRequest {
   region: string
   maxParticipants: number
   difficultyLevel: 'Easy' | 'Moderate' | 'Hard' | 'Expert'
+  startDate?: string
+  endDate?: string
 }

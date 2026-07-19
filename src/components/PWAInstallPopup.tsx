@@ -24,9 +24,7 @@ const Overlay = styled.div`
 
 const Card = styled(motion.div)`
   position: relative;
-  background:
-    linear-gradient(145deg, rgba(28, 43, 32, 0.055), rgba(28, 43, 32, 0.02)),
-    ${({ theme }) => theme.colors.surface[900]};
+  background: ${({ theme }) => theme.colors.surface[900]};
   border: 1px solid ${({ theme }) => theme.glass.border};
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
@@ -146,13 +144,13 @@ const InstallBtn = styled.button`
   font-weight: 700;
   border: none;
   border-radius: ${({ theme }) => theme.radii.lg};
-  background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[400]}, ${({ theme }) => theme.colors.offroad.accent});
+  background: ${({ theme }) => theme.colors.green[400]};
   color: ${({ theme }) => theme.colors.bg[980]};
   cursor: pointer;
   transition: background 0.2s ease, box-shadow 0.2s ease;
 
   &:hover {
-    box-shadow: ${({ theme }) => theme.shadows.glowGold};
+    box-shadow: ${({ theme }) => theme.shadows.glowGreen};
   }
 `
 

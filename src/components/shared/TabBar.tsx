@@ -85,7 +85,7 @@ const Tab = styled.button<{ $active: boolean; $variant: 'default' | 'pill' }>`
 const PillIndicator = styled(motion.div)`
   position: absolute;
   inset: 0;
-  background: linear-gradient(135deg, ${({ theme }) => theme.colors.green[500]} 0%, ${({ theme }) => theme.colors.green[400]} 100%);
+  background: ${({ theme }) => theme.colors.green[400]};
   border-radius: ${({ theme }) => theme.radii.lg};
   box-shadow: 0 4px 14px rgba(46, 141, 84, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.25);
   z-index: 0;
@@ -104,7 +104,7 @@ const UnderlineIndicator = styled(motion.div)`
   bottom: -1px;
   left: 0;
   height: 2px;
-  background: linear-gradient(90deg, ${({ theme }) => theme.colors.green[400]}, ${({ theme }) => theme.colors.offroad.accent});
+  background: ${({ theme }) => theme.colors.green[400]};
   z-index: 1;
   pointer-events: none;
 `

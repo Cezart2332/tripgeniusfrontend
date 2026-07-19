@@ -131,7 +131,7 @@ const SubmitBtn = styled.button`
   gap: ${({ theme }) => theme.spacing.sm};
   padding: 0.7rem 1.5rem;
   border-radius: ${({ theme }) => theme.radii.lg};
-  background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[580]}, ${({ theme }) => theme.colors.green[500]});
+  background: ${({ theme }) => theme.colors.green[400]};
   color: #ffffff;
   font-weight: 700;
   font-size: ${({ theme }) => theme.typography.body};

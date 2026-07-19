@@ -117,7 +117,7 @@ const StartBtn = styled.button`
   min-height: 44px;
   cursor: pointer;
   white-space: nowrap;
-  background: linear-gradient(140deg, ${({ theme }) => theme.colors.offroad.accent}, #a8841f);
+  background: ${({ theme }) => theme.colors.offroad.accent};
   color: #ffffff;
   box-shadow: 0 4px 20px rgba(168, 120, 31, 0.35);
   transition: transform 0.15s ease, opacity 0.15s ease;

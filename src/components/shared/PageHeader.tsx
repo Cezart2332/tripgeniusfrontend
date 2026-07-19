@@ -23,8 +23,6 @@ const Wrapper = styled.div`
   gap: ${({ theme }) => theme.spacing.lg};
   padding: ${({ theme }) => theme.spacing.xl} 0;
   border-bottom: 1px solid ${({ theme }) => theme.colors.lineSoft};
-  background:
-    radial-gradient(ellipse at 82% 0%, rgba(46, 141, 84, 0.06), transparent 65%);
 
   @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
     grid-template-columns: 1fr;
@@ -40,10 +38,7 @@ const HeadingGroup = styled.div`
 `
 
 const Title = styled.h1`
-  background: linear-gradient(140deg, ${({ theme }) => theme.colors.text[100]} 30%, ${({ theme }) => theme.colors.offroad.accent} 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  color: ${({ theme }) => theme.colors.text[100]};
 `
 
 const Description = styled.p`
@@ -90,10 +85,8 @@ const ActionsRow = styled.div`
 
   @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
     width: 100%;
-
-    > * {
-      flex: 1;
-    }
+    flex-direction: column;
+    align-items: stretch;
   }
 `
 

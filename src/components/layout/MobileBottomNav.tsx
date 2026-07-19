@@ -85,7 +85,7 @@ const ActiveBg = styled(motion.div)`
   position: absolute;
   inset: 0;
   border-radius: ${({ theme }) => theme.radii.lg};
-  background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[400]}, ${({ theme }) => theme.colors.offroad.accent});
+  background: ${({ theme }) => theme.colors.green[400]};
   box-shadow: ${({ theme }) => theme.shadows.glowGreen};
   z-index: -1;
 `

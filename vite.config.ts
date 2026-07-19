@@ -21,8 +21,8 @@ export default defineConfig({
         name: 'TripGenius',
         short_name: 'TripGenius',
         description: 'Expert Expedition Intelligence - Plan by conversation.',
-        theme_color: '#f7faf5',
-        background_color: '#f7faf5',
+        theme_color: '#fbfcfb',
+        background_color: '#fbfcfb',
         display: 'standalone',
         start_url: '/app',
         icons: [

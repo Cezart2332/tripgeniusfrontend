@@ -105,12 +105,12 @@ const UnauthedLink = styled(Link)`
   text-decoration: none;
   line-height: 1;
   padding: 0.65rem 1.5rem;
-  background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[580]}, ${({ theme }) => theme.colors.green[500]});
+  background: ${({ theme }) => theme.colors.green[400]};
   color: #ffffff;
   box-shadow: ${({ theme }) => theme.shadows.glowGreen};
 
   &:hover {
-    background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[500]}, ${({ theme }) => theme.colors.green[300]});
+    background: ${({ theme }) => theme.colors.green[500]};
     transform: translateY(-1px);
     box-shadow: 0 0 40px rgba(46, 141, 84, 0.3), 0 0 80px rgba(46, 141, 84, 0.1);
   }
@@ -209,7 +209,7 @@ const TabActiveBar = styled(motion.div)`
   left: 0;
   right: 0;
   height: 2px;
-  background: linear-gradient(90deg, ${({ theme }) => theme.colors.green[580]}, ${({ theme }) => theme.colors.green[500]});
+  background: ${({ theme }) => theme.colors.green[400]};
 `
 
 const TabIconMobile = styled.span`
@@ -410,7 +410,7 @@ const PrimaryBtn = styled.button`
   white-space: nowrap;
   line-height: 1;
   padding: 0.65rem 1.5rem;
-  background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[580]}, ${({ theme }) => theme.colors.green[500]});
+  background: ${({ theme }) => theme.colors.green[400]};
   color: #ffffff;
   box-shadow: ${({ theme }) => theme.shadows.glowGreen};
   border: none;
@@ -418,7 +418,7 @@ const PrimaryBtn = styled.button`
   align-self: flex-start;
 
   &:hover {
-    background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[500]}, ${({ theme }) => theme.colors.green[300]});
+    background: ${({ theme }) => theme.colors.green[500]};
     transform: translateY(-1px);
     box-shadow: 0 0 40px rgba(46, 141, 84, 0.3), 0 0 80px rgba(46, 141, 84, 0.1);
   }
@@ -448,7 +448,7 @@ const DangerBtn = styled.button`
   white-space: nowrap;
   line-height: 1;
   padding: 0.65rem 1.5rem;
-  background: linear-gradient(140deg, ${({ theme }) => theme.colors.danger[500]}, ${({ theme }) => theme.colors.danger[400]});
+  background: ${({ theme }) => theme.colors.danger[500]};
   color: #fff;
   border: none;
   cursor: pointer;
@@ -456,7 +456,7 @@ const DangerBtn = styled.button`
   font-size: ${({ theme }) => theme.typography.bodySmall};
 
   &:hover {
-    background: linear-gradient(140deg, ${({ theme }) => theme.colors.danger[400]}, ${({ theme }) => theme.colors.danger[500]});
+    background: ${({ theme }) => theme.colors.danger[400]};
     transform: translateY(-1px);
     box-shadow: 0 0 36px rgba(219, 74, 91, 0.35);
   }

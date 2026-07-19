@@ -295,7 +295,7 @@ const MessageInner = styled.div<{ $sender: 'user' | 'assistant'; $thinking?: boo
   border-radius: ${({ theme }) => theme.radii.xl};
   border-bottom-right-radius: ${({ $sender, theme }) => ($sender === 'user' ? theme.radii.sm : theme.radii.xl)};
   border-bottom-left-radius: ${({ $sender, theme }) => ($sender === 'assistant' ? theme.radii.sm : theme.radii.xl)};
-  background: ${({ $sender, theme }) => ($sender === 'user' ? `linear-gradient(140deg, ${theme.colors.green[580]}, ${theme.colors.green[700]})` : theme.glass.bg)};
+  background: ${({ $sender, theme }) => ($sender === 'user' ? `${theme.colors.green[500]}` : theme.glass.bg)};
   border: 1px solid ${({ $sender, theme }) => ($sender === 'user' ? 'transparent' : theme.glass.border)};
   backdrop-filter: blur(${({ theme }) => theme.glass.blur});
 
@@ -731,7 +731,7 @@ const OfflineLink = styled(Link)`
   gap: 0.5rem;
   padding: 0.65rem 1.5rem;
   border-radius: ${({ theme }) => theme.radii.lg};
-  background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[580]}, ${({ theme }) => theme.colors.green[500]});
+  background: ${({ theme }) => theme.colors.green[400]};
   color: #ffffff;
   font-weight: 600;
   font-size: ${({ theme }) => theme.typography.bodySmall};

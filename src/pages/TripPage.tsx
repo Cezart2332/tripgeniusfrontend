@@ -1906,14 +1906,14 @@ const PrimaryLink = styled(Link)`
   font-size: ${({ theme }) => theme.typography.bodySmall};
   font-weight: 700;
   text-decoration: none;
-  background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[580]}, ${({ theme }) => theme.colors.green[500]});
+  background: ${({ theme }) => theme.colors.green[400]};
   color: ${({ theme }) => theme.colors.text[100]};
   cursor: pointer;
   border: none;
   transition: all 0.2s ease;
 
   &:hover {
-    background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[500]}, ${({ theme }) => theme.colors.green[300]});
+    background: ${({ theme }) => theme.colors.green[500]};
     transform: translateY(-1px);
   }
 `
@@ -1927,14 +1927,14 @@ const PrimaryButton = styled.button`
   border-radius: ${({ theme }) => theme.radii.lg};
   font-size: ${({ theme }) => theme.typography.bodySmall};
   font-weight: 700;
-  background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[580]}, ${({ theme }) => theme.colors.green[500]});
+  background: ${({ theme }) => theme.colors.green[400]};
   color: ${({ theme }) => theme.colors.text[100]};
   cursor: pointer;
   border: none;
   transition: all 0.2s ease;
 
   &:hover:not(:disabled) {
-    background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[500]}, ${({ theme }) => theme.colors.green[300]});
+    background: ${({ theme }) => theme.colors.green[500]};
     transform: translateY(-1px);
   }
 
@@ -2495,7 +2495,7 @@ const ExportStrip = styled.div`
   flex-wrap: wrap;
   gap: 0.75rem;
   padding: 1rem 1.25rem;
-  background: linear-gradient(140deg, rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0.6));
+  background: rgba(255, 255, 255, 0.7);
   border: 1px solid ${({ theme }) => theme.colors.lineSoft};
   border-radius: ${({ theme }) => theme.radii.md};
   align-items: center;
@@ -2710,7 +2710,7 @@ const AiAvatar = styled.span`
   font-size: 0.62rem;
   font-weight: 700;
   color: #fff;
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  background: ${({ theme }) => theme.colors.green[400]};
   flex-shrink: 0;
 `
 

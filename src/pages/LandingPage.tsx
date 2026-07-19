@@ -59,7 +59,6 @@ const Hero = styled(motion.header)`
     inset: 10% -8% auto 44%;
     height: 70%;
     pointer-events: none;
-    background: radial-gradient(circle, rgba(46, 141, 84, 0.18), transparent 68%);
     opacity: 0.8;
   }
 
@@ -96,7 +95,7 @@ const HeroTitle = styled.h1`
   color: ${({ theme }) => theme.colors.text[100]};
 
   span {
-    background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[300]}, ${({ theme }) => theme.colors.offroad.accent});
+    background: ${({ theme }) => theme.colors.green[500]};
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
@@ -137,7 +136,7 @@ const PrimaryLink = styled(Link)`
   gap: 0.5rem;
   padding: 0.75rem 1.8rem;
   border-radius: ${({ theme }) => theme.radii.lg};
-  background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[400]}, ${({ theme }) => theme.colors.offroad.accent});
+  background: ${({ theme }) => theme.colors.green[400]};
   color: ${({ theme }) => theme.colors.bg[980]};
   font-weight: 700;
   font-size: 0.95rem;
@@ -148,7 +147,7 @@ const PrimaryLink = styled(Link)`
 
   &:hover {
     transform: translateY(-1px);
-    box-shadow: ${({ theme }) => theme.shadows.glowGold};
+    box-shadow: ${({ theme }) => theme.shadows.glowGreen};
   }
 `
 
@@ -180,9 +179,6 @@ const HeroIllustration = styled.div`
   display: grid;
   place-items: center;
   min-height: 24rem;
-  background:
-    radial-gradient(circle at 50% 42%, rgba(168, 120, 31, 0.24), transparent 12rem),
-    radial-gradient(circle at 60% 70%, rgba(46, 141, 84, 0.14), transparent 14rem);
 
   @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
     min-height: 14rem;
@@ -353,9 +349,7 @@ const CTAWrap = styled(motion.section)`
   justify-content: space-between;
   gap: 2rem;
   padding: 3rem 0 0;
-  background:
-    linear-gradient(90deg, ${({ theme }) => theme.colors.lineSoft}, transparent) top left / 100% 1px no-repeat,
-    radial-gradient(circle at 80% 0%, rgba(46, 141, 84, 0.12), transparent 18rem);
+  border-top: 1px solid ${({ theme }) => theme.colors.lineSoft};
 
   @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
     flex-direction: column;
