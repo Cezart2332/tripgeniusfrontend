@@ -51,9 +51,7 @@ const Card = styled.div`
   box-sizing: border-box;
   overflow-x: hidden;
   overflow-y: auto;
-  background:
-    linear-gradient(145deg, rgba(28, 43, 32, 0.045), rgba(28, 43, 32, 0.015)),
-    ${({ theme }) => theme.colors.surface[900]};
+  background: ${({ theme }) => theme.colors.surface[900]};
   border: 1px solid ${({ theme }) => theme.glass.border};
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);

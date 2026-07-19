@@ -29,9 +29,7 @@ const Sheet = styled(motion.div)<{ $height: string }>`
   z-index: 1001;
   max-height: ${({ $height }) => $height};
   height: ${({ $height }) => $height};
-  background:
-    linear-gradient(145deg, rgba(28, 43, 32, 0.045), rgba(28, 43, 32, 0.015)),
-    ${({ theme }) => theme.colors.surface[900]};
+  background: ${({ theme }) => theme.colors.surface[900]};
   border: 1px solid ${({ theme }) => theme.glass.border};
   border-bottom: none;
   backdrop-filter: blur(16px);

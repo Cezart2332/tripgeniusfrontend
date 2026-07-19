@@ -280,12 +280,12 @@ const PrimaryLink = styled(Link)`
   text-decoration: none;
   line-height: 1;
   padding: 0.65rem 1.5rem;
-  background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[400]}, ${({ theme }) => theme.colors.offroad.accent});
+  background: ${({ theme }) => theme.colors.green[400]};
   color: ${({ theme }) => theme.colors.bg[980]};
   box-shadow: ${({ theme }) => theme.shadows.glowGreen};
 
   &:hover {
-    background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[500]}, ${({ theme }) => theme.colors.green[300]});
+    background: ${({ theme }) => theme.colors.green[500]};
     transform: translateY(-1px);
     box-shadow: 0 0 40px rgba(46, 141, 84, 0.3), 0 0 80px rgba(46, 141, 84, 0.1);
   }
@@ -323,8 +323,6 @@ const DiscoveryHeader = styled(motion.header)`
   gap: ${({ theme }) => theme.spacing.md};
   padding: ${({ theme }) => theme.spacing.xl} 0;
   border-bottom: 1px solid ${({ theme }) => theme.colors.lineSoft};
-  background:
-    radial-gradient(ellipse at 82% 0%, rgba(168, 120, 31, 0.07), transparent 65%);
 
   @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
     grid-template-columns: 1fr;
@@ -356,6 +354,12 @@ const HeaderActions = styled.div`
   gap: 0.5rem;
   align-items: center;
   flex-wrap: wrap;
+
+  @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+  }
 `
 
 const Toolbar = styled.div`
@@ -494,7 +498,7 @@ const ResultsMeta = styled.div`
 
 const TripList = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(380px, 100%), 1fr));
   gap: ${({ theme }) => theme.spacing.lg};
 
   @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
@@ -514,9 +518,7 @@ const TripRow = styled(motion.article)`
   flex-direction: column;
   gap: ${({ theme }) => theme.spacing.md};
   padding: ${({ theme }) => theme.spacing.md};
-  background:
-    linear-gradient(145deg, rgba(28, 43, 32, 0.045), rgba(28, 43, 32, 0.015)),
-    ${({ theme }) => theme.colors.surface[900]};
+  background: ${({ theme }) => theme.colors.surface[900]};
   border: 1px solid ${({ theme }) => theme.glass.border};
   border-radius: ${({ theme }) => theme.radii.xl};
   backdrop-filter: blur(${({ theme }) => theme.glass.blur});
@@ -548,7 +550,7 @@ const TripThumb = styled.img`
 const TripThumbPlaceholder = styled.div`
   width: 100%;
   height: 170px;
-  background: linear-gradient(140deg, rgba(168, 120, 31,0.25), rgba(255, 255, 255,0.9));
+  background: ${({ theme }) => theme.colors.bg[940]};
   display: grid;
   place-items: center;
   border-radius: ${({ theme }) => theme.radii.lg};
@@ -647,7 +649,7 @@ const ViewLink = styled(Link)`
   line-height: 1;
   padding: 0.4rem 0.9rem;
   font-size: ${({ theme }) => theme.typography.bodySmall};
-  background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[400]}, ${({ theme }) => theme.colors.offroad.accent});
+  background: ${({ theme }) => theme.colors.green[400]};
   color: ${({ theme }) => theme.colors.bg[980]};
   box-shadow: ${({ theme }) => theme.shadows.glowGreen};
   flex-shrink: 0;
@@ -655,7 +657,7 @@ const ViewLink = styled(Link)`
   align-self: flex-end;
 
   &:hover {
-    background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[500]}, ${({ theme }) => theme.colors.green[300]});
+    background: ${({ theme }) => theme.colors.green[500]};
   }
 
   /* Stretched link: the whole card is one big tap target. Keep transforms off

@@ -1085,12 +1085,12 @@ const PrimaryLink = styled(Link)`
   text-decoration: none;
   line-height: 1;
   padding: 0.65rem 1.5rem;
-  background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[580]}, ${({ theme }) => theme.colors.green[500]});
+  background: ${({ theme }) => theme.colors.green[400]};
   color: #ffffff;
   box-shadow: ${({ theme }) => theme.shadows.glowGreen};
 
   &:hover {
-    background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[500]}, ${({ theme }) => theme.colors.green[300]});
+    background: ${({ theme }) => theme.colors.green[500]};
     transform: translateY(-1px);
   }
 `
@@ -1170,14 +1170,14 @@ const PrimaryBtn = styled.button`
   white-space: nowrap;
   line-height: 1;
   padding: 0.65rem 1.5rem;
-  background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[580]}, ${({ theme }) => theme.colors.green[500]});
+  background: ${({ theme }) => theme.colors.green[400]};
   color: #ffffff;
   box-shadow: ${({ theme }) => theme.shadows.glowGreen};
   border: none;
   cursor: pointer;
 
   &:hover {
-    background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[500]}, ${({ theme }) => theme.colors.green[300]});
+    background: ${({ theme }) => theme.colors.green[500]};
     transform: translateY(-1px);
   }
   &:disabled { opacity: 0.5; transform: none; box-shadow: none; cursor: not-allowed; }
@@ -1688,7 +1688,7 @@ const AiAvatar = styled.span`
   font-size: 0.6rem;
   font-weight: 700;
   color: #fff;
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  background: ${({ theme }) => theme.colors.green[400]};
   flex-shrink: 0;
 `
 

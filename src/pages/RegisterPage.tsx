@@ -81,9 +81,6 @@ const Illustration = styled.aside`
   display: flex;
   justify-content: center;
   align-items: center;
-  background:
-    radial-gradient(circle at 50% 42%, rgba(168, 120, 31, 0.22), transparent 12rem),
-    radial-gradient(circle at 56% 68%, rgba(46, 141, 84, 0.13), transparent 15rem);
 
   @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
     display: none;
@@ -128,7 +125,7 @@ const TabLink = styled(Link)<{ $active: boolean }>`
   font-weight: 700;
   text-decoration: none;
   color: ${({ $active, theme }) => $active ? theme.colors.bg[980] : theme.colors.text[380]};
-  background: ${({ $active, theme }) => $active ? `linear-gradient(140deg, ${theme.colors.green[400]}, ${theme.colors.offroad.accent})` : 'transparent'};
+  background: ${({ $active, theme }) => $active ? `${theme.colors.green[400]}` : 'transparent'};
   box-shadow: ${({ $active, theme }) => $active ? theme.shadows.glowGreen : 'none'};
   transition: all 0.2s ease;
 
@@ -199,7 +196,7 @@ const Chip = styled.button<{ $selected: boolean }>`
   border: 1px solid ${({ $selected, theme }) => $selected ? 'transparent' : theme.colors.lineSoft};
   background: ${({ $selected, theme }) =>
     $selected
-      ? `linear-gradient(140deg, ${theme.colors.green[400]}, ${theme.colors.offroad.accent})`
+      ? `${theme.colors.green[400]}`
       : 'transparent'};
   color: ${({ $selected, theme }) => $selected ? theme.colors.bg[980] : theme.colors.text[380]};
   font-size: ${({ theme }) => theme.typography.caption};
@@ -213,7 +210,7 @@ const Chip = styled.button<{ $selected: boolean }>`
     color: ${({ $selected, theme }) => $selected ? '#ffffff' : theme.colors.text[220]};
     background: ${({ $selected, theme }) =>
       $selected
-        ? `linear-gradient(140deg, ${theme.colors.green[400]}, ${theme.colors.offroad.accent})`
+        ? `${theme.colors.green[400]}`
         : 'rgba(46, 141, 84, 0.08)'};
   }
 
@@ -230,7 +227,7 @@ const SubmitBtn = styled.button`
   gap: 0.5rem;
   padding: 0.7rem 1.5rem;
   border-radius: ${({ theme }) => theme.radii.lg};
-  background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[400]}, ${({ theme }) => theme.colors.offroad.accent});
+  background: ${({ theme }) => theme.colors.green[400]};
   color: ${({ theme }) => theme.colors.bg[980]};
   font-weight: 700;
   font-size: ${({ theme }) => theme.typography.body};
@@ -239,7 +236,7 @@ const SubmitBtn = styled.button`
   transition: box-shadow 0.15s ease;
 
   &:hover:not(:disabled) {
-    box-shadow: ${({ theme }) => theme.shadows.glowGold};
+    box-shadow: ${({ theme }) => theme.shadows.glowGreen};
   }
 
   &:disabled {

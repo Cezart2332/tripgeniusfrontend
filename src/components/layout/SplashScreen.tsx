@@ -33,7 +33,7 @@ const LoaderTrack = styled.div`
 const LoaderBar = styled(motion.div)`
   height: 100%;
   border-radius: 2px;
-  background: linear-gradient(90deg, ${({ theme }) => theme.colors.green[580]}, ${({ theme }) => theme.colors.green[500]});
+  background: ${({ theme }) => theme.colors.green[400]};
 `
 
 const Tagline = styled.p`

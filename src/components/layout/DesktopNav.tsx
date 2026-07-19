@@ -49,7 +49,7 @@ const Link = styled(NavLink)`
 
   &.is-active {
     color: ${({ theme }) => theme.colors.bg[980]};
-    background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[400]}, ${({ theme }) => theme.colors.offroad.accent});
+    background: ${({ theme }) => theme.colors.green[400]};
     box-shadow: ${({ theme }) => theme.shadows.glowGreen};
   }
 

@@ -113,14 +113,14 @@ const theme: DefaultTheme = {
     // Light theme: numbers keep their legacy dark-theme names, but the scale is
     // inverted — bg.980 is the lightest page background.
     bg: {
-      980: '#f7faf5',
-      960: '#eff5eb',
-      940: '#e4eede',
+      980: '#fbfcfb',
+      960: '#f3f7f3',
+      940: '#e9f0e9',
     },
     surface: {
-      900: 'rgba(255, 255, 255, 0.92)',
-      860: 'rgba(255, 255, 255, 0.82)',
-      820: 'rgba(255, 255, 255, 0.68)',
+      900: '#ffffff',
+      860: '#ffffff',
+      820: '#ffffff',
     },
     text: {
       100: '#1c2b21',
@@ -155,10 +155,10 @@ const theme: DefaultTheme = {
   },
 
   glass: {
-    bg: 'rgba(255, 255, 255, 0.74)',
+    bg: '#ffffff',
     border: 'rgba(28, 43, 32, 0.10)',
     blur: '16px',
-    bgStrong: 'rgba(255, 255, 255, 0.92)',
+    bgStrong: '#ffffff',
   },
 
   spacing: {

@@ -34,7 +34,7 @@ const Bar = styled(motion.header)<{ $mobileVisible?: boolean }>`
   gap: 1rem;
   width: 100%;
   padding: 0.7rem clamp(1rem, 4vw, 2rem);
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(255, 255, 255, 0.82));
+  background: rgba(255, 255, 255, 0.92);
   border-bottom: 1px solid ${({ theme }) => theme.glass.border};
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
@@ -125,14 +125,14 @@ const PrimaryBtn = styled(Link)`
   border-radius: ${({ theme }) => theme.radii.md};
   font-size: ${({ theme }) => theme.typography.bodySmall};
   font-weight: 600;
-  background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[400]}, ${({ theme }) => theme.colors.offroad.accent});
+  background: ${({ theme }) => theme.colors.green[400]};
   color: ${({ theme }) => theme.colors.bg[980]};
   text-decoration: none;
   min-height: 36px;
   white-space: nowrap;
 
   &:hover {
-    box-shadow: ${({ theme }) => theme.shadows.glowGold};
+    box-shadow: ${({ theme }) => theme.shadows.glowGreen};
   }
 `
 

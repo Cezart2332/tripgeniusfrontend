@@ -106,8 +106,6 @@ const HeaderRow = styled(motion.header)`
   gap: ${({ theme }) => theme.spacing.lg};
   padding: ${({ theme }) => theme.spacing.xl} 0;
   border-bottom: 1px solid ${({ theme }) => theme.colors.lineSoft};
-  background:
-    radial-gradient(ellipse at 80% 0%, rgba(46, 141, 84, 0.07), transparent 65%);
 
   @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
     grid-template-columns: 1fr;
@@ -139,13 +137,9 @@ const HeaderActions = styled.div`
 
   @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
     width: 100%;
+    flex-direction: column;
+    align-items: stretch;
     gap: ${({ theme }) => theme.spacing.sm};
-
-    > * {
-      flex: 1;
-      padding-left: 0.5rem;
-      padding-right: 0.5rem;
-    }
   }
 `
 
@@ -192,12 +186,12 @@ const PrimaryButton = styled(Link)`
   text-decoration: none;
   line-height: 1;
   padding: 0.65rem 1.5rem;
-  background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[580]}, ${({ theme }) => theme.colors.green[500]});
+  background: ${({ theme }) => theme.colors.green[400]};
   color: #ffffff;
   box-shadow: ${({ theme }) => theme.shadows.glowGreen};
 
   &:hover {
-    background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[500]}, ${({ theme }) => theme.colors.green[300]});
+    background: ${({ theme }) => theme.colors.green[500]};
     transform: translateY(-1px);
     box-shadow: 0 0 40px rgba(46, 141, 84, 0.3), 0 0 80px rgba(46, 141, 84, 0.1);
   }
@@ -382,7 +376,7 @@ const ResultsCount = styled.h2`
 
 const TripList = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(380px, 100%), 1fr));
   gap: ${({ theme }) => theme.spacing.lg};
 
   @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
@@ -402,9 +396,7 @@ const TripCard = styled(motion.article)`
   flex-direction: column;
   gap: ${({ theme }) => theme.spacing.md};
   padding: ${({ theme }) => theme.spacing.md};
-  background:
-    linear-gradient(145deg, rgba(28, 43, 32, 0.045), rgba(28, 43, 32, 0.015)),
-    ${({ theme }) => theme.colors.surface[900]};
+  background: ${({ theme }) => theme.colors.surface[900]};
   border: 1px solid ${({ theme }) => theme.glass.border};
   border-radius: ${({ theme }) => theme.radii.xl};
   backdrop-filter: blur(${({ theme }) => theme.glass.blur});
@@ -494,8 +486,8 @@ const Chip = styled.span`
   border-radius: ${({ theme }) => theme.radii.lg};
   font-size: ${({ theme }) => theme.typography.caption};
   font-weight: 500;
-  background: rgba(46, 141, 84, 0.12);
-  color: ${({ theme }) => theme.colors.green[300]};
+  background: rgba(46, 141, 84, 0.10);
+  color: ${({ theme }) => theme.colors.green[580]};
 `
 
 const ViewButton = styled(Link)`
@@ -513,7 +505,7 @@ const ViewButton = styled(Link)`
   line-height: 1;
   padding: 0.4rem 1rem;
   font-size: ${({ theme }) => theme.typography.bodySmall};
-  background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[400]}, ${({ theme }) => theme.colors.offroad.accent});
+  background: ${({ theme }) => theme.colors.green[400]};
   color: ${({ theme }) => theme.colors.bg[980]};
   box-shadow: ${({ theme }) => theme.shadows.glowGreen};
   flex-shrink: 0;
@@ -521,8 +513,8 @@ const ViewButton = styled(Link)`
   align-self: flex-end;
 
   &:hover {
-    background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[300]}, ${({ theme }) => theme.colors.offroad.accent});
-    box-shadow: ${({ theme }) => theme.shadows.glowGold};
+    background: ${({ theme }) => theme.colors.green[500]};
+    box-shadow: ${({ theme }) => theme.shadows.glowGreen};
   }
 
   /* Stretched link: the whole card is one big tap target. Keep transforms off

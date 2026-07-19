@@ -197,14 +197,14 @@ const SubmitButton = styled.button`
   border-radius: ${({ theme }) => theme.radii.lg};
   border: none;
   cursor: pointer;
-  background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[580]} 0%, ${({ theme }) => theme.colors.green[700]} 100%);
+  background: ${({ theme }) => theme.colors.green[400]};
   color: white;
   box-shadow: 0 10px 30px rgba(46, 141, 84, 0.2);
   margin-top: 1rem;
   transition: all 0.3s;
 
   &:hover:not(:disabled) {
-    background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[500]} 0%, ${({ theme }) => theme.colors.green[580]} 100%);
+    background: ${({ theme }) => theme.colors.green[500]};
     box-shadow: 0 10px 40px rgba(46, 141, 84, 0.35);
     transform: translateY(-1px);
   }
@@ -234,11 +234,24 @@ const FooterText = styled.p`
 /*  AiTripPlannerPage                                                  */
 /* ------------------------------------------------------------------ */
 
+const toIsoDay = (d: Date) => d.toISOString().slice(0, 10)
+
+const addDays = (iso: string, days: number) => {
+  const d = new Date(`${iso}T00:00:00Z`)
+  d.setUTCDate(d.getUTCDate() + days)
+  return toIsoDay(d)
+}
+
+const daysBetween = (fromIso: string, toIso: string) =>
+  Math.round((Date.parse(`${toIso}T00:00:00Z`) - Date.parse(`${fromIso}T00:00:00Z`)) / 86_400_000)
+
 export function AiTripPlannerPage() {
   const navigate = useNavigate()
   const user = useSelector((state: AuthStoreState) => state.auth.user)
   const { toasts, addToast, removeToast } = useToast()
   const [isGenerating, setIsGenerating] = useState(false)
+  const tomorrow = toIsoDay(new Date(Date.now() + 86_400_000))
+  const defaultStart = addDays(tomorrow, 6)
   const [form, setForm] = useState<AiTripPlannerRequest>({
     description: '',
     durationDays: 3,
@@ -246,6 +259,8 @@ export function AiTripPlannerPage() {
     startingPoint: '',
     interests: user?.tags || [],
     maxParticipants: user?.groupSize || 4,
+    startDate: defaultStart,
+    endDate: addDays(defaultStart, 2),
   })
 
   useEffect(() => {
@@ -320,11 +335,61 @@ export function AiTripPlannerPage() {
           <BuilderGrid>
             <FormGroup>
               <FieldLabel>Duration (Days)</FieldLabel>
-              <Input type="number" min={1} max={30} value={form.durationDays} onChange={(e) => setForm((p) => ({ ...p, durationDays: Number(e.target.value) }))} />
+              <Input
+                type="number"
+                min={1}
+                max={30}
+                value={form.durationDays}
+                onChange={(e) => {
+                  const days = Number(e.target.value)
+                  setForm((p) => ({
+                    ...p,
+                    durationDays: days,
+                    endDate: p.startDate && days >= 1 ? addDays(p.startDate, days - 1) : p.endDate,
+                  }))
+                }}
+              />
             </FormGroup>
             <FormGroup>
               <FieldLabel>Budget per Person (EUR)</FieldLabel>
               <Input type="number" min={100} value={form.budget} onChange={(e) => setForm((p) => ({ ...p, budget: Number(e.target.value) }))} />
+            </FormGroup>
+          </BuilderGrid>
+
+          <BuilderGrid>
+            <FormGroup>
+              <FieldLabel>Start Date</FieldLabel>
+              <Input
+                type="date"
+                min={tomorrow}
+                value={form.startDate}
+                required
+                onChange={(e) => {
+                  const start = e.target.value
+                  setForm((p) => ({
+                    ...p,
+                    startDate: start,
+                    endDate: start ? addDays(start, Math.max(1, p.durationDays) - 1) : p.endDate,
+                  }))
+                }}
+              />
+              <FieldHint>The trip will be scheduled to start on this day.</FieldHint>
+            </FormGroup>
+            <FormGroup>
+              <FieldLabel>End Date</FieldLabel>
+              <Input
+                type="date"
+                min={form.startDate || tomorrow}
+                value={form.endDate}
+                required
+                onChange={(e) => {
+                  const end = e.target.value
+                  setForm((p) => {
+                    const days = p.startDate && end ? daysBetween(p.startDate, end) + 1 : 0
+                    return { ...p, endDate: end, durationDays: days >= 1 ? days : p.durationDays }
+                  })
+                }}
+              />
             </FormGroup>
           </BuilderGrid>
 

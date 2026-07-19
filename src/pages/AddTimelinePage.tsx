@@ -485,7 +485,6 @@ const PageSection = styled.section`
 const PageHeader = styled(motion.header)`
   padding: ${({ theme }) => theme.spacing.xl} 0;
   border-bottom: 1px solid ${({ theme }) => theme.colors.lineSoft};
-  background: radial-gradient(circle at 85% 0%, rgba(46, 141, 84, 0.10), transparent 18rem);
 
   h1 { color: ${({ theme }) => theme.colors.text[100]}; }
   p { color: ${({ theme }) => theme.colors.text[380]}; }
@@ -804,14 +803,14 @@ const PrimaryBtn = styled.button`
   white-space: nowrap;
   line-height: 1;
   padding: 0.65rem 1.5rem;
-  background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[580]}, ${({ theme }) => theme.colors.green[500]});
+  background: ${({ theme }) => theme.colors.green[400]};
   color: #ffffff;
   box-shadow: ${({ theme }) => theme.shadows.glowGreen};
   border: none;
   cursor: pointer;
 
   &:hover {
-    background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[500]}, ${({ theme }) => theme.colors.green[300]});
+    background: ${({ theme }) => theme.colors.green[500]};
     transform: translateY(-1px);
   }
   &:disabled { opacity: 0.5; transform: none; box-shadow: none; cursor: not-allowed; }

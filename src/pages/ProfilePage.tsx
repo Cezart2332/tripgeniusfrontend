@@ -276,12 +276,12 @@ const UnauthedLink = styled(Link)`
   text-decoration: none;
   line-height: 1;
   padding: 0.65rem 1.5rem;
-  background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[580]}, ${({ theme }) => theme.colors.green[500]});
+  background: ${({ theme }) => theme.colors.green[400]};
   color: #ffffff;
   box-shadow: ${({ theme }) => theme.shadows.glowGreen};
 
   &:hover {
-    background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[500]}, ${({ theme }) => theme.colors.green[300]});
+    background: ${({ theme }) => theme.colors.green[500]};
     transform: translateY(-1px);
     box-shadow: 0 0 40px rgba(46, 141, 84, 0.3), 0 0 80px rgba(46, 141, 84, 0.1);
   }
@@ -360,7 +360,7 @@ const TabActiveBar = styled(motion.div)`
   left: 0;
   right: 0;
   height: 2px;
-  background: linear-gradient(90deg, ${({ theme }) => theme.colors.green[580]}, ${({ theme }) => theme.colors.green[500]});
+  background: ${({ theme }) => theme.colors.green[400]};
 `
 
 const TabIconMobile = styled.span`
@@ -472,7 +472,7 @@ const PrimaryBtn = styled.button`
   white-space: nowrap;
   line-height: 1;
   padding: 0.65rem 1.5rem;
-  background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[580]}, ${({ theme }) => theme.colors.green[500]});
+  background: ${({ theme }) => theme.colors.green[400]};
   color: #ffffff;
   box-shadow: ${({ theme }) => theme.shadows.glowGreen};
   border: none;
@@ -480,7 +480,7 @@ const PrimaryBtn = styled.button`
   align-self: flex-start;
 
   &:hover {
-    background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[500]}, ${({ theme }) => theme.colors.green[300]});
+    background: ${({ theme }) => theme.colors.green[500]};
     transform: translateY(-1px);
     box-shadow: 0 0 40px rgba(46, 141, 84, 0.3), 0 0 80px rgba(46, 141, 84, 0.1);
   }
@@ -511,13 +511,13 @@ const SmallPrimaryBtn = styled.button`
   line-height: 1;
   padding: 0.4rem 0.9rem;
   font-size: ${({ theme }) => theme.typography.bodySmall};
-  background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[580]}, ${({ theme }) => theme.colors.green[500]});
+  background: ${({ theme }) => theme.colors.green[400]};
   color: #ffffff;
   border: none;
   cursor: pointer;
 
   &:hover {
-    background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[500]}, ${({ theme }) => theme.colors.green[300]});
+    background: ${({ theme }) => theme.colors.green[500]};
   }
 
   &:disabled {
@@ -600,13 +600,13 @@ const DiscoverLink = styled(Link)`
   margin-top: 0.5rem;
   padding: 0.4rem 0.9rem;
   font-size: ${({ theme }) => theme.typography.bodySmall};
-  background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[580]}, ${({ theme }) => theme.colors.green[500]});
+  background: ${({ theme }) => theme.colors.green[400]};
   color: #ffffff;
   border: none;
   cursor: pointer;
 
   &:hover {
-    background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[500]}, ${({ theme }) => theme.colors.green[300]});
+    background: ${({ theme }) => theme.colors.green[500]};
   }
 `
 
@@ -1063,7 +1063,7 @@ const MatchBadge = styled.div`
   font-size: ${({ theme }) => theme.typography.caption};
   font-weight: 700;
   border-radius: ${({ theme }) => theme.radii.lg};
-  background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[580]}, ${({ theme }) => theme.colors.green[500]});
+  background: ${({ theme }) => theme.colors.green[400]};
   color: #ffffff;
   z-index: 1;
 `
@@ -1172,7 +1172,7 @@ const MatchViewBtn = styled.button`
   line-height: 1;
   padding: 0.4rem 0.9rem;
   font-size: ${({ theme }) => theme.typography.bodySmall};
-  background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[580]}, ${({ theme }) => theme.colors.green[500]});
+  background: ${({ theme }) => theme.colors.green[400]};
   color: #ffffff;
   border: none;
   cursor: pointer;
@@ -1180,7 +1180,7 @@ const MatchViewBtn = styled.button`
   width: 100%;
 
   &:hover {
-    background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[500]}, ${({ theme }) => theme.colors.green[300]});
+    background: ${({ theme }) => theme.colors.green[500]};
   }
 `
 

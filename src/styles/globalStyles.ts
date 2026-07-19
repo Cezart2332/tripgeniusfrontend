@@ -25,11 +25,7 @@ const GlobalStyles = createGlobalStyle`
     min-height: 100dvh;
     font-family: ${({ theme }) => theme.typography.fontFamily};
     color: ${({ theme }) => theme.colors.text[100]};
-    background:
-      radial-gradient(circle at 18% 0%, rgba(46, 141, 84, 0.10), transparent 28rem),
-      radial-gradient(circle at 92% 18%, rgba(168, 120, 31, 0.07), transparent 26rem),
-      linear-gradient(180deg, ${({ theme }) => theme.colors.bg[960]}, ${({ theme }) => theme.colors.bg[980]} 38rem);
-    background-attachment: fixed;
+    background: ${({ theme }) => theme.colors.bg[980]};
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     overflow: visible;
@@ -39,20 +35,6 @@ const GlobalStyles = createGlobalStyle`
     padding-bottom: env(safe-area-inset-bottom);
     position: relative;
     overscroll-behavior-y: none;
-  }
-
-  body::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    pointer-events: none;
-    z-index: 0;
-    background-image:
-      linear-gradient(rgba(28, 43, 32, 0.030) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(28, 43, 32, 0.022) 1px, transparent 1px);
-    background-size: 44px 44px;
-    mask-image: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent 78%);
-    opacity: 0.5;
   }
 
   #root {

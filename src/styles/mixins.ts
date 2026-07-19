@@ -3,16 +3,12 @@ import { css, type DefaultTheme } from 'styled-components'
 export const glassMorphism = (strong = false) => css`
   background: ${({ theme }) => strong ? theme.glass.bgStrong : theme.glass.bg};
   border: 1px solid ${({ theme }) => theme.glass.border};
-  backdrop-filter: blur(${({ theme }) => theme.glass.blur});
-  -webkit-backdrop-filter: blur(${({ theme }) => theme.glass.blur});
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65);
+  box-shadow: ${({ theme }) => theme.shadows.sm};
 `
 
-export const textGradient = (theme: DefaultTheme, from?: string, to?: string) => css`
-  background: linear-gradient(140deg, ${from ?? theme.colors.text[100]} 20%, ${to ?? theme.colors.green[400]} 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+/* Flat headings: the old gradient-text treatment is retired for a clean look. */
+export const textGradient = (theme: DefaultTheme, from?: string) => css`
+  color: ${from ?? theme.colors.text[100]};
 `
 
 export const buttonBase = css`
@@ -37,14 +33,14 @@ export const buttonBase = css`
 export const buttonPrimary = css`
   ${buttonBase}
   padding: 0.65rem 1.5rem;
-  background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[400]}, ${({ theme }) => theme.colors.offroad.accent});
-  color: ${({ theme }) => theme.colors.bg[980]};
-  box-shadow: ${({ theme }) => theme.shadows.glowGreen};
+  background: ${({ theme }) => theme.colors.green[400]};
+  color: #ffffff;
+  box-shadow: ${({ theme }) => theme.shadows.sm};
 
   &:hover {
-    background: linear-gradient(140deg, ${({ theme }) => theme.colors.green[300]}, ${({ theme }) => theme.colors.offroad.accent});
+    background: ${({ theme }) => theme.colors.green[500]};
     transform: translateY(-1px);
-    box-shadow: ${({ theme }) => theme.shadows.glowGold};
+    box-shadow: ${({ theme }) => theme.shadows.glowGreen};
   }
 
   &:active {
@@ -168,20 +164,7 @@ export const skeletonShimmer = css`
 
 export const glowingBorder = (color?: string) => css`
   position: relative;
-
-  &::before {
-    content: '';
-    position: absolute;
-    inset: -1px;
-    border-radius: inherit;
-    padding: 1px;
-    background: linear-gradient(140deg, ${color ?? 'rgba(46, 141, 84, 0.55)'}, transparent 62%);
-    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-    -webkit-mask-composite: xor;
-    mask-composite: exclude;
-    pointer-events: none;
-  }
+  border-color: ${color ?? 'rgba(46, 141, 84, 0.45)'} !important;
 `
 
 export const hideOnMobile = css`
