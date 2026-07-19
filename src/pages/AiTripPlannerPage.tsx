@@ -334,30 +334,6 @@ export function AiTripPlannerPage() {
 
           <BuilderGrid>
             <FormGroup>
-              <FieldLabel>Duration (Days)</FieldLabel>
-              <Input
-                type="number"
-                min={1}
-                max={30}
-                value={form.durationDays}
-                onChange={(e) => {
-                  const days = Number(e.target.value)
-                  setForm((p) => ({
-                    ...p,
-                    durationDays: days,
-                    endDate: p.startDate && days >= 1 ? addDays(p.startDate, days - 1) : p.endDate,
-                  }))
-                }}
-              />
-            </FormGroup>
-            <FormGroup>
-              <FieldLabel>Budget per Person (EUR)</FieldLabel>
-              <Input type="number" min={100} value={form.budget} onChange={(e) => setForm((p) => ({ ...p, budget: Number(e.target.value) }))} />
-            </FormGroup>
-          </BuilderGrid>
-
-          <BuilderGrid>
-            <FormGroup>
               <FieldLabel>Start Date</FieldLabel>
               <Input
                 type="date"
@@ -380,6 +356,7 @@ export function AiTripPlannerPage() {
               <Input
                 type="date"
                 min={form.startDate || tomorrow}
+                max={form.startDate ? addDays(form.startDate, 29) : undefined}
                 value={form.endDate}
                 required
                 onChange={(e) => {
@@ -390,23 +367,29 @@ export function AiTripPlannerPage() {
                   })
                 }}
               />
+              <FieldHint>{Math.max(1, form.durationDays)}-day trip.</FieldHint>
             </FormGroup>
           </BuilderGrid>
 
           <BuilderGrid>
-            <LocationAutocompleteField
-              id="planner-starting-point"
-              label="Deployment Base (Starting Point)"
-              placeholder="Where does the mission begin?"
-              value={form.startingPoint}
-              onValueChange={(v) => setForm((p) => ({ ...p, startingPoint: v }))}
-              onLocationSelect={(s) => setForm((p) => ({ ...p, startingPoint: s.placeName }))}
-            />
+            <FormGroup>
+              <FieldLabel>Budget per Person (EUR)</FieldLabel>
+              <Input type="number" min={100} value={form.budget} onChange={(e) => setForm((p) => ({ ...p, budget: Number(e.target.value) }))} />
+            </FormGroup>
             <FormGroup>
               <FieldLabel>Max Team Size</FieldLabel>
               <Input type="number" min={1} value={form.maxParticipants} onChange={(e) => setForm((p) => ({ ...p, maxParticipants: Number(e.target.value) }))} />
             </FormGroup>
           </BuilderGrid>
+
+          <LocationAutocompleteField
+            id="planner-starting-point"
+            label="Deployment Base (Starting Point)"
+            placeholder="Where does the mission begin?"
+            value={form.startingPoint}
+            onValueChange={(v) => setForm((p) => ({ ...p, startingPoint: v }))}
+            onLocationSelect={(s) => setForm((p) => ({ ...p, startingPoint: s.placeName }))}
+          />
 
           <FormGroup>
             <FieldLabel>Interests & Mission Style</FieldLabel>

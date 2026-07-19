@@ -35,6 +35,18 @@ const GlobalStyles = createGlobalStyle`
     padding-bottom: env(safe-area-inset-bottom);
     position: relative;
     overscroll-behavior-y: none;
+    /* Clip (don't scroll) anything that leaks past the viewport so mobile
+       browsers never shrink-to-fit the page. */
+    overflow-x: clip;
+  }
+
+  p, li, a, td, th, h1, h2, h3, h4, h5, h6 {
+    overflow-wrap: break-word;
+  }
+
+  pre {
+    max-width: 100%;
+    overflow-x: auto;
   }
 
   #root {
@@ -45,6 +57,7 @@ const GlobalStyles = createGlobalStyle`
     z-index: 1;
     display: flex;
     flex-direction: column;
+    overflow-x: clip;
   }
 
   a {
